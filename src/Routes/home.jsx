@@ -1,8 +1,10 @@
 import React, { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -35,6 +37,7 @@ const Home = () => {
                     <button
                       className="px-3 py-2 rounded"
                       style={{ backgroundColor: "#01D5C4", color: "white" }}
+                      onClick={() => navigate("/appointment")}
                     >
                       Book an Appointment
                     </button>
