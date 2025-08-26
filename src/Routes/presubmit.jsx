@@ -1,82 +1,92 @@
-import React from 'react';
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useRegister } from "../context/RegisterContext";
+import axios from "axios";
 
+const Presubmit = () => {
+  const navigate = useNavigate();
+  const { registerData } = useRegister();
+  const [errorMessage, setErrorMessage] = useState(""); 
+  const [successMessage, setSuccessMessage] = useState("");
 
-    const presubmit = () => {
-        const navigate = useNavigate();
-        
-        return(
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4]">
-              <br />
-              <br />
-              <div class="w-[50%] bg-white p-10 rounded-lg shadow-lg text-center">
-                <h2 class="text-[#00c3b8] text-2xl font-bold mb-2">SIGN UP</h2>
-                <p class="text-[#00458B] text-sm mb-6">Please double check your information</p>
-                
-                <br />
+  const handleSubmit = async () => {
+    setErrorMessage(""); // clear old errors
+    setSuccessMessage("");
 
-                <div className='col-sm-12'>
-                    <div className='row'>
-                        <div className='col-sm-6'>
-                        <p class="text-[#00c3b8] font-bold mb-2">Login Information</p>
-                        <br />
-                            <div class="mb-4 text-[#00458B] text-left">
-                                <p><b>Username:</b> ...</p>
-                                <br />
-                                <p><b>Password:</b> *****</p>
-                                <br />
-                                <p><b>Confirm Password:</b> *****</p>
-                                <br />
-                                <p><b>Email:</b> ...</p>
-                                <br />
-                                <p><b>Contact Number:</b> +63...</p>
-                            </div>
-                        </div>
-                        <div className='col-sm-6'>
-                        <p class="text-[#00c3b8] font-bold mb-2">Personal Information</p>
-                        <br />
-                            <div class="mb-4 text-[#00458B] text-left">
-                                <p><b>First Name:</b> ...</p>
-                                <br />
-                                <p><b>Middle Name:</b> ...</p>
-                                <br />
-                                <p><b>Last Name:</b> ...</p>
-                                <br />
-                                <p><b>Date of Birth:</b> ...</p>
-                                <br />
-                                <p><b>Gender:</b> ...</p>
-                                <br />
-                                <p><b>Religion:</b> ...</p>
-                                <br />
-                                <p><b>Home Address:</b> ...</p>
-                                <br />
-                                <p><b>City:</b> ...</p>
-                                <br />
-                                <p><b>Province:</b> ...</p>
-                                <br />
-                                <p><b>Occupation:</b> ...</p>
-                                <br />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <br />
-                <div className='col-sm-12'>
-                    <div className='row'>
-                        <div className='col-sm-6'>
-                            <button class="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/register2")}>Back</button>
-                        </div>
-                        <div className='col-sm-6'>
-                            <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/")}>Submit</button>
-                        </div>
-                    </div>
-                </div>
-              </div>
-              <br />
-              <br />
-            </div>
-        )
+    try {
+      const response = await axios.post("http://localhost:3000/auth/register", registerData);
+      setSuccessMessage(response.data.message || "Registration successful!");
+      console.log(response);
+      setTimeout(() => navigate("/login"), 1500);
+    } catch (error) {
+      if (error.response) {
+        setErrorMessage(error.response.data.message || "Something went wrong");
+        console.error("Response error:", error.response.data);
+      } else if (error.request) {
+        setErrorMessage("No response from server. Please try again later.");
+        console.error("Request error:", error.request);
+      } else {
+        setErrorMessage("Error: " + error.message);
+        console.error("Axios error:", error.message);
+      }
     }
+  };
 
-    export default presubmit
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4]">
+      <div className="w-[50%] bg-white p-10 rounded-lg shadow-lg text-center">
+        <h2 className="text-[#00c3b8] text-2xl font-bold mb-2">SIGN UP</h2>
+        <p className="text-[#00458B] text-sm mb-6">
+          Please double check your information
+        </p>
+
+        <div className="text-left text-[#00458B]">
+          <p><b>Username:</b> {registerData.user_name}</p>
+          <p><b>Password:</b> *****</p>
+          <p><b>Email:</b> {registerData.email}</p>
+          <p><b>Contact Number:</b> {registerData.contact_no}</p>
+          <p><b>First Name:</b> {registerData.fname}</p>
+          <p><b>Middle Name:</b> {registerData.mname}</p>
+          <p><b>Last Name:</b> {registerData.lname}</p>
+          <p><b>Date of Birth:</b> {registerData.date_birth}</p>
+          <p><b>Gender:</b> {registerData.gender}</p>
+          <p><b>Age:</b> {registerData.age}</p>
+          <p><b>Religion:</b> {registerData.religion}</p>
+          <p><b>Nationality:</b> {registerData.nationality}</p>
+          <p><b>Home Address:</b> {registerData.home_address}</p>
+          <p><b>City:</b> {registerData.city}</p>
+          <p><b>Province:</b> {registerData.province}</p>
+          <p><b>Occupation:</b> {registerData.occupation}</p>
+          <p><b>Gcash:</b> {registerData.gcash_num}</p>
+        </div>
+
+        {errorMessage && (
+        <p className="text-red-500 font-medium mt-4">{errorMessage}</p>
+        )}
+
+        {successMessage && (
+        <p className="text-green-600 font-medium mt-4">{successMessage}</p>
+        )}
+
+        <div className="flex mt-6 gap-4">
+          <button
+            className="bg-[#FFFFFF] text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full"
+            onClick={() => navigate("/register2")}
+          >
+            Back
+          </button>
+          <button
+            type="submit"
+            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full"
+            onClick={handleSubmit}
+          >
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Presubmit;

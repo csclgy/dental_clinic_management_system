@@ -34,13 +34,20 @@ const Home = () => {
                     <br />
                     <p className="text-3xl">"Our Passion is Your Smile"</p>
                     <br />
-                    <button
-                      className="px-3 py-2 rounded"
-                      style={{ backgroundColor: "#01D5C4", color: "white" }}
-                      onClick={() => navigate("/appointment")}
-                    >
-                      Book an Appointment
-                    </button>
+                      <button
+                        className="px-3 py-2 rounded"
+                        style={{ backgroundColor: "#01D5C4", color: "white" }}
+                        onClick={() => {
+                          const token = localStorage.getItem("token");
+                          if (token) {
+                            navigate("/appointment");
+                          } else {
+                            navigate("/login");
+                          }
+                        }}
+                      >
+                        Book an Appointment
+                      </button>
                   </div>
                   <div className="col-sm-6">
                     <img src="./main.png" style={{ width: "100%" }} alt="Main" />
@@ -187,7 +194,7 @@ const Home = () => {
                 <p style={{ fontSize: "20px" }}>Social Media</p>
               </b>
               <p style={{ fontSize: "35px" }}>
-                <a>
+                <a href="https://www.facebook.com/arciagajuntillatmjorthodental">
                   <i className="fa fa-facebook-official" aria-hidden="true"></i>
                 </a>
               </p>
