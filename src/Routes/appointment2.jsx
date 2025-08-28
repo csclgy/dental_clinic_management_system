@@ -1,22 +1,13 @@
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAppointment } from "../context/AppointmentContext"; // adjust path
 
 const Appointment2 = () => {
   const navigate = useNavigate();
-  const { appointmentData, updateAppointment } = useAppointment();
-  const [receipt, setReceipt] = useState(null);
+  const { appointmentData, updateAppointment } = useAppointment(); // ✅ include updateAppointment
 
   const handleSubmit = () => {
-    // 👇 combine everything into one object
-    const finalData = {
-      ...appointmentData,
-      downpayment: appointmentData.downpayment,
-      receipt: receipt,
-    };
-
-    console.log("Final Appointment Data:", finalData);
-
+    console.log("Final Appointment Data:", appointmentData);
     navigate("/appointmentsubmit"); // Go to confirmation page
   };
 
@@ -32,7 +23,7 @@ const Appointment2 = () => {
           Please note that your appointment is not yet confirmed. Our dental
           clinic will get in touch with you shortly to confirm the schedule.
         </p>
-        <br />
+
         <b>
           <p className="text-[#00458B] text-sm mb-6">
             Do you want to make a downpayment to reserve your appointment?
@@ -46,9 +37,8 @@ const Appointment2 = () => {
                 type="radio"
                 id="yes"
                 name="downpayment"
-                value="Yes"
-                checked={appointmentData.downpayment === "Yes"}
-                onChange={() => updateAppointment("downpayment", "Yes")}
+                checked={appointmentData.payment_method === "Yes"}
+                onChange={() => updateAppointment("payment_method", "Yes")}
               />
               <label htmlFor="yes" className="ml-2">
                 Yes
@@ -59,9 +49,8 @@ const Appointment2 = () => {
                 type="radio"
                 id="no"
                 name="downpayment"
-                value="No"
-                checked={appointmentData.downpayment === "No"}
-                onChange={() => updateAppointment("downpayment", "No")}
+                checked={appointmentData.payment_method === "No"}
+                onChange={() => updateAppointment("payment_method", "No")}
               />
               <label htmlFor="no" className="ml-2">
                 No
@@ -74,19 +63,13 @@ const Appointment2 = () => {
         <br />
 
         {/* If Yes → show GCash QR and file upload */}
-        {appointmentData.downpayment === "Yes" && (
+        {appointmentData.payment_method === "Yes" && (
           <>
-            <h2 className="text-[#00458B] text-sm mb-6">
-              Scan this QR Code with your Gcash App
+            <h2 className="text-[#00458B] text-sm my-6">
+              Scan this QR Code with your GCash App
             </h2>
-            <img
-              src="gcashcode.png"
-              alt="Gcash QR Code"
-              style={{ width: "100%" }}
-            />
+            <img src="gcashcode.png" alt="Gcash QR Code" className="w-full" />
 
-            <br />
-            <br />
             <div className="mb-4 text-left">
               <label className="block text-[#00458b] font-semibold mb-1">
                 Upload your receipt here
@@ -94,8 +77,9 @@ const Appointment2 = () => {
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) => setReceipt(e.target.files[0])}
-                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                onChange={(e) =>
+                  updateAppointment("downpayment_proof", e.target.files[0])
+                }
               />
             </div>
           </>
@@ -104,7 +88,7 @@ const Appointment2 = () => {
         <div className="col-sm-12">
           <center>
             <button
-              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"
+              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mt-4"
               onClick={handleSubmit}
             >
               Submit

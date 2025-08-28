@@ -3,11 +3,19 @@ import { connectToDatabase } from '../lib/db.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
+import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
 import { authenticateToken } from "../middleware/authMiddleware.js";
 
 dotenv.config();
 
 const router = express.Router();
+
+// ES module fix for __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 
 // for register.jsx
@@ -160,75 +168,109 @@ router.put("/change-password", async (req, res) => {
   }
 });
 
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../uploads")); // all files go to uploads/
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage });
+
+// Fields configuration: downpayment + multiple photos
+const cpUpload = upload.fields([
+  { name: "downpayment_proof", maxCount: 1 },
+  { name: "photos", maxCount: 10 }, // allow up to 10 uploaded photos
+]);
+
+
 // CREATE Appointment
-router.post("/appointments", authenticateToken, async (req, res) => {
-  const {
-    procedure_type,
-    pref_date,
-    payment_method,
-    downpayment_proof,
-    attending_dentist,
-    or_num,
-    payment_status,
-    total_charged,
-    appointment_status,
-    p_fname,
-    p_mname,
-    p_lname,
-    p_gender,
-    p_age,
-    p_date_birth,
-    p_home_address,
-    p_email,
-    p_contact_no,
-    p_blood_type,
-  } = req.body;
-
-  if (!procedure_type || !pref_date || !p_fname || !p_lname) {
-    return res.status(400).json({ message: "Missing required fields" });
-  }
-
+// CREATE Appointment
+router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
   try {
     const db = await connectToDatabase();
 
-    await db.query(
-    `INSERT INTO appointment 
-    (user_name, procedure_type, pref_date, payment_method, downpayment_proof, attending_dentist, or_num, 
-    payment_status, total_charged, appointment_status, 
-    p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth, 
-    p_home_address, p_email, p_contact_no, p_blood_type) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      req.user.user_name,
+    const {
       procedure_type,
       pref_date,
+      pref_time,
       payment_method,
-      downpayment_proof || null,
-      attending_dentist || null,
-      or_num || null,
-      payment_status || "pending",
-      total_charged || null,
-      appointment_status || "pending",
+      attending_dentist,
+      or_num,
+      payment_status,
+      total_charged,
+      appointment_status,
       p_fname,
-      p_mname || null,
+      p_mname,
       p_lname,
-      p_gender || null,
-      p_age || null,
-      p_date_birth || null,
-      p_home_address || null,
-      p_email || null,
-      p_contact_no || null,
-      p_blood_type || null,
-    ]
-  );
+      p_gender,
+      p_age,
+      p_date_birth,
+      p_home_address,
+      p_email,
+      p_contact_no,
+      p_blood_type,
+    } = req.body;
 
+    // Required fields
+    if (!procedure_type || !pref_date || !pref_time || !payment_method) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
-    return res.status(201).json({ message: "Appointment created successfully" });
+    // Insert appointment
+    const [appointmentResult] = await db.query(
+      `INSERT INTO appointment
+      (user_name, procedure_type, pref_date, pref_time, payment_method, downpayment_proof,
+       attending_dentist, or_num, payment_status, total_charged, appointment_status,
+       p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
+       p_home_address, p_email, p_contact_no, p_blood_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        req.user.user_name,
+        procedure_type,
+        pref_date,
+        pref_time,
+        payment_method,
+        req.files.downpayment_proof ? req.files.downpayment_proof[0].filename : null,
+        attending_dentist || "Unassigned",
+        or_num || null,
+        payment_status || "pending",
+        total_charged || null,
+        appointment_status || "pending",
+        p_fname,
+        p_mname,
+        p_lname,
+        p_gender,
+        p_age,
+        p_date_birth,
+        p_home_address,
+        p_email,
+        p_contact_no,
+        p_blood_type,
+      ]
+    );
+
+    const appoint_id = appointmentResult.insertId;
+
+    // Insert multiple uploaded photos (if any)
+    if (req.files.photos) {
+      for (const file of req.files.photos) {
+        await db.query(
+          `INSERT INTO uploadedphotos (up_url, appoint_id) VALUES (?, ?)`,
+          [file.filename, appoint_id]
+        );
+      }
+    }
+
+    return res.status(201).json({ message: "Appointment created successfully!" });
   } catch (err) {
     console.error("Create appointment error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 export default router;

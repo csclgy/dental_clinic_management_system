@@ -3,9 +3,20 @@ import { createContext, useContext, useState } from "react";
 const AppointmentContext = createContext();
 
 export const AppointmentProvider = ({ children }) => {
+  // Appointment + patient info (NO downpayment_proof here)
   const [appointmentData, setAppointmentData] = useState({
-    downpayment: "",
-    receipt: null,
+    procedure_type: "",
+    pref_date: "",
+    pref_time: "",
+    payment_method: "",
+    downpayment_proof: null,
+    attending_dentist: "",
+    or_num: "",
+    payment_status: "pending",
+    total_charged: 0,
+    appointment_status: "pending",
+
+    // Patient info
     p_fname: "",
     p_mname: "",
     p_lname: "",
@@ -16,9 +27,10 @@ export const AppointmentProvider = ({ children }) => {
     p_email: "",
     p_contact_no: "",
     p_blood_type: "",
-    });
+    photos: [],
+  });
 
-  // update fields
+  // Generic updater
   const updateAppointment = (field, value) => {
     setAppointmentData((prev) => ({
       ...prev,
