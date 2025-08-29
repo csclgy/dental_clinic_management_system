@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { authenticateToken } from "../middleware/authMiddleware.js";
 
+
 dotenv.config();
 
 const router = express.Router();
@@ -38,6 +39,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
+
 // for login.jsx
 router.post('/login', async (req, res) => {
   const { user_name, user_password } = req.body;
@@ -64,6 +66,143 @@ router.post('/login', async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+// Add a new Chart of Account
+router.post("/coa", async (req, res) => {
+  const { account_name, account_type } = req.body;
+
+  if (!account_name || !account_type) {
+    return res.status(400).json({ message: "All fields required" });
+  }
+
+  try {
+    const db = await connectToDatabase();
+    await db.query(
+      "INSERT INTO chartofaccounts (account_name, account_type) VALUES (?, ?)",
+      [account_name, account_type]
+    );
+
+    return res.status(201).json({ message: "Account saved successfully!" });
+  } catch (err) {
+    console.error("COA insert error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+ // Add a new journal enrty
+router.post("/journal", async (req, res) => {
+  const { date, description, accounts, debit, credit, comment } = req.body;
+
+  // Validation
+  if (!date || !description || !accounts || (!debit && !credit)) {
+    return res.status(400).json({ message: "All required fields must be filled" });
+  }
+
+  try {
+    const db = await connectToDatabase();
+    await db.query(
+      "INSERT INTO journalentry (`date`, description, accounts, debit, credit, comment) VALUES (?,?,?,?,?,?)",
+      [date, description, accounts, debit || 0, credit || 0, comment || ""]
+    );
+
+    return res.status(201).json({ message: "Journal entry saved successfully!" });
+  } catch (err) {
+    console.error("Journal insert error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//get  Chart of Accounts
+router.get("/coa", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query("SELECT * FROM chartofaccounts ORDER BY account_name ASC");
+    return res.json(rows); // Send back as JSON array
+  } catch (err) {
+    console.error("Fetch COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// get journal entry(foradminjournal)
+router.get("/journal1", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query("SELECT * FROM journalentry ORDER BY date DESC");
+    return res.json(rows); 
+  } catch (err) {
+    console.error("Fetch journal entries error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+//delete chart of accounts
+router.delete("/coa/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [result] = await db.query("DELETE FROM chartofaccounts WHERE account_id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    return res.json({ message: "Account deleted successfully" });
+  } catch (err) {
+    console.error("Delete COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+//edit coa
+
+
+
+// Get a single account by ID
+router.get("/coa/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [result] = await db.query(
+      "SELECT * FROM chartofaccounts WHERE account_id = ?",
+      [id]
+    );
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    res.json(result[0]);
+  } catch (err) {
+    console.error("Fetch COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Update account by ID
+router.put("/coa/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { account_name, account_type } = req.body;
+
+    const db = await connectToDatabase();
+
+    // Update record
+    const [result] = await db.query(
+      "UPDATE chartofaccounts SET account_name = ?, account_type = ? WHERE account_id = ?",
+      [account_name, account_type, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    return res.json({ message: "Account updated successfully" });
+  } catch (err) {
+    console.error("Update COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 // ============ GET CURRENT USER ============
 router.get('/me', async (req, res) => {

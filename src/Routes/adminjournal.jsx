@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 const adminjournal = () => {
   const location = useLocation();
@@ -10,7 +11,7 @@ const adminjournal = () => {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
+  const [journalData, setJournalData] = useState([]);
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -24,40 +25,33 @@ const adminjournal = () => {
     }
   }, [location]);
 
-   const records = [
-    {
-      date: "05-30-2025",
-      diagnosis: "Dental Caries",
-      services: "Oral Exam & Periapical X-ray",
-      dentist: "Dr. A. Reyes",
-      status: "Completed",
-    },
-    {
-      date: "07-15-2025",
-      diagnosis: "Tooth Extraction",
-      services: "Extraction of Wisdom Tooth",
-      dentist: "Dr. M. Santos",
-      status: "Ongoing",
-    },
-  ];
+   // Fetch journal entries from backend 
+    useEffect(() => { const fetchJournalEntries = async () => {
+    try { const response = await axios.get("http://localhost:3000/auth/journal1"); 
+    setJournalData(response.data);  } 
+    catch (err) {
+         console.error(err); 
+         alert("Failed to fetch journal entries"); 
+        } }; 
+        fetchJournalEntries(); 
+    }, 
+    []);
 
-    // Filter records by search term & date range
-    const filteredRecords = records.filter((record) => {
-    const recordDate = new Date(record.date.split("-").reverse().join("-")); // Convert MM-DD-YYYY to YYYY-MM-DD
+  const filteredRecords = journalData.filter((record) => {
+      if (!searchTerm && !startDate && !endDate) return true;
+    const recordDate = new Date(record.date); 
 
     const start = startDate ? new Date(startDate) : null;
     const end = endDate ? new Date(endDate) : null;
 
     const matchesSearch = Object.values(record).some((value) =>
-        value.toLowerCase().includes(searchTerm.toLowerCase())
+      String(value).toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const matchesDate =
-        (!start || recordDate >= start) && (!end || recordDate <= end);
+    const matchesDate = (!start || recordDate >= start) && (!end || recordDate <= end);
 
     return matchesSearch && matchesDate;
-    });
-
+  });
   return (
     <div>
       <div className="p-4">
@@ -195,8 +189,8 @@ const adminjournal = () => {
                                             Start Date
                                         </label>
                                         <input
-                                            type="date"
-                                            value={startDate}
+                                            input type="date" 
+                                            value={startDate} 
                                             onChange={(e) => setStartDate(e.target.value)}
                                             className="w-full border border-[#00458B] rounded-lg px-3 py-2 outline-none"
                                         />
@@ -222,11 +216,11 @@ const adminjournal = () => {
                                         </label>
                                         <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1">
                                             <input
-                                            type="text"
+                                            input type="text" 
                                             placeholder="Search"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 outline-none text-sm text-gray-700"
+                                             value={searchTerm} 
+                                             onChange={(e) => setSearchTerm(e.target.value)}
+                                             className="flex-1 outline-none text-sm text-gray-700"
                                             />
                                             <i className="fa fa-search text-[#00458B]"></i>
                                         </div>
@@ -253,11 +247,11 @@ const adminjournal = () => {
                                             filteredRecords.map((record, index) => (
                                                 <tr key={index} className="border-b border-gray-200">
                                                 <td className="px-4 py-2 text-blue-700">{record.date}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
+                                                <td className="px-4 py-2 text-blue-700">{record.description}</td>
+                                                <td className="px-4 py-2 text-blue-700">{record.accounts}</td>
+                                                <td className="px-4 py-2 text-blue-700">{record.debit}</td>
+                                                <td className="px-4 py-2 text-blue-700">{record.credit}</td>
+                                                <td className="px-4 py-2 text-blue-700">{record.comment}</td>
 
                                                 </tr>
                                             ))

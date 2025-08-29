@@ -46,6 +46,9 @@ import Registergcash from "./Routes/registergcash";
 import Adminschedule from "./Routes/adminschedule";
 import { RegisterProvider } from "./context/RegisterContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminCoaEdit from "./Routes/admincoaedit"; 
+
+
 
 function App() {
   return (
@@ -166,6 +169,7 @@ function App() {
             <Route path="/adminbillingedititem" element={<Adminbillingedititem />} />
             <Route path="/notification" element={<Notification />} />
             <Route path="/adminschedule" element={<Adminschedule />} />
+            <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>
