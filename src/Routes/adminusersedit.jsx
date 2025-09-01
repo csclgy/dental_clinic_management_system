@@ -1,24 +1,103 @@
-import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom"; // 👈 useParams here
 
-const adminusersedit = () => {
-  const location = useLocation();
+const AdminUsersEdit = () => {
+  const { id } = useParams(); // 👈 get user id from URL
   const navigate = useNavigate();
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
-  // Scroll to the section if state.scrollTo is passed
+  const [user, setUser] = useState({
+    user_name: "",
+    email: "",
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+    contact_no: "",
+    role: "",
+    fname: "",
+    mname: "",
+    lname: "",
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    if (location.state?.scrollTo) {
-      const element = document.getElementById(location.state.scrollTo);
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
       }
+
+      try {
+        const res = await fetch(`http://localhost:3000/auth/displayuserinfo/${id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await res.json();
+        setUser({
+          user_name: data.user_name,
+          email: data.email,
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+          contact_no: data.contact_no,
+          role: data.role,
+          fname: data.fname,
+          mname: data.mname,
+          lname: data.lname,
+        });
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+        setError("Could not fetch user. Please login again.");
+        localStorage.removeItem("token");
+        navigate("/login");
+      }
+    };
+
+    fetchUser();
+  }, [id, navigate]);
+
+  const handleSave = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
     }
-  }, [location]);
+
+    try {
+      const res = await fetch(`http://localhost:3000/auth/updateuserinfo/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(user),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to update profile");
+      }
+
+      const data = await res.json();
+      alert(data.message);
+      navigate("/adminusers"); // 👈 go back after saving
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      alert("Could not update profile. Please try again.");
+    }
+  };
 
   return (
     <div>
@@ -39,19 +118,21 @@ const adminusersedit = () => {
                     </button>
                 </Link>
 
-                {/* Ledger with Dropdown */}
+                {/* Ledger Dropdown */}
                 <button
-                    onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                    className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
+                  onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+                  className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
+                  style={{ color: "#00458B" }}
                 >
-                    <span>
+                  <span>
                     <i className="fa fa-book" aria-hidden="true"></i> Ledger
-                    </span>
-                    <i
-                    className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`}
+                  </span>
+                  <i
+                    className={`fa fa-chevron-${
+                      isLedgerOpen ? "up" : "down"
+                    }`}
                     aria-hidden="true"
-                    ></i>
+                  ></i>
                 </button>
 
                 {isLedgerOpen && (
@@ -154,35 +235,104 @@ const adminusersedit = () => {
                                     <div className="col-sm-6">
                                         <br />
                                         <br />
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Username</label>
-                                            <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                        <div className="mb-4 text-left">
+                                        <label className="block text-[#00458b] font-semibold mb-1">Username</label>
+                                        <input 
+                                            type="text" 
+                                            value={user.user_name}
+                                            onChange={(e) => setUser({ ...user, user_name: e.target.value })}
+                                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" 
+                                        />
+                                        </div>
+
+                                        <div className="mb-4 text-left">
+                                        <label className="block text-[#00458b] font-semibold mb-1">Email</label>
+                                        <input 
+                                            type="email" 
+                                            value={user.email}
+                                            onChange={(e) => setUser({ ...user, email: e.target.value })}
+                                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" 
+                                        />
+                                        </div>
+
+                                        <div className="mb-4 text-left">
+                                        <label className="block text-[#00458b] font-semibold mb-1">Current Password</label>
+                                        <input
+                                            type="password"
+                                            value={user.currentPassword}
+                                            onChange={(e) => setUser({ ...user, currentPassword: e.target.value })}
+                                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                        />
+                                        </div>
+
+                                        <div className="mb-4 text-left">
+                                        <label className="block text-[#00458b] font-semibold mb-1">New Password</label>
+                                        <input
+                                            type="password"
+                                            value={user.newPassword}
+                                            onChange={(e) => setUser({ ...user, newPassword: e.target.value })}
+                                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                        />
+                                        </div>
+
+                                        <div className="mb-4 text-left">
+                                        <label className="block text-[#00458b] font-semibold mb-1">Confirm Password</label>
+                                        <input
+                                            type="password"
+                                            value={user.confirmPassword}
+                                            onChange={(e) => setUser({ ...user, confirmPassword: e.target.value })}
+                                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                        />
                                         </div>
                                         <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Password</label>
-                                            <input type="password" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                            <label class="block text-[#00458b] font-semibold mb-1">Contact Number</label>
+                                            <input 
+                                                type="number" 
+                                                value={user.contact_no}
+                                                onChange={(e) => setUser({ ...user, contact_no: e.target.value })}
+                                                class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" 
+                                            />
                                         </div>
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Access Level</label>
-                                            <select  class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
-                                                <option value="male">Patient</option>
-                                                <option value="female">Dentist</option>
-                                                <option value="female">Receptionist</option>
-                                                <option value="female">Inventory Staff</option>
-                                                <option value="female">Admin</option>
-                                            </select>
+                                        <div className="mb-4 text-left">
+                                        <label className="block text-[#00458b] font-semibold mb-1">Access Level</label>
+                                        <select 
+                                            value={user.role}
+                                            onChange={(e) => setUser({ ...user, role: e.target.value })}
+                                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                        >
+                                            <option value="patient">Patient</option>
+                                            <option value="dentist">Dentist</option>
+                                            <option value="receptionist">Receptionist</option>
+                                            <option value="inventory">Inventory Staff</option>
+                                            <option value="admin">Admin</option>
+                                        </select>
                                         </div>
                                         <div class="mb-4 text-left">
                                             <label class="block text-[#00458b] font-semibold mb-1">First Name</label>
-                                            <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                <input 
+                                                    type="text" 
+                                                    value={user.fname}
+                                                    onChange={(e) => setUser({ ...user, fname: e.target.value })} 
+                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" 
+                                                />
                                         </div>
                                         <div class="mb-4 text-left">
                                             <label class="block text-[#00458b] font-semibold mb-1">Middle Name</label>
-                                            <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                <input 
+                                                    type="text" 
+                                                    value={user.mname}
+                                                    onChange={(e) => setUser({ ...user, mname: e.target.value })} 
+                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" 
+                                                />
                                         </div>
                                         <div class="mb-4 text-left">
                                             <label class="block text-[#00458b] font-semibold mb-1">Last Name</label>
-                                            <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                <input 
+                                                    type="text" 
+                                                    value={user.lname}
+                                                    onChange={(e) => setUser({ ...user, lname: e.target.value })} 
+                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" 
+                                                />
                                         </div>
                                     </div>
                                     <div className="col-sm-3">
@@ -200,7 +350,11 @@ const adminusersedit = () => {
                                                     <button class="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminusers")}>Back</button>
                                                 </div>
                                             <div className="col-sm-6">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminusers")}>Save</button>
+                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" 
+                                                    onClick={handleSave} 
+                                                >
+                                                  Save
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -219,4 +373,4 @@ const adminusersedit = () => {
   );
 };
 
-export default adminusersedit;
+export default AdminUsersEdit;

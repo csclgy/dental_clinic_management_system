@@ -2,12 +2,14 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
 const admincoa = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [accounts, setAccounts] = useState([]);
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -21,29 +23,38 @@ const admincoa = () => {
     }
   }, [location]);
 
-   const records = [
-    {
-      date: "05-30-2025",
-      diagnosis: "Dental Caries",
-      services: "Oral Exam & Periapical X-ray",
-      dentist: "Dr. A. Reyes",
-      status: "Completed",
-    },
-    {
-      date: "07-15-2025",
-      diagnosis: "Tooth Extraction",
-      services: "Extraction of Wisdom Tooth",
-      dentist: "Dr. M. Santos",
-      status: "Ongoing",
-    },
-  ];
+     useEffect(() => {
+    const fetchAccounts = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/auth/coa"); // Make sure your endpoint matches
+        setAccounts(res.data); // res.data should be an array of accounts
+      } catch (err) {
+        console.error("Error fetching accounts:", err);
+      }
+    };
+    fetchAccounts();
+  }, []);
 
-  // Filter based on search term (case-insensitive)
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      value.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+ // Filter accounts by search term
+  const filteredAccounts = accounts.filter((account) => {
+    if (!searchTerm) return true; // if search bar empty, show all
+    return (
+      account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      account.account_type.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  const handleDelete = async (id) => {
+  if (window.confirm("Are you sure you want to delete this account?")) {
+    try {
+      await axios.delete(`http://localhost:3000/auth/coa/${id}`);
+      setAccounts(accounts.filter((a) => a.account_id !== id)); // update UI
+    } catch (err) {
+      console.error("Error deleting account:", err);
+      alert("Failed to delete account");
+    }
+  }
+};
 
   return (
     <div>
@@ -201,21 +212,21 @@ const admincoa = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredRecords.length > 0 ? (
-                                            filteredRecords.map((record, index) => (
+                                            {filteredAccounts.length > 0 ? (
+                                            filteredAccounts.map((account, index) => (
                                                 <tr key={index} className="border-b border-gray-200 text-center item-center">
-                                                <td className="px-4 py-2 text-blue-700">{record.date}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
+                                                <td className="px-4 py-2 text-blue-700">{account.account_name}</td>
+                                                <td className="px-4 py-2 text-blue-700">{account.account_type}</td>
                                                 <td className="px-4 py-2">
-                                                    <Link to="/admincoaedit">
+                                                    <Link to={`/admincoaedit/${account.account_id}`}>
                                                     <button className="bg-[#04AA6D] text-white font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
                                                     Edit
                                                     </button>
                                                     </Link>
                                                 </td>
                                                 <td className="px-4 py-2">
-                                                    <Link to="/transviewmed">
-                                                    <button className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
+                                                    <Link to="/admincoa">
+                                                    <button  onClick={() => handleDelete(account.account_id)} className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
                                                     Delete
                                                     </button>
                                                     </Link>

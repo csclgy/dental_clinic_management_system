@@ -2,12 +2,52 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useParams} from "react-router-dom";
+import axios from "axios";
 
 const admincoaedit = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const { id } = useParams();
+  
 
+    const [account, setAccount] = useState({
+    account_name: "",
+    account_type: "",
+  });
+
+
+//
+  useEffect(() => {
+    const fetchAccount = async () => {
+      try {
+      const res = await axios.get(`http://localhost:3000/auth/coa/${id}`);
+
+        setAccount(res.data);
+      } catch (err) {
+        console.error("Error fetching account:", err);
+      }
+    };
+    fetchAccount();
+  }, [id]);
+//update
+   const handleChange = (e) => {
+    setAccount({ ...account, [e.target.name]: e.target.value });
+  };
+
+    const handleUpdate = async () => {
+    try {
+     await axios.put(`http://localhost:3000/auth/coa/${id}`, account);
+      alert("Account updated successfully!");
+      navigate("/admincoa"); // go back to list
+    } catch (err) {
+      console.error("Error updating account:", err);
+      alert("Failed to update account");
+      }};
+  
+    
+//
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -153,16 +193,25 @@ const admincoaedit = () => {
                                         <br />
                                         <div class="mb-4 text-left">
                                             <label class="block text-[#00458b] font-semibold mb-1">Name</label>
-                                            <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                            <input 
+                                             type="text"
+                                             name="account_name"
+                                             value={account.account_name}
+                                             onChange={handleChange}
+                                             class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                         </div>
                                         <div class="mb-4 text-left">
                                             <label class="block text-[#00458b] font-semibold mb-1">Account Type</label>
-                                            <select  class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
-                                                <option value="...">Asset</option>
-                                                <option value="...">Liability</option>
-                                                <option value="...">Equity</option>
-                                                <option value="...">Income</option>
-                                                <option value="...">Expense</option>
+                                            <select  
+                                            name="account_type"
+                                            value={account.account_type}
+                                            onChange={handleChange}
+                                            class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
+                                                 <option value="Asset">Asset</option>
+                                                 <option value="Liability">Liability</option>
+                                                 <option value="Equity">Equity</option>
+                                                 <option value="Income">Income</option>
+                                                 <option value="Expense">Expense</option>
                                             </select>
                                         </div>
                                     </div>
@@ -181,7 +230,7 @@ const admincoaedit = () => {
                                                     <button class="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admincoa")}>Back to List</button>
                                                 </div>
                                             <div className="col-sm-6">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admincoa")}>Update</button>
+                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"  onClick={handleUpdate}>Update</button>
                                             </div>
                                         </div>
                                     </div>

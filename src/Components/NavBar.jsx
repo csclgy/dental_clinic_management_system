@@ -25,6 +25,20 @@ const Navbar = () => {
     navigate("/login");
   };
 
+  const [role, setRole] = useState("");
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const storedUser = localStorage.getItem("userName");
+    const storedRole = localStorage.getItem("role");
+
+    if (token) {
+      setIsLoggedIn(true);
+      if (storedUser) setUserName(storedUser);
+      if (storedRole) setRole(storedRole);
+    }
+  }, []);
+
   return (
     <nav className="bg-white shadow-lg" style={{ color: "#00458B" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,12 +51,19 @@ const Navbar = () => {
             </div>
 
             {/* Desktop menu */}
+            
+            {role === "patient" && (
             <div className="hidden md:flex space-x-4"> 
               <Link to="/" state={{ scrollTo: "section1" }} className="px-3 py-2 rounded">Home</Link> 
               <Link to="/" state={{ scrollTo: "section2" }} className="px-3 py-2 rounded">About Us</Link> 
               <Link to="/" state={{ scrollTo: "section3" }} className="px-3 py-2 rounded">Services</Link> 
               <Link to="/" state={{ scrollTo: "section4" }} className="px-3 py-2 rounded">Contact Us</Link> 
             </div>
+            )}
+            {role === "admin" && (
+            <div className="hidden md:flex space-x-4"> 
+            </div>
+            )}
           </div>
 
           {/* RIGHT side: Desktop */}
@@ -81,7 +102,9 @@ const Navbar = () => {
 
                     <div className="py-2">
                       <Link to="/profilelogin" className="block px-4 py-2 hover:bg-gray-100">Profile</Link>
+                      {role === "patient" && (
                       <Link to="/transmed" className="block px-4 py-2 hover:bg-gray-100">Transaction History</Link>
+                      )}
                       <Link to="/notification" className="block px-4 py-2 hover:bg-gray-100">Notifications</Link>
                       <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-red-500 hover:bg-gray-100">Logout</button>
                     </div>

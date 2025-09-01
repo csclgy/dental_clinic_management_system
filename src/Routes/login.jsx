@@ -5,38 +5,48 @@ const Login = () => {
   const [user_password, setUserPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleLogin = async () => {
+const handleLogin = async () => {
   setError(""); // clear old error
+  try {
+    const res = await fetch("http://localhost:3000/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_name, user_password }),
+    });
+
+    let data = {}; 
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user_name, user_password }),
-      });
-
-      let data = {}; 
-      try {
-        data = await res.json();
-      } catch {
-        // backend sent no JSON
-      }
-
-      if (res.ok) {
-        localStorage.setItem("token", data.token);
-
-        // ✅ save the username too (make sure backend sends it in response)
-        localStorage.setItem("userName", data.user.user_name);
-
-        window.location.href = "/"; // or navigate("/dashboard")
-      } else {
-        setError(data.error || "Login failed. Please check your credentials.");
-      }
-    } catch (err) {
-      console.error(err);
-      setError("No response from server. Please try again later.");
+      data = await res.json();
+    } catch {
+      // backend sent no JSON
     }
-  };
 
+    if (res.ok) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("userName", data.user.user_name);
+      localStorage.setItem("role", data.user.role); // 👈 save the role
+
+      // 🔑 redirect based on role
+      if (data.user.role === "admin") {
+        window.location.href = "/admincoa"; 
+      } else if (data.user.role === "dentist") {
+        window.location.href = "/adminpatients";
+      } else if (data.user.role === "inventory") {
+        window.location.href = "/admininventory";
+      } else if (data.user.role === "receptionist") {
+        window.location.href = "/adminschedule";
+      }
+      else {
+        window.location.href = "/"; 
+      }
+    } else {
+      setError(data.error || "Login failed. Please check your credentials.");
+    }
+  } catch (err) {
+    console.error(err);
+    setError("No response from server. Please try again later.");
+  }
+};
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4]">

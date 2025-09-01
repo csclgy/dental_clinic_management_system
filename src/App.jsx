@@ -21,7 +21,7 @@ import Transviewmed from "./Routes/transviewmed";
 import Transappointment from "./Routes/transappointment";
 import Admincoa from "./Routes/admincoa";
 import Admincoaadd from "./Routes/admincoaadd";
-import Admincoaedit from "./Routes/admincoaedit";
+import AdminCoaEdit from "./Routes/admincoaedit"; 
 import Adminjournal from "./Routes/adminjournal";
 import Adminjournaladd from "./Routes/adminjournaladd";
 import Admingeneral from "./Routes/admingeneral";
@@ -29,7 +29,7 @@ import Admintrial from "./Routes/admintrial";
 import Adminusers from "./Routes/adminusers";
 import Adminusersadd from "./Routes/adminusersadd";
 import Adminusersaddpatient from "./Routes/adminusersaddpatient";
-import Adminusersedit from "./Routes/adminusersedit";
+import AdminUsersEdit from "./Routes/adminusersedit";
 import Admininventory from "./Routes/admininventory";
 import Admininventoryadd from "./Routes/admininventoryadd";
 import Admininventoryedit from "./Routes/admininventoryedit";
@@ -144,7 +144,6 @@ function App() {
             {/* Admin routes */}
             <Route path="/admincoa" element={<Admincoa />} />
             <Route path="/admincoaadd" element={<Admincoaadd />} />
-            <Route path="/admincoaedit" element={<Admincoaedit />} />
             <Route path="/adminjournal" element={<Adminjournal />} />
             <Route path="/adminjournaladd" element={<Adminjournaladd />} />
             <Route path="/admingeneral" element={<Admingeneral />} />
@@ -152,10 +151,10 @@ function App() {
             <Route path="/adminusers" element={<Adminusers />} />
             <Route path="/adminusersadd" element={<Adminusersadd />} />
             <Route path="/adminusersaddpatient" element={<Adminusersaddpatient />} />
-            <Route path="/adminusersedit" element={<Adminusersedit />} />
+            <Route path="/adminusersedit/:id" element={<AdminUsersEdit />} />
             <Route path="/admininventory" element={<Admininventory />} />
             <Route path="/admininventoryadd" element={<Admininventoryadd />} />
-            <Route path="/admininventoryedit" element={<Admininventoryedit />} />
+            <Route path="/admininventoryedit/:id" element={<Admininventoryedit />} />
             <Route path="/adminaudit" element={<Adminaudit />} />
             <Route path="/adminpatients" element={<Adminpatients />} />
             <Route path="/adminpatientsview" element={<Adminpatientsview />} />
@@ -166,6 +165,7 @@ function App() {
             <Route path="/adminbillingedititem" element={<Adminbillingedititem />} />
             <Route path="/notification" element={<Notification />} />
             <Route path="/adminschedule" element={<Adminschedule />} />
+             <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

@@ -91,7 +91,7 @@ const Appointment2 = () => {
               className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mt-4"
               onClick={handleSubmit}
             >
-              Submit
+              Next
             </button>
           </center>
         </div>

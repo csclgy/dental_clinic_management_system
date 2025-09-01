@@ -10,7 +10,7 @@ const Presubmit = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const handleSubmit = async () => {
-    setErrorMessage(""); // clear old errors
+    setErrorMessage("");
     setSuccessMessage("");
 
     try {
@@ -32,16 +32,15 @@ const Presubmit = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4]">
-      <div className="w-[50%] bg-white p-10 rounded-lg shadow-lg text-center">
-        <h2 className="text-[#00c3b8] text-2xl font-bold mb-2">SIGN UP</h2>
-        <p className="text-[#00458B] text-sm mb-6">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4">
+      <div className="w-full max-w-3xl bg-white p-6 sm:p-8 md:p-10 rounded-lg shadow-lg text-center">
+        <h2 className="text-[#00c3b8] text-xl sm:text-2xl font-bold mb-2">SIGN UP</h2>
+        <p className="text-[#00458B] text-sm sm:text-base mb-6">
           Please double check your information
         </p>
 
-        <div className="text-left text-[#00458B]">
+        <div className="text-left text-[#00458B] space-y-1 text-sm sm:text-base">
           <p><b>Username:</b> {registerData.user_name}</p>
           <p><b>Password:</b> *****</p>
           <p><b>Email:</b> {registerData.email}</p>
@@ -62,16 +61,16 @@ const Presubmit = () => {
         </div>
 
         {errorMessage && (
-        <p className="text-red-500 font-medium mt-4">{errorMessage}</p>
+          <p className="text-red-500 font-medium mt-4">{errorMessage}</p>
         )}
 
         {successMessage && (
-        <p className="text-green-600 font-medium mt-4">{successMessage}</p>
+          <p className="text-green-600 font-medium mt-4">{successMessage}</p>
         )}
 
-        <div className="flex mt-6 gap-4">
+        <div className="flex flex-col sm:flex-row mt-6 gap-3 sm:gap-4">
           <button
-            className="bg-[#FFFFFF] text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full"
+            className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full"
             onClick={() => navigate("/register2")}
           >
             Back

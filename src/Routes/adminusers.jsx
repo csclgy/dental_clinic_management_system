@@ -1,48 +1,97 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 
-const adminusers = () => {
+const AdminUsers = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [users, setUsers] = useState([]);   // users from backend
+  const [loading, setLoading] = useState(true);
 
-  // Scroll to the section if state.scrollTo is passed
+  // Scroll to section if state.scrollTo is passed
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100);
       }
     }
   }, [location]);
 
-   const records = [
-    {
-      date: "05-30-2025",
-      diagnosis: "Dental Caries",
-      services: "Oral Exam & Periapical X-ray",
-      dentist: "Dr. A. Reyes",
-      status: "Completed",
-    },
-    {
-      date: "07-15-2025",
-      diagnosis: "Tooth Extraction",
-      services: "Extraction of Wisdom Tooth",
-      dentist: "Dr. M. Santos",
-      status: "Ongoing",
-    },
-  ];
+// Fetch users on mount
+useEffect(() => {
+  const fetchUsers = async () => {
+    try {
+      // Get raw token from localStorage
+      const rawToken = localStorage.getItem("token");
+      if (!rawToken) {
+        throw new Error("No token found in localStorage");
+      }
 
-  // Filter based on search term (case-insensitive)
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      value.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+      // Ensure token is in correct format
+      const token = rawToken.startsWith("Bearer ")
+        ? rawToken.split(" ")[1] // remove "Bearer " if already there
+        : rawToken;
+
+      console.log("Token in localStorage:", token);
+
+      // Send request with properly formatted Authorization header
+      const res = await fetch("http://localhost:3000/auth/displayusers", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`Failed to fetch users: ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log("Fetched users:", data);
+
+      setUsers(data); // update state with users
+    } catch (err) {
+      console.error("Fetch users error:", err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchUsers();
+}, []);
+
+const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`http://localhost:3000/auth/deleteuserinfo/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete user");
+
+      // Remove user from state so UI updates
+      setUsers(users.filter((u) => u.user_id !== id));
+      alert("User deleted successfully");
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      alert("Could not delete user");
+    }
+  };
+
+  // Search filter
+  const filteredUsers = users.filter((user) =>
+    Object.values(user)
+      .join(" ")
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -170,75 +219,70 @@ const adminusers = () => {
                             </div>
                         </div>
                         <p style={{color:"transparent"}}>...</p>
-                        <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                            <div className="row">
-                                <div className="col-sm-12">
-                                {/* Search bar */}
-                                <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-center mb-1">
-                                        <h1 className=" font-bold text-[#00458B]"></h1>
-                                        {/* Search bar */}
-                                        <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                                        <input
-                                            type="text"
-                                            placeholder="Search"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 outline-none text-sm text-gray-700"
-                                        />
-                                        <i className="fa fa-search text-[#00458B]"></i>
+                                {/* Table */}
+                                        <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{ border: "solid", borderColor: "#01D5C4" }}>
+                                        <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
+                                            <div className="flex justify-between items-center">
+                                            <h1 className="font-bold text-[#00458B]"></h1>
+                                            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
+                                                <input
+                                                type="text"
+                                                placeholder="Search"
+                                                value={searchTerm}
+                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                                className="flex-1 outline-none text-sm text-gray-700"
+                                                />
+                                                <i className="fa fa-search text-[#00458B]"></i>
+                                            </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
 
-                                    {/* Table */}
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full border-collapse border border-gray-200">
-                                        <thead>
-                                            <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                            <th className="px-4 py-2 text-center">Username</th>
-                                            <th className="px-4 py-2 text-center">Access Level</th>
-                                            <th className="px-4 py-2 text-center">Name</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredRecords.length > 0 ? (
-                                            filteredRecords.map((record, index) => (
-                                                <tr key={index} className="border-b border-gray-200 text-center item-center">
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2">
-                                                    <Link to="/adminusersedit">
-                                                    <button className="bg-[#04AA6D] text-white font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
-                                                    Edit
-                                                    </button>
-                                                    </Link>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <Link to="/transviewmed">
-                                                    <button className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
-                                                    Delete
-                                                    </button>
-                                                    </Link>
-                                                </td>
+                                        {loading ? (
+                                            <p className="text-center text-gray-500">Loading users…</p>
+                                        ) : (
+                                            <div className="overflow-x-auto">
+                                            <table className="w-full border-collapse border border-gray-200">
+                                                <thead>
+                                                <tr className="bg-white text-[#00458B] border-b border-gray-200">
+                                                    <th className="px-4 py-2 text-center">Username</th>
+                                                    <th className="px-4 py-2 text-center">Access Level</th>
+                                                    <th className="px-4 py-2 text-center">Name</th>
+                                                    <th className="px-4 py-2 text-center">Action</th>
                                                 </tr>
-                                            ))
-                                            ) : (
-                                            <tr>
-                                                <td
-                                                colSpan="6"
-                                                className="text-center text-gray-500 py-4"
-                                                >
-                                                No records found
-                                                </td>
-                                            </tr>
-                                            )}
-                                        </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody>
+                                                {filteredUsers.length > 0 ? (
+                                                    filteredUsers.map((user) => (
+                                                    <tr key={user.user_id} className="border-b border-gray-200 text-center">
+                                                        <td className="px-4 py-2 text-blue-700">{user.user_name}</td>
+                                                        <td className="px-4 py-2">{user.role}</td>
+                                                        <td className="px-4 py-2">{`${user.fname} ${user.mname || ""} ${user.lname}`}</td>
+                                                        <td className="px-4 py-2 flex gap-2 justify-center">
+                                                        <Link to={`/adminusersedit/${user.user_id}`}>
+                                                            <button className="bg-[#04AA6D] text-white font-semibold px-4 py-1 rounded-full">
+                                                            Edit
+                                                            </button>
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => handleDelete(user.user_id)}
+                                                            className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-red-600"
+                                                        >
+                                                            Delete
+                                                        </button>
+                                                        </td>
+                                                    </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                    <td colSpan="4" className="text-center text-gray-500 py-4">
+                                                        No users found
+                                                    </td>
+                                                    </tr>
+                                                )}
+                                                </tbody>
+                                            </table>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -263,13 +307,9 @@ const adminusers = () => {
                     </div>
                 </div>
             <div className="col-sm-2">
-                
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
 };
 
-export default adminusers;
+export default AdminUsers;
