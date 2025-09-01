@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 
-const profilechange = () => {
+const ProfileChange = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -14,159 +12,120 @@ const profilechange = () => {
   const [success, setSuccess] = useState("");
 
   const handleChangePassword = async () => {
-  setError("");
-  setSuccess("");
+    setError("");
+    setSuccess("");
 
-  if (newPassword !== confirmPassword) {
-    setError("New password and confirm password do not match.");
-    return;
-  }
+    if (newPassword !== confirmPassword) {
+      setError("New password and confirm password do not match.");
+      return;
+    }
 
-  const token = localStorage.getItem("token");
-  if (!token) {
-    navigate("/login");
-    return;
-  }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
-  try {
-    const res = await fetch("http://localhost:3000/auth/change-password", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-      },
-      body: JSON.stringify({ currentPassword, newPassword })
-    });
+    try {
+      const res = await fetch("http://localhost:3000/auth/change-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to change password");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to change password");
 
-    setSuccess("Password changed successfully.");
-    setCurrentPassword("");
-    setNewPassword("");
-    setConfirmPassword("");
-  } catch (err) {
-    setError(err.message);
-  }
-};
+      setSuccess("Password changed successfully.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
-
-  // Scroll to the section if state.scrollTo is passed
+  // Smooth scroll if location.state.scrollTo exists
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100);
       }
     }
   }, [location]);
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            <div className="col-sm-3">
-                <br />
-                <h2 className="text-3xl font-bold text-[#00458B]">Profile</h2>
-                <br />
-                <br />
-                <Link to ="/profilelogin" >
-                    <button  className="w-full text-left px-4 py-2 text-500 hover:bg-blue-100" style={{color:"#00458B"}}><i class="fa fa-user-circle-o" aria-hidden="true"></i> Login Information</button>
-                </Link>
-                <br />
-                <Link to ="/profileinfo">
-                    <button className="w-full text-left px-4 py-2 text-500 hover:bg-blue-100 " style={{color:"#00458B"}}><i class="fa fa-info-circle" aria-hidden="true"></i>  User Information</button>
-                </Link>
-                <br />
-                <Link to ="/profilechange">
-                    <button className="w-full text-left px-4 py-2 text-500 hover:bg-blue-100" style={{color:"#00c3b8"}}><i class="fa fa-lock" aria-hidden="true"></i>  Change Password</button> 
-                </Link>
-            </div>
-            <div className="col-sm-7">
-                <div className="row">
-                    <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
-                        <div className="row">
-                            <div className="col-sm-10">
-                                <h1 className="text-2xl font-bold">Change Password</h1>
-                            </div>
-                            <div className="col-sm-2">
-                                <h1 className="text-2xl font-bold" style={{color:"transparent"}}></h1>
-                            </div>
-                        </div>
-                    </div>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      {/* Sidebar */}
+        <div className="bg-white rounded-lg shadow-md p-4 md:col-span-1">
+          <h2 className="text-2xl font-bold text-[#00458B] mb-6">Profile</h2>
+          <div className="flex flex-col gap-2">
+            <Link to="/profilelogin">
+              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                <i className="fa fa-user-circle-o mr-2" /> Login Information
+              </button>
+            </Link>
+            <Link to="/profileinfo">
+              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                <i className="fa fa-info-circle mr-2" /> User Information
+              </button>
+            </Link>
+            <Link to="/profilechange">
+              <button className="w-full text-left px-4 py-2 rounded-md font-medium bg-[#E6FCF9] text-[#00c3b8] hover:bg-[#d0f8f5]">
+                <i className="fa fa-lock mr-2" /> Change Password
+              </button>
+            </Link>
+          </div>
+        </div>
 
-                    <p style={{color:"transparent"}}>...</p>
-                    <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                        <div className="row">
-                            <div className="col-sm-3">
-  
-                            </div>
-                            <div className="col-sm-6">
-                                <br />
-                                <br />
-                              <div class="mb-4 text-left">
-                                <label class="block text-[#00458b] font-semibold mb-1">Current Password</label>
-                                <input
-                                  type="password"
-                                  value={currentPassword}
-                                  onChange={(e) => setCurrentPassword(e.target.value)}
-                                  className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                                />
-                              </div>
-                              <div class="mb-4 text-left">
-                                <label class="block text-[#00458b] font-semibold mb-1">New Password</label>
-                                <input
-                                  type="password"
-                                  value={newPassword}
-                                  onChange={(e) => setNewPassword(e.target.value)}
-                                  className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                                />
-                              </div>
-                              <div class="mb-4 text-left">
-                                <label class="block text-[#00458b] font-semibold mb-1">Confirm Password</label>
-                                <input
-                                  type="password"
-                                  value={confirmPassword}
-                                  onChange={(e) => setConfirmPassword(e.target.value)}
-                                  className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                                />
-                              </div>
+        {/* Main content */}
+        <div className="md:col-span-3 space-y-6">
+          {/* Header */}
+          <div className="bg-[#00458B] p-6 rounded-lg shadow-lg text-white">
+            <h1 className="text-xl md:text-2xl font-bold">Change Password</h1>
+          </div>
 
-                            </div>
-                            <div className="col-sm-3">
+          {/* Form Card */}
+          <div className="p-6 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
+            <br></br>
+            <div className="max-w-md mx-auto">
+              {error && <p className="text-red-600 mb-2">{error}</p>}
+              {success && <p className="text-green-600 mb-2">{success}</p>}
 
-                            </div>
+              <Input
+                label="Current Password"
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+              />
+              <Input
+                label="New Password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+              <Input
+                label="Confirm Password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
 
-                            <div className="col-sm-12">
-                                <div className="row">
-                                    <div className="col-sm-6">
-
-                                    </div>
-                                    <div className="col-sm-6">
-                                        <div className="row">
-                                            <div className="col-sm-8">
-
-                                            </div>
-                                            <div className="col-sm-4">
-                                              <button
-                                                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"
-                                                onClick={handleChangePassword}
-                                              >
-                                                Save
-                                              </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div className="col-sm-2">
+              <div className="flex justify-end mt-6">
+                <button
+                  className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full md:w-auto"
+                  onClick={handleChangePassword}
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -175,4 +134,17 @@ const profilechange = () => {
   );
 };
 
-export default profilechange;
+// Reusable input
+const Input = ({ label, type, value, onChange }) => (
+  <div className="mb-4">
+    <label className="block text-[#00458b] font-semibold mb-1">{label}</label>
+    <input
+      type={type}
+      value={value}
+      onChange={onChange}
+      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+    />
+  </div>
+);
+
+export default ProfileChange;

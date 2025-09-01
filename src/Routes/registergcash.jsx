@@ -41,25 +41,40 @@ const Registergcash = () => {
           Kindly confirm that your contact number is the one registered with your GCash account before moving to the next step.
         </p>
 
-        {/* Radio Buttons */}
-        <div className="flex flex-col sm:flex-row justify-between mb-4 gap-4">
-          <label className="flex items-center gap-2">
+        {/* Radio Buttons*/}
+        <div className="flex justify-center gap-6 mb-4">
+          <label
+            className={`px-6 py-2 rounded-full border font-semibold cursor-pointer transition ${
+              registerData.downpayment === "Yes"
+                ? "bg-[#00c3b8] text-white border-[#00c3b8]"
+                : "bg-white text-[#00458b] border-[#00458b]"
+            }`}
+          >
             <input
               type="radio"
               name="downpayment"
               value="Yes"
               checked={registerData.downpayment === "Yes"}
               onChange={() => handleRadioChange("Yes")}
+              className="hidden"
             />
             Yes
           </label>
-          <label className="flex items-center gap-2">
+
+          <label
+            className={`px-6 py-2 rounded-full border font-semibold cursor-pointer transition ${
+              registerData.downpayment === "No"
+                ? "bg-[#00c3b8] text-white border-[#00c3b8]"
+                : "bg-white text-[#00458b] border-[#00458b]"
+            }`}
+          >
             <input
               type="radio"
               name="downpayment"
               value="No"
               checked={registerData.downpayment === "No"}
               onChange={() => handleRadioChange("No")}
+              className="hidden"
             />
             No
           </label>

@@ -1,78 +1,77 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
-import { Link, useNavigate } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 
-const profileinfo = () => {
+const ProfileInfo = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const [user, setUser] = useState({
-      fname: "",
-      mname: "",
-      lname: "",
-      date_birth: "",
-      gender: "",
-      age: "",
-      religion: "",
-      nationality: "",
-      home_address: "",
-      city: "",
-      province: "",
-      occupation: "",
-    });
-    const [loading, setLoading] = useState(true); // optional: show loading state
-    const [error, setError] = useState("");
-    useEffect(() => {
-      const fetchUser = async () => {
-        const token = localStorage.getItem("token");
-  
-        if (!token) {
-          navigate("/login"); // redirect if no token
-          return;
-        }
-  
-        try {
-          const res = await fetch("http://localhost:3000/auth/me", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-          });
-  
-          if (!res.ok) {
-            throw new Error("Failed to fetch user");
-          }
-  
-          const data = await res.json();
-          setUser({
-            fname: data.fname,
-            mname: data.mname,
-            lname: data.lname,
-            date_birth: data.date_birth,
-            gender: data.gender,
-            age: data.age,
-            religion: data.religion,
-            nationality: data.nationality,
-            home_address: data.home_address,
-            city: data.city,
-            province: data.province,
-            occupation: data.occupation,
-          });
-          setLoading(false);
-        } catch (err) {
-          console.error("Error fetching user:", err);
-          setError("Could not fetch user. Please login again.");
-          localStorage.removeItem("token");
-          navigate("/login");
-        }
-      };
-  
-      fetchUser();
-    }, [navigate]);
+    fname: "",
+    mname: "",
+    lname: "",
+    date_birth: "",
+    gender: "",
+    age: "",
+    religion: "",
+    nationality: "",
+    home_address: "",
+    city: "",
+    province: "",
+    occupation: "",
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:3000/auth/me", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch user");
+
+        const data = await res.json();
+        setUser({
+          fname: data.fname,
+          mname: data.mname,
+          lname: data.lname,
+          date_birth: data.date_birth,
+          gender: data.gender,
+          age: data.age,
+          religion: data.religion,
+          nationality: data.nationality,
+          home_address: data.home_address,
+          city: data.city,
+          province: data.province,
+          occupation: data.occupation,
+        });
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+        setError("Could not fetch user. Please login again.");
+        localStorage.removeItem("token");
+        navigate("/login");
+      }
+    };
+
+    fetchUser();
+  }, [navigate]);
 
   const handleSave = async () => {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
       return;
@@ -83,45 +82,29 @@ const profileinfo = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          user_name: user.user_name,
-          fname: user.fname,
-          mname: user.mname,
-          lname: user.lname,
-          date_birth: user.date_birth,
-          gender: user.gender,
-          age: user.age,
-          religion: user.religion,
-          nationality: user.nationality,
-          home_address: user.home_address,
-          city: user.city,
-          province: user.province,
-          occupation: user.occupation,
-        }),
+        body: JSON.stringify(user),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to update profile");
-      }
+      if (!res.ok) throw new Error("Failed to update profile");
 
       const data = await res.json();
-      alert(data.message); // show success message
+      alert(data.message);
     } catch (err) {
       console.error("Error updating profile:", err);
       alert("Could not update profile. Please try again.");
     }
   };
 
-  // Scroll to the section if state.scrollTo is passed
+  // Smooth scroll on mount
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100);
       }
     }
   }, [location]);
@@ -129,196 +112,91 @@ const profileinfo = () => {
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            <div className="col-sm-3">
-                <br />
-                <h2 className="text-3xl font-bold text-[#00458B]">Profile</h2>
-                <br />
-                <br />
-                <Link to ="/profilelogin" >
-                    <button  className="w-full text-left px-4 py-2 text-500 hover:bg-blue-100" style={{color:"#00458B"}}><i class="fa fa-user-circle-o" aria-hidden="true"></i> Login Information</button>
-                </Link>
-                <br />
-                <Link to ="/profileinfo">
-                    <button className="w-full text-left px-4 py-2 text-500 hover:bg-blue-100 " style={{color:"#00c3b8"}}><i class="fa fa-info-circle" aria-hidden="true"></i>  User Information</button>
-                </Link>
-                <br />
-                <Link to ="/profilechange">
-                    <button className="w-full text-left px-4 py-2 text-500 hover:bg-blue-100" style={{color:"#00458B"}}><i class="fa fa-lock" aria-hidden="true"></i>  Change Password</button> 
-                </Link>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <div className="bg-white rounded-lg shadow-md p-4 md:col-span-1">
+          <h2 className="text-2xl font-bold text-[#00458B] mb-6">Profile</h2>
+          <div className="flex flex-col gap-2">
+            <Link to="/profilelogin">
+              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                <i className="fa fa-user-circle-o mr-2" /> Login Information
+              </button>
+            </Link>
+            <Link to="/profileinfo">
+              <button className="w-full text-left px-4 py-2 rounded-md font-medium bg-[#E6FCF9] text-[#00c3b8] hover:bg-[#d0f8f5]">
+                <i className="fa fa-info-circle mr-2" /> User Information
+              </button>
+            </Link>
+            <Link to="/profilechange">
+              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                <i className="fa fa-lock mr-2" /> Change Password
+              </button>
+            </Link>
+          </div>
+        </div>
+
+        {/* Main content */}
+        <div className="md:col-span-3 space-y-6">
+          {/* Header */}
+          <div className="bg-[#00458B] p-6 rounded-lg shadow-lg text-white">
+            <h1 className="text-xl md:text-2xl font-bold">User Information</h1>
+          </div>
+
+          {/* Form Card */}
+          <div className="p-6 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* Left side */}
+              <div>
+                <Input label="First Name" value={user.fname} readOnly />
+                <Input label="Last Name" value={user.lname} readOnly />
+                <Input label="Gender" value={user.gender} readOnly />
+                <Input label="Religion" value={user.religion} readOnly />
+                <Input
+                  label="Home Address"
+                  value={user.home_address}
+                  onChange={(e) =>
+                    setUser({ ...user, home_address: e.target.value })
+                  }
+                />
+                <Input
+                  label="Province"
+                  value={user.province}
+                  onChange={(e) =>
+                    setUser({ ...user, province: e.target.value })
+                  }
+                />
+              </div>
+
+              {/* Right side */}
+              <div>
+                <Input label="Middle Name" value={user.mname} readOnly />
+                <Input label="Date of Birth" value={user.date_birth} readOnly />
+                <Input label="Age" value={user.age} readOnly />
+                <Input label="Nationality" value={user.nationality} readOnly />
+                <Input
+                  label="City"
+                  value={user.city}
+                  onChange={(e) => setUser({ ...user, city: e.target.value })}
+                />
+                <Input
+                  label="Occupation"
+                  value={user.occupation}
+                  onChange={(e) =>
+                    setUser({ ...user, occupation: e.target.value })
+                  }
+                />
+              </div>
             </div>
-            <div className="col-sm-7">
-                <div className="row">
-                    <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
-                        <div className="row">
-                            <div className="col-sm-10">
-                                <h1 className="text-2xl font-bold">User Information</h1>
-                            </div>
-                            <div className="col-sm-2">
-                                <h1 className="text-2xl font-bold" style={{color:"transparent"}}></h1>
-                            </div>
-                        </div>
-                    </div>
 
-                    <p style={{color:"transparent"}}>...</p>
-                    <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                        <div className="row">
-                            <div className="col-sm-2">
-  
-                            </div>
-                            <div className="col-sm-8">
-                                <br />
-                                <br />
-                                <div className="col-sm-12">
-                                    <div className="row">
-                                        <div className="col-sm-6">
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">First Name</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={user.fname}
-                                                    onChange={(e) => setUser({ ...user, fname: e.target.value })}
-                                                    readOnly
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Last Name</label>
-                                                <input 
-                                                    type="text"
-                                                    value={user.lname}
-                                                    onChange={(e) => setUser({ ...user, lname: e.target.value })} 
-                                                    readOnly
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Gender</label>
-                                                <input 
-                                                    type="text"
-                                                    value={user.gender}
-                                                    onChange={(e) => setUser({ ...user, gender: e.target.value })} 
-                                                    readOnly
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Religion</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={user.religion}
-                                                    onChange={(e) => setUser({ ...user, religion: e.target.value })} 
-                                                    readOnly
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Home Address</label>
-                                                <input 
-                                                    type="text"
-                                                    value={user.home_address}
-                                                    onChange={(e) => setUser({ ...user, home_address: e.target.value })} 
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Province</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={user.province}
-                                                    onChange={(e) => setUser({ ...user, province: e.target.value })} 
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                        </div>
-
-                                        <div className="col-sm-6">
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Middle Name</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={user.mname}
-                                                    onChange={(e) => setUser({ ...user, mname: e.target.value })} 
-                                                    readOnly
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Date of Birth</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={user.date_birth}
-                                                    onChange={(e) => setUser({ ...user, date_birth: e.target.value })} 
-                                                    readOnly
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Age</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={user.age}
-                                                    onChange={(e) => setUser({ ...user, age: e.target.value })} 
-                                                    readOnly
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Nationality</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={user.nationality}
-                                                    onChange={(e) => setUser({ ...user, nationality: e.target.value })} 
-                                                    readOnly
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">City</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={user.city}
-                                                    onChange={(e) => setUser({ ...user, city: e.target.value })} 
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                            <div class="mb-4 text-left">
-                                                <label class="block text-[#00458b] font-semibold mb-1">Occupation</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={user.occupation}
-                                                    onChange={(e) => setUser({ ...user, occupation: e.target.value })} 
-                                                    class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                </div>
-
-                            </div>
-                            <div className="col-sm-2">
-
-                            </div>
-
-                            <div className="col-sm-12">
-                                <div className="row">
-                                    <div className="col-sm-6">
-
-                                    </div>
-                                    <div className="col-sm-6">
-                                        <div className="row">
-                                            <div className="col-sm-8">
-
-                                            </div>
-                                            <div className="col-sm-4">
-                                              <br />
-                                              <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" 
-                                                onClick={handleSave} 
-                                                >
-                                                  Save
-                                              </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div className="col-sm-2">
+            {/* Save button */}
+            <div className="flex justify-end mt-6">
+              <button
+                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full md:w-auto"
+                onClick={handleSave}
+              >
+                Save
+              </button>
             </div>
           </div>
         </div>
@@ -327,4 +205,18 @@ const profileinfo = () => {
   );
 };
 
-export default profileinfo;
+// Small reusable input field
+const Input = ({ label, value, onChange, readOnly }) => (
+  <div className="mb-4">
+    <label className="block text-[#00458b] font-semibold mb-1">{label}</label>
+    <input
+      type="text"
+      value={value}
+      readOnly={readOnly}
+      onChange={onChange}
+      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+    />
+  </div>
+);
+
+export default ProfileInfo;

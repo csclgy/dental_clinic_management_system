@@ -81,12 +81,24 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">Religion</label>
-              <input
-                type="text"
+              <select
                 value={registerData.religion || ""}
                 onChange={(e) => updateFormData("religion", e.target.value)}
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-[#00c3b8]"
-              />
+              >
+                <option value="">-- Select Religion --</option>
+                <option value="Catholic">Catholic</option>
+                <option value="Islam">Islam</option>
+                <option value="Iglesia ni Cristo">Iglesia ni Cristo</option>
+                <option value="Evangelicals">Evangelicals</option>
+                <option value="Protestant">Protestant</option>
+                <option value="Seventh-day Adventist">Seventh-day Adventist</option>
+                <option value="Bible Baptist Church">Bible Baptist Church</option>
+                <option value="Aglipayan">Aglipayan</option>
+                <option value="UCCP">UCCP</option>
+                <option value="Jehovah's Witnesses">Jehovah's Witnesses</option>
+                <option value="Others">Others</option>
+              </select>
             </div>
 
             <div>
@@ -191,6 +203,7 @@ const Register2 = () => {
           </button>
         </div>
       </div>
+      <br></br>
     </div>
   );
 };

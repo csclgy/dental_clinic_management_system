@@ -51,7 +51,6 @@ const Appointment = () => {
               { label: "Home Address", key: "p_home_address", type: "text" },
               { label: "Email", key: "p_email", type: "email" },
               { label: "Contact Number", key: "p_contact_no", type: "text" },
-              { label: "Blood Type", key: "p_blood_type", type: "text" },
             ].map((field) => (
               <div key={field.key} className="mb-4 text-left">
                 <label className="block text-[#00458b] font-semibold mb-1">
@@ -67,6 +66,29 @@ const Appointment = () => {
                 />
               </div>
             ))}
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Blood Type
+              </label>
+              <select
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                value={appointmentData.blood_type}
+                onChange={(e) => updateAppointment("blood_type", e.target.value)}
+              >
+                <option value="">-- Select Blood Type --</option>
+                <option value="O">O</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="A">A</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B">B</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB">AB</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="Unknown">Unknown</option>
+              </select>
           </div>
 
           {/* Right Column */}
@@ -81,7 +103,7 @@ const Appointment = () => {
                 value={appointmentData.p_gender}
                 onChange={(e) => updateAppointment("p_gender", e.target.value)}
               >
-                <option value="">Select gender</option>
+                <option value="">-- Select gender --</option>
                 <option value="Male">Male</option>
                 <option value="Female">Female</option>
               </select>
