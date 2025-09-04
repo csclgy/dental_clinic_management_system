@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Patients View - Dental System</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f9fb;
+      padding: 30px;
+    }
+    h1 {
+      text-align: center;
+      color: #2e3a46;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #3b82f6;
+      color: white;
+    }
+    .actions button {
+      padding: 6px 12px;
+      margin: 2px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      color: white;
+    }
+    .view { background: #16a34a; }
+    .followup { background: #f59e0b; }
+    .delete { background: #dc2626; }
+    .cancel { background: #6b7280; }
+    .actions button:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+
+  <h1>Admin Patients View</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Patient ID</th>
+        <th>Name</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>P001</td>
+        <td>John Doe</td>
+        <td>Pending</td>
+        <td class="actions">
+          <button class="view" onclick="handleAction('P001', 'View')">View</button>
+          <button class="followup" onclick="handleAction('P001', 'Follow Up')">Follow Up</button>
+          <button class="delete" onclick="handleAction('P001', 'Delete')">Delete</button>
+          <button class="cancel" onclick="handleAction('P001', 'Cancel')">Cancel</button>
+        </td>
+      </tr>
+      <tr>
+        <td>P002</td>
+        <td>Jane Smith</td>
+        <td>Confirmed</td>
+        <td class="actions">
+          <button class="view" onclick="handleAction('P002', 'View')">View</button>
+          <button class="followup" onclick="handleAction('P002', 'Follow Up')">Follow Up</button>
+          <button class="delete" onclick="handleAction('P002', 'Delete')">Delete</button>
+          <button class="cancel" onclick="handleAction('P002', 'Cancel')">Cancel</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <script>
+    function handleAction(patientId, action) {
+      alert("Patient ID: " + patientId + " | Action: " + action);
+      // Here you can connect to backend (PHP/DB) to perform actions
+    }
+  </script>
+
+</body>
+</html>
