@@ -252,11 +252,20 @@ const AdminSchedule = () => {
 
                                 {/* Follow Up */}
                                 <td className="px-2 py-3 whitespace-nowrap">
-                                  <Link to="/admininventoryedit" state={{ schedule: record }}>
-                                    <button className="bg-[#00c3b8] hover:bg-[#00a89d] transition text-white font-semibold px-4 py-2 rounded-full">
+                                  {record.status === "Completed" ? (
+                                    <button
+                                      disabled
+                                      className="bg-[#00a89d] text-white px-4 py-2 rounded-full cursor-not-allowed"
+                                    >
                                       + Follow Up
                                     </button>
-                                  </Link>
+                                  ) : (
+                                    <Link to="/admininventoryedit" state={{ schedule: record }}>
+                                      <button className="bg-[#00c3b8] hover:bg-[#00a89d] transition text-white font-semibold px-4 py-2 rounded-full">
+                                        + Follow Up
+                                      </button>
+                                    </Link>
+                                  )}
                                 </td>
 
                                 {/* Complete */}
