@@ -59,7 +59,7 @@ const AdminSchedule = () => {
               {/* Dashboard */}
               <Link to="/">
                 <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
+                  className="w-full text-left px-4 py-2 hover:bg-blue-100 transition"
                   style={{ color: "#00458B" }}
                 >
                   <i className="fa fa-tachometer" aria-hidden="true"></i>{" "}
@@ -70,7 +70,7 @@ const AdminSchedule = () => {
               {/* Ledger */}
               <button
                 onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
+                className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100 transition"
                 style={{ color: "#00458B" }}
               >
                 <span>
@@ -109,7 +109,7 @@ const AdminSchedule = () => {
               {/* Other nav */}
               <Link to="/adminusers">
                 <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
+                  className="w-full text-left px-4 py-2 hover:bg-blue-100 transition"
                   style={{ color: "#00458B" }}
                 >
                   <i className="fa fa-users" aria-hidden="true"></i> Users
@@ -117,7 +117,7 @@ const AdminSchedule = () => {
               </Link>
               <Link to="/admininventory">
                 <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
+                  className="w-full text-left px-4 py-2 hover:bg-blue-100 transition"
                   style={{ color: "#00458B" }}
                 >
                   <i className="fa fa-archive" aria-hidden="true"></i> Inventory
@@ -125,7 +125,7 @@ const AdminSchedule = () => {
               </Link>
               <Link to="/adminpatients">
                 <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
+                  className="w-full text-left px-4 py-2 hover:bg-blue-100 transition"
                   style={{ color: "#00458B" }}
                 >
                   <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
@@ -133,7 +133,7 @@ const AdminSchedule = () => {
               </Link>
               <Link to="/adminschedule">
                 <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
+                  className="w-full text-left px-4 py-2 hover:bg-blue-100 transition"
                   style={{ color: "#00c3b8" }}
                 >
                   <i className="fa fa-calendar" aria-hidden="true"></i> Schedules
@@ -141,7 +141,7 @@ const AdminSchedule = () => {
               </Link>
               <Link to="/adminaudit">
                 <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
+                  className="w-full text-left px-4 py-2 hover:bg-blue-100 transition"
                   style={{ color: "#00458B" }}
                 >
                   <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
@@ -166,110 +166,128 @@ const AdminSchedule = () => {
                   style={{ border: "solid", borderColor: "#01D5C4" }}
                 >
                   {/* Search */}
-                  <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                    <div className="flex justify-between items-center mb-1">
-                      <div></div>
-                      <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
+                  <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400 mb-6">
+                    <div className="flex justify-end">
+                      <div className="flex items-center border border-[#00458B] rounded-full px-3 py-2 w-80">
                         <input
                           type="text"
                           placeholder="Search"
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
-                          className="flex-1 outline-none text-sm text-gray-700"
+                          className="flex-1 outline-none text-base text-gray-700"
                         />
-                        <i className="fa fa-search text-[#00458B]"></i>
+                        <i className="fa fa-search text-[#00458B] text-lg"></i>
                       </div>
                     </div>
                   </div>
 
                   {/* Table */}
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-200">
-                      <thead>
-                        <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                          <th className="px-4 py-2 text-center">Visit Date</th>
-                          <th className="px-4 py-2 text-center">Last Name</th>
-                          <th className="px-4 py-2 text-center">First Name</th>
-                          <th className="px-4 py-2 text-center">Services</th>
-                          <th className="px-4 py-2 text-center">Dentist</th>
-                          <th className="px-4 py-2 text-center">Status</th>
-                          <th colSpan="4" className="px-4 py-2 text-center">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredRecords.length > 0 ? (
-                          filteredRecords.map((record, index) => (
-                            <tr
-                              key={index}
-                              className="border-b border-gray-200 text-center"
-                            >
-                              <td className="px-4 py-2 text-blue-700">{record.date}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.lastName}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.firstName}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.services}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.dentist}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.status}</td>
+                    <div className="max-h-96 overflow-y-auto">
+                      <table className="min-w-max w-full border-collapse border border-gray-200 text-base">
+                        <thead className="bg-white text-[#00458B] border-b border-gray-200 sticky top-0 z-10">
+                          <tr>
+                            <th className="px-4 py-3 text-center whitespace-nowrap">Visit Date</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap">Last Name</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap">First Name</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap">Services</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap">Dentist</th>
+                            <th className="px-4 py-3 text-center whitespace-nowrap">Status</th>
+                            <th colSpan={5} className="px-4 py-3 text-center whitespace-nowrap">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredRecords.length > 0 ? (
+                            filteredRecords.map((record, index) => (
+                              <tr
+                                key={index}
+                                className={`border-b border-gray-200 text-center ${
+                                  index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                                }`}
+                              >
+                                <td className="px-4 py-3 text-blue-700 whitespace-nowrap">{record.date}</td>
+                                <td className="px-4 py-3 text-blue-700 whitespace-nowrap">{record.lastName}</td>
+                                <td className="px-4 py-3 text-blue-700 whitespace-nowrap">{record.firstName}</td>
+                                <td className="px-4 py-3 text-blue-700 whitespace-nowrap">{record.services}</td>
+                                <td className="px-4 py-3 text-blue-700 whitespace-nowrap">{record.dentist}</td>
+                                <td className="px-4 py-3 text-blue-700 whitespace-nowrap">{record.status}</td>
 
-                              {/* View */}
-                              <td className="px-2 py-2">
-                                <Link to="/adminconsultationview" state={{ schedule: record }}>
-                                  <button className="bg-[#008CBA] text-white font-semibold w-full px-4 py-1 rounded-full">
-                                    View
-                                  </button>
-                                </Link>
-                              </td>
-
-                              {/* Delete */}
-                              <td className="px-2 py-2">
-                                <Link to="/admininventorydelete" state={{ schedule: record }}>
-                                  <button className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-red-600">
-                                    Delete
-                                  </button>
-                                </Link>
-                              </td>
-
-                              {/* Cancel (disabled if Completed) */}
-                              <td className="px-2 py-2">
-                                {record.status === "Completed" ? (
-                                  <button
-                                    disabled
-                                    className="bg-gray-300 text-gray-600 px-4 py-1 rounded-full cursor-not-allowed"
-                                  >
-                                    Cancel
-                                  </button>
-                                ) : (
-                                  <Link
-                                    to="/adminschedulecancel"
-                                    state={{ schedule: record }}
-                                  >
-                                    <button className="bg-[#e7e7e7] text-black px-4 py-1 rounded-full hover:bg-gray-300">
-                                      Cancel
+                                {/* View */}
+                                <td className="px-2 py-3 whitespace-nowrap">
+                                  <Link to="/adminconsultationview" state={{ schedule: record }}>
+                                    <button className="bg-[#008CBA] hover:bg-[#0079A5] transition text-white font-semibold px-4 py-2 rounded-full">
+                                      View
                                     </button>
                                   </Link>
-                                )}
-                              </td>
+                                </td>
 
-                              {/* Follow Up */}
-                              <td className="px-2 py-2">
-                                <Link to="/admininventoryedit" state={{ schedule: record }}>
-                                  <button className="bg-[#00c3b8] text-white font-semibold w-full px-4 py-1 rounded-full">
-                                    + Follow Up
-                                  </button>
-                                </Link>
+                                {/* Delete */}
+                                <td className="px-2 py-3 whitespace-nowrap">
+                                  <Link to="/admininventorydelete" state={{ schedule: record }}>
+                                    <button className="bg-[#f44336] hover:bg-[#d32f2f] transition text-white px-4 py-2 rounded-full">
+                                      Delete
+                                    </button>
+                                  </Link>
+                                </td>
+
+                                {/* Cancel */}
+                                <td className="px-2 py-3 whitespace-nowrap">
+                                  {record.status === "Completed" ? (
+                                    <button
+                                      disabled
+                                      className="bg-gray-300 text-gray-600 px-4 py-2 rounded-full cursor-not-allowed"
+                                    >
+                                      Cancel
+                                    </button>
+                                  ) : (
+                                    <Link to="/adminschedulecancel" state={{ schedule: record }}>
+                                      <button className="bg-[#e7e7e7] hover:bg-gray-300 transition text-black px-4 py-2 rounded-full">
+                                        Cancel
+                                      </button>
+                                    </Link>
+                                  )}
+                                </td>
+
+                                {/* Follow Up */}
+                                <td className="px-2 py-3 whitespace-nowrap">
+                                  <Link to="/admininventoryedit" state={{ schedule: record }}>
+                                    <button className="bg-[#00c3b8] hover:bg-[#00a89d] transition text-white font-semibold px-4 py-2 rounded-full">
+                                      + Follow Up
+                                    </button>
+                                  </Link>
+                                </td>
+
+                                {/* Complete */}
+                                <td className="px-2 py-3 whitespace-nowrap">
+                                  {record.status === "Completed" ? (
+                                    <button
+                                      disabled
+                                      className="bg-green-200 text-white px-4 py-2 rounded-full cursor-not-allowed"
+                                    >
+                                      Complete
+                                    </button>
+                                  ) : (
+                                    <Link to="/adminschedulecomplete" state={{ schedule: record }}>
+                                      <button className="bg-green-600 hover:bg-green-700 transition text-white font-semibold px-4 py-2 rounded-full">
+                                        Complete
+                                      </button>
+                                    </Link>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={11} className="text-center text-gray-500 py-4">
+                                No records found
                               </td>
                             </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td colSpan="10" className="text-center text-gray-500 py-4">
-                              No records found
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
