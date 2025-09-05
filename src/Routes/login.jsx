@@ -6,7 +6,7 @@ const Login = () => {
   const [error, setError] = useState("");
 
   const handleLogin = async () => {
-  setError(""); // clear old error
+    setError(""); // clear old error
     try {
       const res = await fetch("http://localhost:3000/auth/login", {
         method: "POST",
@@ -14,7 +14,7 @@ const Login = () => {
         body: JSON.stringify({ user_name, user_password }),
       });
 
-      let data = {}; 
+      let data = {};
       try {
         data = await res.json();
       } catch {
@@ -23,11 +23,8 @@ const Login = () => {
 
       if (res.ok) {
         localStorage.setItem("token", data.token);
-
-        // ✅ save the username too (make sure backend sends it in response)
         localStorage.setItem("userName", data.user.user_name);
-
-        window.location.href = "/"; // or navigate("/dashboard")
+        window.location.href = "/";
       } else {
         setError(data.error || "Login failed. Please check your credentials.");
       }
@@ -37,11 +34,21 @@ const Login = () => {
     }
   };
 
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4]">
-      <div className="w-[400px] bg-white p-10 rounded-lg shadow-lg text-center">
-        <h2 className="text-[#00c3b8] text-2xl font-bold mb-2">LOGIN NOW</h2>
+    <div
+  className="min-h-screen flex flex-col items-center justify-center bg-cover bg-center"
+  style={{
+    backgroundImage:
+      "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+  }}
+>
+
+
+      {/* Content */}
+      <div className="relative w-[400px] bg-white bg-opacity-90 p-10 rounded-lg shadow-lg text-center">
+        <h2 className="text-[#00c3b8] text-2xl font-bold mb-2">LOGGING IN</h2>
         <p className="text-[#00458B] text-sm mb-6">
           Please enter your login information to set your appointment now.
         </p>

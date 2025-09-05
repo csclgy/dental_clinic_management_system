@@ -44,6 +44,7 @@ import Adminbillingedititem from "./Routes/adminbillingedititem";
 import Notification from "./Routes/notification";
 import Registergcash from "./Routes/registergcash";
 import Adminschedule from "./Routes/adminschedule";
+import AdminScheduleCancel from "./Routes/adminschedulecancel";
 import { RegisterProvider } from "./context/RegisterContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -166,6 +167,7 @@ function App() {
             <Route path="/adminbillingedititem" element={<Adminbillingedititem />} />
             <Route path="/notification" element={<Notification />} />
             <Route path="/adminschedule" element={<Adminschedule />} />
+            <Route path="/adminschedulecancel" element={<AdminScheduleCancel />} />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>
