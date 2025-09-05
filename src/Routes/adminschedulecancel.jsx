@@ -30,7 +30,7 @@ const AdminScheduleCancel = () => {
       <div className="p-4">
         <div className="container-fluid">
           <div className="row">
-            {/* Sidebar (same as before) */}
+            {/* Sidebar */}
             <div
               className="col-sm-3 p-5 rounded-lg shadow-lg"
               style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
