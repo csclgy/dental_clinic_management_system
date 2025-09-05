@@ -35,8 +35,8 @@ const Home = () => {
                     <p className="text-3xl">"Our Passion is Your Smile"</p>
                     <br />
                       <button
-                        className="px-3 py-2 rounded"
-                        style={{ backgroundColor: "#01D5C4", color: "white" }}
+                        className="px-5 py-3 rounded"
+                        style={{ backgroundImage: "linear-gradient(to right, rgba(96,242,231,1), rgba(0, 208, 255, 1))", color: "white", fontWeight: "bold"}}
                         onClick={() => {
                           const token = localStorage.getItem("token");
                           if (token) {
