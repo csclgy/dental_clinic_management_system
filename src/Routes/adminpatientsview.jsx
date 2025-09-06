@@ -1,47 +1,93 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 
-const adminpatientsview = () => {
+const AdminPatientsView = () => {
+  const { id } = useParams();
+  const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [patient, setPatient] = useState(null);
+  const [consultations, setConsultations] = useState([]); // ✅ define consultations
+  const [error, setError] = useState("");
 
-  // Scroll to the section if state.scrollTo is passed
+  useEffect(() => {
+    const fetchPatient = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          setError("No token found. Please log in again.");
+          return;
+        }
+
+        const res = await fetch(`http://localhost:3000/auth/displaypatient/${id}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          setError(errData.message || "Failed to fetch patient");
+          return;
+        }
+
+        const data = await res.json();
+        setPatient(data.patient);
+        setConsultations(data.consultations || []); // ✅ save history
+      } catch (err) {
+        console.error("Error fetching patient:", err);
+        setError("Server error");
+      }
+    };
+
+    fetchPatient();
+  }, [id]);
+
+    // 🔹 Handle delete consultation
+  const handleDelete = async (appointId) => {
+    if (!window.confirm("Are you sure you want to delete this consultation?")) return;
+
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`http://localhost:3000/auth/deleteconsultation/${appointId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error("Failed to delete consultation");
+
+      setConsultations(consultations.filter((c) => c.appoint_id !== appointId));
+      alert("Consultation deleted successfully");
+    } catch (err) {
+      console.error("Error deleting consultation:", err);
+      alert("Could not delete consultation");
+    }
+  };
+
+  // Scroll effect
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100);
       }
     }
   }, [location]);
 
-   const records = [
-    {
-      date: "05-30-2025",
-      diagnosis: "Dental Caries",
-      services: "Oral Exam & Periapical X-ray",
-      dentist: "Dr. A. Reyes",
-      status: "Completed",
-    },
-    {
-      date: "07-15-2025",
-      diagnosis: "Tooth Extraction",
-      services: "Extraction of Wisdom Tooth",
-      dentist: "Dr. M. Santos",
-      status: "Ongoing",
-    },
-  ];
+  if (error) return <p className="text-red-500">{error}</p>;
+  if (!patient) return <p>Loading...</p>;
 
-  // Filter based on search term (case-insensitive)
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      value.toLowerCase().includes(searchTerm.toLowerCase())
+  // ✅ filter consultation history
+  const filteredConsultations = consultations.filter((c) =>
+    Object.values(c).some((val) =>
+      String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -174,7 +220,12 @@ const adminpatientsview = () => {
                                             <h1 className="text-2xl font-bold" style={{color:"#00458B"}}>Patients Information</h1>
                                         </div>
                                         <div className="col-sm-3">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatientsedit")}>Edit Profile</button>
+                                            <button 
+                                                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"
+                                                onClick={() => navigate(`/adminpatientsedit/${patient.user_id}`)}
+                                                >
+                                                Edit Profile
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -183,8 +234,8 @@ const adminpatientsview = () => {
 
                                 <div className="col-sm-12">
                                         <br />
-                                    <p className="font-bold text-xl" style={{color:"#00c3b8"}}>Santos Maria</p>
-                                    <p style={{color:"#00458B"}}>Female | 28 years old | Frebruary 15, 1997</p>
+                                    <p className="font-bold text-xl" style={{color:"#00c3b8"}}>{patient.fname} {patient.mname} {patient.lname}</p>
+                                    <p style={{color:"#00458B"}}>{patient.gender} | {patient.age} | {patient.date_birth}</p>
                                         <br />
                                         <br />
                                         <br />
@@ -193,11 +244,11 @@ const adminpatientsview = () => {
                                         <p className="font-bold text-2xl">Address and Contact Information</p>
                                         <hr></hr>
                                         <br />
-                                        <p className="font-bold">Address:</p><p>...</p>
+                                        <p className="font-bold">Address:</p><p>{patient.home_address}, {patient.city}</p>
                                         <br />
-                                        <p className="font-bold">Email Address:</p><p>...</p>
+                                        <p className="font-bold">Email Address:</p><p>{patient.email}</p>
                                         <br />
-                                        <p className="font-bold">Contact Number:</p><p>...</p>
+                                        <p className="font-bold">Contact Number:</p><p>{patient.contact_no}</p>
                                     </div>
 
                                     <div className="col-sm-6" style={{color:"#00458B"}}>
@@ -228,90 +279,69 @@ const adminpatientsview = () => {
                                 <div className="col-sm-12">
                                 {/* Search bar */}
                                 <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-center mb-1">
-                                        <h1 className=" font-bold text-[#00458B]"></h1>
-                                        {/* Search bar */}
-                                        <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                                        <input
-                                            type="text"
-                                            placeholder="Search"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 outline-none text-sm text-gray-700"
-                                        />
-                                        <i className="fa fa-search text-[#00458B]"></i>
-                                        </div>
+                                    <div className="flex justify-between items-center"></div>
+                                    <div></div>
+                                    <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
+                                    <input
+                                        type="text"
+                                        placeholder="Search"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="flex-1 outline-none text-sm text-gray-700"
+                                    />
+                                    <i className="fa fa-search text-[#00458B]"></i>
                                     </div>
                                 </div>
 
-                                    {/* Table */}
+                                {/* Table */}
+                                        {filteredConsultations.length === 0 ? (
+                                        <p className="text-gray-500">No consultations found.</p>
+                                        ) : (
                                     <div className="overflow-x-auto">
                                         <table className="w-full border-collapse border border-gray-200">
-                                        <thead>
-                                            <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                            <th className="px-4 py-2 text-center">Visit Date</th>
-                                            <th className="px-4 py-2 text-center">Diagnosis</th>
-                                            <th className="px-4 py-2 text-center">Services</th>
-                                            <th className="px-4 py-2 text-center">Dentist</th>
-                                            <th className="px-4 py-2 text-center">Status</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
+                                            <thead>
+                                            <tr className="bg-gray-100 text-[#00458B] text-center">
+                                                <th className="border px-2 py-1">Date</th>
+                                                <th className="border px-2 py-1">Procedure</th>
+                                                <th className="border px-2 py-1">Dentist</th>
+                                                <th className="border px-2 py-1">Payment Status</th>
+                                                <th className="border px-5 py-1">Total Charged</th>
+                                                <th className=" px-2 py-1"></th>
+                                                <th className=" px-2 py-1"></th>
+                                                <th className=" px-2 py-1"></th>
+                                                <th className=" px-2 py-1"></th>
                                             </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredRecords.length > 0 ? (
-                                            filteredRecords.map((record, index) => (
-                                                <tr key={index} className="border-b border-gray-200 text-center item-center">
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
+                                            </thead>
+                                            <tbody>
+                                            {filteredConsultations.map((c) => (
+                                                <tr key={c.appoint_id} className="border-b border-gray-200 text-center">
+                                                <td className="px-4 py-2 text-blue-700">{c.pref_date}</td>
+                                                <td className="px-4 py-2 text-blue-700">{c.procedure_type}</td>
+                                                <td className="px-4 py-2 text-blue-700">{c.attending_dentist}</td>
+                                                <td className="px-4 py-2 text-blue-700">{c.payment_status}</td>
+                                                <td className="px-4 py-2 text-blue-700">{c.total_charged}</td>
                                                 <td className="px-4 py-2">
-                                                    <Link to="/adminconsultationview">
-                                                    <button className="bg-[#008CBA] text-[white] font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
-                                                    View
-                                                    </button>
-                                                    </Link>
+                                                    <button 
+                                                        onClick={() => navigate(`/adminconsultationview/${c.appoint_id}`)}
+                                                        className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-4 py-1 rounded-full">View</button>
+                                                </td>
+                                                <td className="px-4 py-2"> 
+                                                    <button 
+                                                        onClick={() => handleDelete(c.appoint_id)}
+                                                        className="bg-[#f44336] text-white px-4 py-1 rounded-full">Delete</button>
                                                 </td>
                                                 <td className="px-4 py-2">
-                                                    <Link to="/admininventorydelete">
-                                                    <button className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
-                                                    Delete
-                                                    </button>
-                                                    </Link>
+                                                    <button className="bg-[#e7e7e7] text-black px-3 py-1 rounded-full">Cancel</button>
                                                 </td>
                                                 <td className="px-4 py-2">
-                                                    <Link to="/admininventorydelete">
-                                                    <button className="bg-[#e7e7e7] text-black px-4 py-1 rounded-full hover:bg-teal-500">
-                                                    Cancel
-                                                    </button>
-                                                    </Link>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <Link to="/admininventoryedit">
-                                                    <button className="bg-[#00c3b8] text-white font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
-                                                    + Follow Up
-                                                    </button>
-                                                    </Link>
+                                                    <button className="bg-[#00c3b8] text-white px-3 py-1 rounded-full">+ Follow Up</button>
                                                 </td>
                                                 </tr>
-                                            ))
-                                            ) : (
-                                            <tr>
-                                                <td
-                                                colSpan="6"
-                                                className="text-center text-gray-500 py-4"
-                                                >
-                                                No records found
-                                                </td>
-                                            </tr>
-                                            )}
-                                        </tbody>
+                                            ))}
+                                            </tbody>
                                         </table>
+                                        </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -341,8 +371,7 @@ const adminpatientsview = () => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
-export default adminpatientsview;
+export default AdminPatientsView;

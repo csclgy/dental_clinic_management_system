@@ -1,49 +1,72 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 
-const adminconsultationview = () => {
+const Adminconsultationview = () => {
+  const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
-  // Scroll to the section if state.scrollTo is passed
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [patient, setPatient] = useState(null);
+  const [consultation, setConsultation] = useState(null);
+  const [error, setError] = useState("");
+
+useEffect(() => {
+  const fetchConsultation = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("No token found. Please log in again.");
+        return;
+      }
+
+      const res = await fetch(`http://localhost:3000/auth/displayconsultation/${appointId}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        setError(errData.message || "Failed to fetch consultation");
+        return;
+      }
+
+      const data = await res.json();
+      console.log("Fetched consultation data:", data);
+
+      if (!data.consultation) {
+        setError("No consultation data found");
+        return;
+      }
+
+      setConsultation(data.consultation);
+      setPatient(data.patient || null); // allow null
+    } catch (err) {
+      console.error("Error fetching consultation:", err);
+      setError("Server error");
+    }
+  };
+
+  fetchConsultation();
+}, [appointId]);
+
+  // Scroll effect
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100);
       }
     }
   }, [location]);
 
-   const records = [
-    {
-      date: "05-30-2025",
-      diagnosis: "Dental Caries",
-      services: "Oral Exam & Periapical X-ray",
-      dentist: "Dr. A. Reyes",
-      status: "Completed",
-    },
-    {
-      date: "07-15-2025",
-      diagnosis: "Tooth Extraction",
-      services: "Extraction of Wisdom Tooth",
-      dentist: "Dr. M. Santos",
-      status: "Ongoing",
-    },
-  ];
-
-  // Filter based on search term (case-insensitive)
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      value.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+if (error) return <p className="text-red-500">{error}</p>;
+if (!consultation) return <p>Loading consultation...</p>;
 
   return (
     <div>
@@ -162,7 +185,6 @@ const adminconsultationview = () => {
                                     <h1 className="text-2xl font-bold">Patients Record</h1>
                                 </div>
                                 <div className="col-sm-2">
-                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatientsadd")}>Add</button>
                                 </div>
                             </div>
                         </div>
@@ -175,7 +197,11 @@ const adminconsultationview = () => {
                                             <h1 className="text-2xl font-bold" style={{color:"#00458B"}}>Patients Information</h1>
                                         </div>
                                         <div className="col-sm-3">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatientsedit")}>Edit Profile</button>
+                                                <button className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" 
+                                                    onClick={() => navigate(`/adminpatientsedit/${patient.user_id}`)}
+                                                >
+                                                    Edit Profile
+                                                </button>
                                         </div>
                                     </div>
                                 </div>
@@ -184,8 +210,8 @@ const adminconsultationview = () => {
 
                                 <div className="col-sm-12">
                                         <br />
-                                    <p className="font-bold text-xl" style={{color:"#00c3b8"}}>Santos Maria</p>
-                                    <p style={{color:"#00458B"}}>Female | 28 years old | Frebruary 15, 1997</p>
+                                    <p className="font-bold text-xl" style={{color:"#00c3b8"}}>{consultation.p_fname} {consultation.p_mname} {consultation.p_lname}</p>
+                                    <p style={{color:"#00458B"}}>{consultation.p_gender} | {consultation.p_age} | {consultation.p_date_birth}</p>
                                         <br />
                                         <br />
                                         <br />
@@ -194,11 +220,11 @@ const adminconsultationview = () => {
                                         <p className="font-bold text-2xl">Address and Contact Information</p>
                                         <hr></hr>
                                         <br />
-                                        <p className="font-bold">Address:</p><p>...</p>
+                                        <p className="font-bold">Address:</p><p>{consultation.p_home_address}, {consultation.p_city}</p>
                                         <br />
-                                        <p className="font-bold">Email Address:</p><p>...</p>
+                                        <p className="font-bold">Email Address:</p><p>{consultation.p_email}</p>
                                         <br />
-                                        <p className="font-bold">Contact Number:</p><p>...</p>
+                                        <p className="font-bold">Contact Number:</p><p>{consultation.p_contact_no}</p>
                                     </div>
 
                                     <div className="col-sm-6" style={{color:"#00458B"}}>
@@ -218,16 +244,15 @@ const adminconsultationview = () => {
                                     <p className="font-bold text-2xl" style={{color:"#00458B"}}>Consultation Details</p>
                                     <hr></hr>
                                     <br />
-
                                     <div className="row">
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
-                                            <p className="font-bold">Date of Visit:</p><p>...</p>
+                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date}</p>
                                             <br />
-                                            <p className="font-bold">Attending Dentist:</p><p>...</p>
+                                            <p className="font-bold">Attending Dentist:</p><p>{consultation.attending_dentist}</p>
                                             <br />
                                             <p className="font-bold">Diagnosis:</p><p>...</p>
                                             <br />
-                                            <p className="font-bold">Services:</p><p>...</p>
+                                            <p className="font-bold">Services:</p><p>{consultation.procedure_type}</p>
                                             <br />
                                             <p className="font-bold">Follow-Up:</p><p>...</p>
                                             <br />
@@ -270,4 +295,4 @@ const adminconsultationview = () => {
   );
 };
 
-export default adminconsultationview;
+export default Adminconsultationview;

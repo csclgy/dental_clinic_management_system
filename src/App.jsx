@@ -157,9 +157,9 @@ function App() {
             <Route path="/admininventoryedit/:id" element={<Admininventoryedit />} />
             <Route path="/adminaudit" element={<Adminaudit />} />
             <Route path="/adminpatients" element={<Adminpatients />} />
-            <Route path="/adminpatientsview" element={<Adminpatientsview />} />
-            <Route path="/adminpatientsedit" element={<Adminpatientsedit />} />
-            <Route path="/adminconsultationview" element={<Adminconsultationview />} />
+            <Route path="/adminpatientsview/:id" element={<Adminpatientsview />} />
+            <Route path="/adminpatientsedit/:id" element={<Adminpatientsedit />} />
+            <Route path="/adminconsultationview/:appointId" element={<Adminconsultationview />} />
             <Route path="/adminconsultationadd" element={<Adminconsultationadd />} />
             <Route path="/adminbillingedit" element={<Adminbillingedit />} />
             <Route path="/adminbillingedititem" element={<Adminbillingedititem />} />

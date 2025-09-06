@@ -521,6 +521,38 @@ router.get('/displaypatients', async (req, res) => {
   }
 });
 
+// (DISPLAY ALL PATIENTS CONSULTATIONS IN TABLE)
+router.get('/displayconsultations', async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT appoint_id, procedure_type, pref_date, pref_time, payment_method,
+             downpayment_proof, attending_dentist, or_num, payment_status,
+             total_charged, appointment_status,
+             p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
+             p_home_address, p_email, p_contact_no, p_blood_type
+      FROM appointment
+      WHERE appointment_status = 'pending'
+      ORDER BY pref_date ASC
+    `);
+
+    return res.json({ consultations: rows }); // wrap for frontend clarity
+  } catch (err) {
+    console.error("Display consultations error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
 //(DELETE PATIENT)
 router.delete("/deletepatient/:id", async (req, res) => {
   const authHeader = req.headers["authorization"];
@@ -546,6 +578,154 @@ router.delete("/deletepatient/:id", async (req, res) => {
   } catch (err) {
     console.error("Error deleting user:", err);
     res.status(500).json({ error: "Failed to delete user" });
+  }
+});
+
+// (DISPLAY SPECIFIC PATIENT BY ID + CONSULTATION HISTORY)
+router.get('/displaypatient/:id', async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    // Fetch patient info
+    const [userRows] = await db.query(
+      `SELECT user_id, user_name, email, contact_no, fname, mname, lname, 
+              date_birth, gender, age, religion, nationality, home_address, city 
+       FROM users WHERE user_id = ? AND role = 'patient'`,
+      [id]
+    );
+
+    if (userRows.length === 0) return res.status(404).json({ message: "Patient not found" });
+
+    const patient = userRows[0];
+
+    // Fetch patient’s appointments using user_name
+    const [appointmentRows] = await db.query(
+      `SELECT appoint_id, procedure_type, pref_date, pref_time, payment_method, 
+              downpayment_proof, attending_dentist, or_num, payment_status, 
+              total_charged, appointment_status 
+       FROM appointment WHERE user_name = ? 
+       ORDER BY pref_date DESC`,
+      [patient.user_name] 
+    );
+
+    return res.json({
+      patient,
+      consultations: appointmentRows
+    });
+    
+  } catch (err) {
+    console.error("Display patient error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+//DISPLAY CONSULTATION
+router.get('/displayconsultation/:appointId', async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== "admin") return res.status(403).json({ message: "Access denied" });
+
+    const { appointId } = req.params;
+    const db = await connectToDatabase();
+
+    const [rows] = await db.query(
+      `SELECT * FROM appointment WHERE appoint_id = ?`,
+      [appointId]
+    );
+
+    if (rows.length === 0) return res.status(404).json({ message: "Consultation not found" });
+
+    return res.json({ consultation: rows[0] });
+  } catch (err) {
+    console.error("Display consultation error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+//(DELETE PATIENTS CONSULTATION)
+router.delete("/deleteconsultation/:appointId", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { appointId } = req.params;
+    const db = await connectToDatabase();
+
+    const [result] = await db.query("DELETE FROM appointment WHERE appoint_id = ?", [appointId]);
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Consultation not found" });
+    }
+
+    res.json({ message: "Consultation deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting Consultation:", err);
+    res.status(500).json({ error: "Failed to delete COnsultation" });
+  }
+});
+
+// (UPDATE PATIENT INFO)
+router.put("/updatepatientinfo/:id", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // only admins can update other patients
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const { id } = req.params;
+    const {
+      email,
+      contact_no,
+      fname,
+      mname,
+      lname,
+      date_birth,
+      gender,
+      age,
+      home_address,
+      city,
+    } = req.body;
+
+    const db = await connectToDatabase();
+    await db.query(
+      `UPDATE users 
+       SET email = ?, contact_no = ?, fname = ?, mname = ?, lname = ?, 
+           date_birth = ?, gender = ?, age = ?, home_address = ?, city = ? 
+       WHERE user_id = ? AND role = 'patient'`,
+      [email, contact_no, fname, mname, lname, date_birth, gender, age, home_address, city, id]
+    );
+
+    return res.json({ message: "Patient profile updated successfully" });
+  } catch (err) {
+    console.error("Update patient error:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 

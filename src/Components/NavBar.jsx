@@ -101,7 +101,9 @@ const Navbar = () => {
                     <div className="absolute -top-2 right-6 w-4 h-4 bg-white border-t border-l border-gray-200 rotate-45"></div>
 
                     <div className="py-2">
+                      {role === "patient" && (
                       <Link to="/profilelogin" className="block px-4 py-2 hover:bg-gray-100">Profile</Link>
+                      )}
                       {role === "patient" && (
                       <Link to="/transmed" className="block px-4 py-2 hover:bg-gray-100">Transaction History</Link>
                       )}

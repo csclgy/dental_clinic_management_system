@@ -1,24 +1,103 @@
-import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom"; // 👈 useParams here
 
-const adminpatientsedit = () => {
-  const location = useLocation();
+const AdminPatientsEdit = () => {
+  const { id } = useParams(); // 👈 get user id from URL
   const navigate = useNavigate();
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
-  // Scroll to the section if state.scrollTo is passed
+  const [patient, setPatient] = useState({
+    fname: "",
+    mname: "",
+    lname: "",
+    gender: "",
+    age: "",
+    date_birth: "",
+    home_address: "",
+    city: "",
+    email: "",
+    contact_no: "",
+  });
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    if (location.state?.scrollTo) {
-      const element = document.getElementById(location.state.scrollTo);
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        navigate("/login");
+        return;
       }
+
+      try {
+        const res = await fetch(`http://localhost:3000/auth/displaypatient/${id}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await res.json();
+        setPatient({
+        fname: data.patient.fname,
+        mname: data.patient.mname,
+        lname: data.patient.lname,
+        gender: data.patient.gender,
+        age: data.patient.age,
+        date_birth: data.patient.date_birth,
+        home_address: data.patient.home_address,
+        city: data.patient.city,
+        email: data.patient.email,
+        contact_no: data.patient.contact_no,
+        });
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching user:", err);
+        setError("Could not fetch user. Please login again.");
+        localStorage.removeItem("token");
+        navigate("/login");
+      }
+    };
+
+    fetchUser();
+  }, [id, navigate]);
+
+  const handleSave = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
     }
-  }, [location]);
+
+    try {
+    const res = await fetch(`http://localhost:3000/auth/updatepatientinfo/${id}`, {
+    method: "PUT",
+    headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(patient), // ✅ use patient, not user
+    });
+
+      if (!res.ok) {
+        throw new Error("Failed to update profile");
+      }
+
+      const data = await res.json();
+      alert(data.message);
+      navigate("/adminpatients"); // 👈 go back after saving
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      alert("Could not update profile. Please try again.");
+    }
+  };
 
   return (
     <div>
@@ -154,50 +233,110 @@ const adminpatientsedit = () => {
                                             <div className="col-sm-6">
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">First Name</label>
-                                                    <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                    <input 
+                                                        type="text" 
+                                                        value={patient.fname}
+                                                        onChange={(e) => setPatient({ ...patient, fname: e.target.value })} 
+                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                                 </div>
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Middle Name</label>
-                                                    <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                    <input 
+                                                        type="text" 
+                                                        value={patient.mname}
+                                                        onChange={(e) => setPatient({ ...patient, mname: e.target.value })} 
+                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                                 </div>
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Last Name</label>
-                                                    <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                    <input 
+                                                        type="text" 
+                                                        value={patient.lname}
+                                                        onChange={(e) => setPatient({ ...patient, lname: e.target.value })} 
+                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                                 </div>
                                             </div>
                                             <div className="col-sm-6">
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Gender</label>
-                                                    <select  class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
+                                                    <select  
+                                                        value={patient.gender}
+                                                        onChange={(e) => setPatient({ ...patient, gender: e.target.value })} 
+                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
                                                         <option value="male">Male</option>
                                                         <option value="female">Female</option>
                                                     </select>
                                                 </div>
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Age</label>
-                                                    <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                    <input 
+                                                        type="text" 
+                                                        value={patient.age}
+                                                        onChange={(e) => setPatient({ ...patient, age: e.target.value })} 
+                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                                 </div>
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Date of Birth</label>
-                                                    <input type="date" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                    <input 
+                                                        type="date" 
+                                                        value={patient.date_birth}
+                                                        onChange={(e) => setPatient({ ...patient, date_birth: e.target.value })} 
+                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Address</label>
-                                            <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                            <label class="block text-[#00458b] font-semibold mb-1">Home Address</label>
+                                            <input 
+                                                type="text" 
+                                                value={patient.home_address}
+                                                onChange={(e) => setPatient({ ...patient, home_address: e.target.value })} 
+                                                class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                        </div>
+                                        <div class="mb-4 text-left">
+                                            <label class="block text-[#00458b] font-semibold mb-1">City</label>
+                                            <input 
+                                                type="text" 
+                                                value={patient.city}
+                                                onChange={(e) => setPatient({ ...patient, city: e.target.value })} 
+                                                class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                         </div>
                                         <div class="mb-4 text-left">
                                             <label class="block text-[#00458b] font-semibold mb-1">Email Address</label>
-                                            <input type="email" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                            <input 
+                                                type="email" 
+                                                value={patient.email}
+                                                onChange={(e) => setPatient({ ...patient, email: e.target.value })} 
+                                                class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                         </div>
                                         <div class="mb-4 text-left">
                                             <label class="block text-[#00458b] font-semibold mb-1">Contact Number</label>
-                                            <input type="number" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                            <input 
+                                                type="number" 
+                                                value={patient.contact_no}
+                                                onChange={(e) => setPatient({ ...patient, contact_no: e.target.value })} 
+                                                class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                         </div>
                                         <div class="mb-4 text-left">
                                             <label class="block text-[#00458b] font-semibold mb-1">Blood Type</label>
-                                            <input type="text" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                            <select
+                                                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                            >
+                                                <option value="">-- Select Blood Type --</option>
+                                                <option value="O">O</option>
+                                                <option value="O+">O+</option>
+                                                <option value="O-">O-</option>
+                                                <option value="A">A</option>
+                                                <option value="A+">A+</option>
+                                                <option value="A-">A-</option>
+                                                <option value="B">B</option>
+                                                <option value="B+">B+</option>
+                                                <option value="B-">B-</option>
+                                                <option value="AB">AB</option>
+                                                <option value="AB+">AB+</option>
+                                                <option value="AB-">AB-</option>
+                                                <option value="Unknown">Unknown</option>
+                                            </select>
                                         </div>
                                     </div>
                                     <div className="col-sm-3">
@@ -212,10 +351,14 @@ const adminpatientsedit = () => {
                                         <div className="col-sm-6">
                                             <div className="row">
                                                 <div className="col-sm-6">
-                                                    <button class="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatientsview")}>Back</button>
+                                                    <button class="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatients")}>Back</button>
                                                 </div>
                                             <div className="col-sm-6">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatientsview")}>Save</button>
+                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" 
+                                                    onClick={handleSave} 
+                                                >
+                                                    Save
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -234,4 +377,4 @@ const adminpatientsedit = () => {
   );
 };
 
-export default adminpatientsedit;
+export default AdminPatientsEdit;
