@@ -10,8 +10,12 @@ const AdminInventoryAdd = () => {
   const [successMessage, setSuccessMessage] = useState("");
 
   const [registerData, setRegisterData] = useState({
+    inv_item_type: "",
     inv_item_name: "",
+    inv_price_per_item: "",
     inv_quantity: "",
+    inv_ml: "",
+    inv_exp_date: "",
   });
 
   const updateFormData = (field, value) => {
@@ -228,6 +232,21 @@ const AdminInventoryAdd = () => {
                       <form onSubmit={handleSubmit}>
                         <div className="mb-4 text-left">
                           <label className="block text-[#00458b] font-semibold mb-1">
+                            Item Type
+                          </label>
+                          <select
+                            value={registerData.inv_item_type || ""}
+                            onChange={(e) => updateFormData("inv_item_type", e.target.value)}
+                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                          >
+                            <option value="">-- Select Type --</option>
+                            <option value="tool">Tool</option>
+                            <option value="medicine">Medicine</option>
+                          </select>
+                        </div>
+
+                        <div className="mb-4 text-left">
+                          <label className="block text-[#00458b] font-semibold mb-1">
                             Item Name
                           </label>
                           <input
@@ -239,6 +258,21 @@ const AdminInventoryAdd = () => {
                             className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                           />
                         </div>
+
+                        <div className="mb-4 text-left">
+                          <label className="block text-[#00458b] font-semibold mb-1">
+                            Price Per Item
+                          </label>
+                          <input
+                            type="number"
+                            value={registerData.inv_price_per_item || ""}
+                            onChange={(e) =>
+                              updateFormData("inv_price_per_item", e.target.value)
+                            }
+                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                          />
+                        </div>
+
                         <div className="mb-4 text-left">
                           <label className="block text-[#00458b] font-semibold mb-1">
                             Quantity
@@ -252,6 +286,39 @@ const AdminInventoryAdd = () => {
                             className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                           />
                         </div>
+
+                        {/* Show only when medicine is selected */}
+                        {registerData.inv_item_type === "medicine" && (
+                          <>
+                            <div className="mb-4 text-left">
+                              <label className="block text-[#00458b] font-semibold mb-1">
+                                Amount of mL
+                              </label>
+                              <input
+                                type="number"
+                                value={registerData.inv_ml || ""}
+                                onChange={(e) =>
+                                  updateFormData("inv_ml", e.target.value)
+                                }
+                                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                              />
+                            </div>
+
+                            <div className="mb-4 text-left">
+                              <label className="block text-[#00458b] font-semibold mb-1">
+                                Expiration Date
+                              </label>
+                              <input
+                                type="date"
+                                value={registerData.inv_expiration_date || ""}
+                                onChange={(e) =>
+                                  updateFormData("inv_expiration_date", e.target.value)
+                                }
+                                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                              />
+                            </div>
+                          </>
+                        )}
 
                         {errorMessage && (
                           <p className="text-red-500 font-medium mt-4">

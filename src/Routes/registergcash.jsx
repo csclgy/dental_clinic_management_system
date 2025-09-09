@@ -12,6 +12,15 @@ const Registergcash = () => {
     registerData.downpayment === "Yes" ||
     (registerData.downpayment === "No" && isGcashValid);
 
+  const handleSkip = () => {
+    setRegisterData((prev) => ({
+      ...prev,
+      downpayment: "",   // clears Yes/No
+      gcash_num: "",     // clears GCash number too
+    }));
+    navigate("/register2");
+  };
+
   const handleNext = () => {
     if (canProceed) {
       navigate("/register2");
@@ -100,21 +109,31 @@ const Registergcash = () => {
         )}
 
         {/* Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 mt-6">
+        <div className="flex flex-col gap-3 mt-6 w-full">
           <button
-            className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full sm:w-1/2"
-            onClick={() => navigate("/register")}
-          >
-            Back
-          </button>
-          <button
-            className={`px-6 py-2 rounded-full w-full sm:w-1/2 font-semibold ${
-              canProceed ? "bg-[#00c3b8] text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            className={`px-6 py-2 rounded-full font-semibold w-full ${
+              canProceed
+                ? "bg-[#00c3b8] text-white"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
             onClick={handleNext}
             disabled={!canProceed}
           >
             Next
+          </button>
+
+          <button
+            className="bg-gray-200 text-[#00458b] font-semibold px-6 py-2 rounded-full w-full"
+            onClick={handleSkip}
+          >
+            Skip
+          </button>
+
+          <button
+            className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full"
+            onClick={() => navigate("/register")}
+          >
+            Back
           </button>
         </div>
       </div>

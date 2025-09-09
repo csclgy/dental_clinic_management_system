@@ -614,9 +614,9 @@ router.get('/displaypatient/:id', async (req, res) => {
       `SELECT appoint_id, procedure_type, pref_date, pref_time, payment_method, 
               downpayment_proof, attending_dentist, or_num, payment_status, 
               total_charged, appointment_status 
-       FROM appointment WHERE user_name = ? 
+       FROM appointment WHERE p_email = ? 
        ORDER BY pref_date DESC`,
-      [patient.user_name] 
+      [patient.email] 
     );
 
     return res.json({
@@ -630,32 +630,167 @@ router.get('/displaypatient/:id', async (req, res) => {
   }
 });
 
-//DISPLAY CONSULTATION
-router.get('/displayconsultation/:appointId', async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "No token provided" });
-
+// DISPLAY CONSULTATION with charged items
+router.get("/displayconsultation/:appointId", async (req, res) => {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.role !== "admin") return res.status(403).json({ message: "Access denied" });
-
     const { appointId } = req.params;
     const db = await connectToDatabase();
 
     const [rows] = await db.query(
-      `SELECT * FROM appointment WHERE appoint_id = ?`,
+      "SELECT * FROM appointment WHERE appoint_id = ?",
       [appointId]
     );
 
     if (rows.length === 0) return res.status(404).json({ message: "Consultation not found" });
 
-    return res.json({ consultation: rows[0] });
+    const consultation = rows[0];
+
+    const [chargedItems] = await db.query(
+      "SELECT ci_id, inv_id, ci_item_name, ci_quantity, ci_amount FROM chargeditem WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems });
   } catch (err) {
     console.error("Display consultation error:", err);
-    return res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 });
+
+// Create Appointment (Admin Side)
+router.post("/createconsultation", authenticateToken, async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+
+    const {
+      user_name,
+      procedure_type,
+      pref_date,
+      pref_time,
+      attending_dentist,
+      or_num,
+      payment_method,
+      payment_status,
+      appointment_status,
+      total_service_charged,
+      chargedItems, // array of { inv_id, ci_item_name, ci_quantity, ci_amount }
+      p_fname,
+      p_mname,
+      p_lname,
+      p_gender,
+      p_age,
+      p_date_birth,
+      p_home_address,
+      p_email,
+      p_contact_no,
+    } = req.body;
+
+    // Insert appointment (admin creates directly)
+    const [appointmentResult] = await db.query(
+      `INSERT INTO appointment
+      (procedure_type, pref_date, pref_time, payment_method, attending_dentist,
+      or_num, payment_status, appointment_status, total_service_charged,
+      p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
+      p_home_address, p_email, p_contact_no)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `,
+      [
+        procedure_type,
+        pref_date,
+        pref_time,
+        payment_method,
+        attending_dentist || "Unassigned",
+        or_num || null,
+        payment_status || "pending",
+        appointment_status || "pending",
+        total_service_charged || 0,
+        p_fname,
+        p_mname,
+        p_lname,
+        p_gender,
+        p_age,
+        p_date_birth,
+        p_home_address,
+        p_email,
+        p_contact_no,
+      ]
+    );
+
+    const appoint_id = appointmentResult.insertId;
+
+    // Insert charged items (if any)
+    if (chargedItems && chargedItems.length > 0) {
+      for (const item of chargedItems) {
+        await db.query(
+          `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id)
+           VALUES (?, ?, ?, ?, ?)`,
+          [item.inv_id, item.ci_item_name, item.ci_quantity, item.ci_amount, appoint_id]
+        );
+      }
+    }
+
+    res.status(201).json({ message: "Consultation added successfully!", appoint_id });
+  } catch (err) {
+    console.error("Admin create appointment error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get charged items for an appointment
+router.get("/billing/:appointId", authenticateToken, async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const { appointId } = req.params;
+
+    const [rows] = await db.query(
+      `SELECT ci_item_name AS item, ci_quantity, ci_amount AS amount
+       FROM chargeditem
+       WHERE appoint_id = ?`,
+      [appointId]
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching billing items:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Add a new billing item
+// Add billing item
+router.post("/billing", authenticateToken, async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+
+    const { inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id } = req.body;
+
+    // Validate required fields
+    if (!appoint_id || !inv_id || !ci_item_name || !ci_quantity || !ci_amount) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Insert into chargeditem table
+    const [result] = await db.query(
+      `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id)
+       VALUES (?, ?, ?, ?, ?)`,
+      [inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id]
+    );
+
+    // Return the inserted item
+    res.status(201).json({
+      id: result.insertId,
+      inv_id,
+      ci_item_name,
+      ci_quantity,
+      ci_amount,
+      appoint_id,
+    });
+  } catch (err) {
+    console.error("Add billing item error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 //(DELETE PATIENTS CONSULTATION)
 router.delete("/deleteconsultation/:appointId", async (req, res) => {
@@ -732,10 +867,14 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
 //################################ INVENTORY MANAGEMENT ################################
 // for admininventoryadd.jsx (ADD NEW ITEM)
 router.post('/additem', async (req, res) => {
-  const { inv_item_name, inv_quantity } = req.body;
+  const { inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date } = req.body;
 
-  if (!inv_item_name || !inv_quantity) {
-    return res.status(400).json({ message: "Item Name and Quantity are required" });
+  if (!inv_item_name || !inv_quantity || !inv_item_type) {
+    return res.status(400).json({ message: "Item Name, Quantity, and Item Type are required" });
+  }
+
+  if (inv_item_type === "medicine" && (!inv_ml || !inv_exp_date)) {
+    return res.status(400).json({ message: "Medicine requires Amount of ML and Expiration Date" });
   }
 
   try {
@@ -750,14 +889,14 @@ router.post('/additem', async (req, res) => {
       return res.status(409).json({ message: "Item already exists" });
     }
 
-    // Default inv_status: High if quantity > 50, Low otherwise (example)
+    // Default inv_status: High if quantity > 50, Low otherwise
     let status = inv_quantity > 50 ? "High" : "Low";
 
     await db.query(
       `INSERT INTO inventory 
-      (inv_item_name, inv_quantity, inv_status) 
-      VALUES (?, ?, ?)`,
-      [inv_item_name, inv_quantity, status]
+      (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [inv_item_type, inv_item_name, inv_price_per_item, inv_quantity || null, inv_ml || null, inv_exp_date || null, status]
     );
 
     return res.status(201).json({ message: "Item created successfully" });
@@ -782,7 +921,7 @@ router.put("/edititem/:id", async (req, res) => {
 
     const db = await connectToDatabase();
     const [result] = await db.query(
-      "UPDATE inventory SET inv_item_name = ?, inv_quantity = ? WHERE inv_id = ?",
+      "UPDATE inventory SET inv_item_name = ?, inv_price_per_item = ?, inv_quantity = ? WHERE inv_id = ?",
       [inv_item_name, inv_quantity, id]
     );
 
@@ -861,7 +1000,7 @@ router.get("/displayitem/:id", async (req, res) => {
 router.get('/inventory', async (req, res) => {
   try {
     const db = await connectToDatabase();
-    const [rows] = await db.query('SELECT inv_id, inv_item_name, inv_quantity, inv_status FROM inventory');
+    const [rows] = await db.query('SELECT * FROM inventory');
     res.json(rows);
   } catch (err) {
     console.error("Fetch inventory error:", err);

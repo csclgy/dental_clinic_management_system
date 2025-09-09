@@ -249,6 +249,8 @@ const AdminPatientsView = () => {
                                         <p className="font-bold">Email Address:</p><p>{patient.email}</p>
                                         <br />
                                         <p className="font-bold">Contact Number:</p><p>{patient.contact_no}</p>
+                                        <br />
+                                        <p className="font-bold" style={{color:"transparent"}}>Username:</p><p style={{color:"transparent"}}>{patient.user_name}</p>
                                     </div>
 
                                     <div className="col-sm-6" style={{color:"#00458B"}}>
@@ -269,7 +271,16 @@ const AdminPatientsView = () => {
                                             <h1 className="text-2xl font-bold" style={{color:"#00458B"}}>Consultation History</h1>
                                         </div>
                                         <div className="col-sm-4">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminconsultationadd")}>+ Create New Consultation</button>
+                                            <button
+                                            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"
+                                            onClick={() =>
+                                                navigate("/adminconsultationadd", {
+                                                state: { patient }   // ✅ send patient info to next page
+                                                })
+                                            }
+                                            >
+                                            + Create New Consultation
+                                            </button>
                                         </div>
                                     </div>
                                 </div>

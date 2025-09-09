@@ -9,49 +9,33 @@ const Adminconsultationview = () => {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [patient, setPatient] = useState(null);
   const [consultation, setConsultation] = useState(null);
+  const [chargedItems, setChargedItems] = useState([]);
   const [error, setError] = useState("");
 
 useEffect(() => {
-  const fetchConsultation = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        setError("No token found. Please log in again.");
-        return;
+    const fetchConsultation = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`http://localhost:3000/auth/displayconsultation/${appointId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!res.ok) throw new Error("Failed to fetch consultation");
+
+        const data = await res.json();
+        setConsultation(data.consultation);
+        setChargedItems(data.chargedItems || []);
+      } catch (err) {
+        console.error("Error fetching consultation:", err);
+        setError("Could not load consultation");
       }
+    };
 
-      const res = await fetch(`http://localhost:3000/auth/displayconsultation/${appointId}`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        setError(errData.message || "Failed to fetch consultation");
-        return;
-      }
-
-      const data = await res.json();
-      console.log("Fetched consultation data:", data);
-
-      if (!data.consultation) {
-        setError("No consultation data found");
-        return;
-      }
-
-      setConsultation(data.consultation);
-      setPatient(data.patient || null); // allow null
-    } catch (err) {
-      console.error("Error fetching consultation:", err);
-      setError("Server error");
-    }
-  };
-
-  fetchConsultation();
-}, [appointId]);
+    fetchConsultation();
+  }, [appointId]);
 
   // Scroll effect
   useEffect(() => {
@@ -65,8 +49,8 @@ useEffect(() => {
     }
   }, [location]);
 
-if (error) return <p className="text-red-500">{error}</p>;
-if (!consultation) return <p>Loading consultation...</p>;
+  if (error) return <p className="text-red-500">{error}</p>;
+  if (!consultation) return <p>Loading consultation...</p>;
 
   return (
     <div>
@@ -258,14 +242,46 @@ if (!consultation) return <p>Loading consultation...</p>;
                                             <br />
                                         </div>
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
-                                            <p className="font-bold">Billing Information</p>
-                                            <br />
-                                            <ul>
-                                                <li>...</li>
-                                            </ul>
+                                        <p className="font-bold">Billing Information</p>
+                                        <br />
+
+                                       {consultation.appointment_status !== "done" ? (
+                                        <button
+                                          className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full"
+                                          onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
+                                        >
+                                          Edit Billing
+                                        </button>
+                                      ) : (
+                                        <div className="p-4 rounded-lg shadow-md" style={{ border: "solid", borderColor: "#01D5C4" }}>
+                                          <p className="font-bold mb-2">Charged Service</p>
+                                          <p>
+                                            {consultation.procedure_type} - ₱{consultation.total_service_charged.toFixed(2)}
+                                          </p>
+                                          <hr className="my-2" />
+                                          <p className="font-bold mb-2">Charged Items</p>
+                                          {chargedItems.length > 0 ? (
+                                            chargedItems.map((item, idx) => (
+                                              <p key={idx}>
+                                                {item.ci_item_name} (x{item.ci_quantity}) - ₱{item.ci_amount.toFixed(2)}
+                                              </p>
+                                            ))
+                                          ) : (
+                                            <p>No additional items</p>
+                                          )}
+                                          <hr className="my-2" />
+                                          <p className="font-bold text-lg">
+                                            Total: ₱{(
+                                              consultation.total_service_charged +
+                                              chargedItems.reduce((sum, i) => sum + i.ci_amount, 0)
+                                            ).toFixed(2)}
+                                          </p>
                                         </div>
+                                      )}
+                                      </div>
                                     </div>
                             </div>
+                            <br></br>
                             <div className="col-sm-12">
                                 <div className="row">
                                     <div className="col-sm-6">

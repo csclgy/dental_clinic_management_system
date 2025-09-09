@@ -1,13 +1,83 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
+import axios from "axios";   // ✅ make sure axios is installed
 
-const adminbillingedit = () => {
+const Adminbillingedit = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const { appointId } = useParams();  // ✅ Accept appointId from route
+  const [newInvId, setNewInvId] = useState(null);
+  const [inventory, setInventory] = useState([]);
+
+  const [chargedServices, setChargedServices] = useState([]);
+  const [chargedItems, setChargedItems] = useState([]);
+
+  const [newItem, setNewItem] = useState("");
+  const [newAmount, setNewAmount] = useState("");
+
+    useEffect(() => {
+    const fetchBilling = async () => {
+        try {
+        const token = localStorage.getItem("token"); // or wherever you store it
+        const response = await axios.get(
+            `http://localhost:3000/auth/billing/${appointId}`,
+            {
+            headers: { Authorization: `Bearer ${token}` }, // <--- important
+            }
+        );
+        console.log("Billing data:", response.data);
+        setChargedItems(response.data);
+        } catch (err) {
+        console.error("Error fetching billing:", err);
+        }
+    };
+
+    fetchBilling();
+    }, [appointId]);
+
+const handleAddItem = async () => {
+  if (!newItem || !newAmount || !newInvId) return;
+
+  try {
+    const response = await axios.post(
+      "http://localhost:3000/auth/billing",
+      {
+        appoint_id: appointId,
+        inv_id: newInvId,
+        ci_item_name: newItem,
+        ci_quantity: 1, // or you can add another input for quantity
+        ci_amount: parseFloat(newAmount),
+      },
+      {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      }
+    );
+
+    setChargedItems([...chargedItems, response.data]);
+    setNewItem("");
+    setNewAmount("");
+    setNewInvId(null);
+  } catch (err) {
+    console.error("Error adding billing item:", err);
+  }
+};
+
+useEffect(() => {
+  const fetchInventory = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/auth/inventory", {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      });
+      setInventory(response.data); // assuming the API returns an array of inventory items
+    } catch (err) {
+      console.error("Error fetching inventory:", err);
+    }
+  };
+
+  fetchInventory();
+}, []);
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -20,30 +90,6 @@ const adminbillingedit = () => {
       }
     }
   }, [location]);
-
-   const records = [
-    {
-      date: "05-30-2025",
-      diagnosis: "Dental Caries",
-      services: "Oral Exam & Periapical X-ray",
-      dentist: "Dr. A. Reyes",
-      status: "Completed",
-    },
-    {
-      date: "07-15-2025",
-      diagnosis: "Tooth Extraction",
-      services: "Extraction of Wisdom Tooth",
-      dentist: "Dr. M. Santos",
-      status: "Ongoing",
-    },
-  ];
-
-  // Filter based on search term (case-insensitive)
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      value.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
 
   return (
     <div>
@@ -180,21 +226,41 @@ const adminbillingedit = () => {
 
                                 <div className="col-sm-12">
                                     <div className="row">
-                                        <div className="col-sm-6">
-                                            <div class="mb-4 text-left">
-                                                <br></br>
-                                                <label class="block text-[#00458b] font-semibold mb-1">Charge Item</label>
-                                                    <select  class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
-                                                        <option value="...">Gloves</option>
-                                                        <option value="...">Hairnet</option>
-                                                    </select>
+                                              <div className="mb-6">
+                                                {/* Charge Item Dropdown */}
+                                                <label className="block text-[#00458b] font-semibold mb-1">
+                                                Charge Item
+                                                </label>
+                                                <select
+                                                value={newItem}
+                                                onChange={(e) => {
+                                                    const selected = inventory.find(
+                                                    (inv) => inv.inv_item_name === e.target.value
+                                                    );
+                                                    if (selected) {
+                                                    setNewItem(selected.inv_item_name);
+                                                    setNewAmount(selected.inv_price_per_item); // default unit price
+                                                    setNewInvId(selected.inv_id); // store inv_id for backend
+                                                    }
+                                                }}
+                                                >
+                                                <option value="">Select Item</option>
+                                                {inventory.map((item) => (
+                                                    <option key={item.inv_id} value={item.inv_item_name}>
+                                                    {item.inv_item_name} (₱{item.inv_price_per_item}, Stock: {item.inv_quantity})
+                                                    </option>
+                                                ))}
+                                                </select>
+                                                <label className="block text-[#00458b] font-semibold mb-1">
+                                                Amount
+                                                </label>
+                                                <input
+                                                type="number"
+                                                value={newAmount}
+                                                onChange={(e) => setNewAmount(e.target.value)}
+                                                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none mb-3"
+                                                />
                                             </div>
-                                            <div class="mb-4 text-left">
-                                                <br></br>
-                                                <label class="block text-[#00458b] font-semibold mb-1">Amount</label>
-                                                <input type="number" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                            </div>
-                                        </div>
                                         <div className="col-sm-6">
 
                                         </div>
@@ -207,7 +273,7 @@ const adminbillingedit = () => {
                                             <h1 className="text-2xl font-bold" style={{color:"#00458B"}}></h1>
                                         </div>
                                         <div className="col-sm-2">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminbillingedit")}>Add</button>
+                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={handleAddItem}>Add</button>
                                         </div>
                                     </div>
                                 </div>
@@ -246,37 +312,23 @@ const adminbillingedit = () => {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredRecords.length > 0 ? (
-                                            filteredRecords.map((record, index) => (
-                                                <tr key={index} className="border-b border-gray-200 text-center item-center">
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2">
-                                                    <Link to="/adminbillingedititem">
-                                                    <button className="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
-                                                    Edit
-                                                    </button>
-                                                    </Link>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <Link to="/admininventorydelete">
-                                                    <button className="bg-[#00c3b8] text-white px-4 py-1 rounded-full hover:bg-teal-500">
-                                                    Delete
-                                                    </button>
-                                                    </Link>
-                                                </td>
+                                            {chargedItems.length > 0 ? (
+                                            chargedItems.map((item, index) => (
+                                                <tr key={index} className="border-b border-gray-200 text-center">
+                                                    <td className="px-4 py-2 text-blue-700">{item.item}</td>
+                                                    <td className="px-4 py-2 text-blue-700">₱{item.amount}</td>
                                                 </tr>
                                             ))
                                             ) : (
                                             <tr>
-                                                <td
-                                                colSpan="6"
-                                                className="text-center text-gray-500 py-4"
-                                                >
-                                                No records found
+                                                <td colSpan="2" className="text-center text-gray-500 py-4">
+                                                No items found
                                                 </td>
                                             </tr>
                                             )}
+                                            <tr className="px-4 py-2 text-blue-700">
+                                            <td>Total: ₱{chargedItems.reduce((sum, item) => sum + Number(item.amount), 0)}</td>
+                                            </tr>
                                         </tbody>
                                         </table>
                                     </div>
@@ -284,18 +336,17 @@ const adminbillingedit = () => {
                             </div>
                             <div className="col-sm-12">
                                 <div className="row">
-                                    <div className="col-sm-6">
+                                    <div className="col-sm-12">
                                     </div>
-                                        <div className="col-sm-6">
+                                        <div className="col-sm-12">
+                                            <br></br>
                                             <div className="row">
-                                                <div className="col-sm-6">
-
-                                                </div>
-                                            <div className="col-sm-6">
-                                                    <br />
-                                                    <br />
-                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminconsultationadd")}>Save</button>
-                                            </div>
+                                                <button
+                                                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full"
+                                                onClick={() => navigate(`/adminconsultationview/${appointId}`)}
+                                                >
+                                                Done
+                                                </button>
                                         </div>
                                     </div>
                                 </div>
@@ -312,4 +363,4 @@ const adminbillingedit = () => {
   );
 };
 
-export default adminbillingedit;
+export default Adminbillingedit;
