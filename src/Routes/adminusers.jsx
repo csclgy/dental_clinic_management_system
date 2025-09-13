@@ -247,7 +247,7 @@ const handleDelete = async (id) => {
                                                     <th className="px-4 py-2 text-center">Username</th>
                                                     <th className="px-4 py-2 text-center">Access Level</th>
                                                     <th className="px-4 py-2 text-center">Name</th>
-                                                    <th className="px-4 py-2 text-center">Action</th>
+                                                    <th className="px-4 py-2 text-center"></th>
                                                 </tr>
                                                 </thead>
                                                 <tbody>

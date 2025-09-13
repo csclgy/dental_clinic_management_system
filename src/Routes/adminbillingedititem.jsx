@@ -1,12 +1,78 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
+import axios from "axios";
 
-const adminbillingedititem = () => {
-  const location = useLocation();
+const AdminBillingEditItem = () => {   // ✅ uppercase
+const location = useLocation();
+  const { ci_id } = useParams();
   const navigate = useNavigate();
+  const [selectedInvId, setSelectedInvId] = useState(null);
+  const [item, setItem] = useState(null);
+  const [itemName, setItemName] = useState("");
+  const [amount, setAmount] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [unitPrice, setUnitPrice] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  // hooks must always be called unconditionally
+useEffect(() => {
+  if (ci_id) {
+    axios
+      .get(`http://localhost:3000/auth/billing/item/${ci_id}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      })
+      .then((res) => {
+        setItem(res.data);
+        setItemName(res.data.ci_item_name);
+        setQuantity(res.data.ci_quantity);
+        setAmount(res.data.ci_amount);
+        setSelectedInvId(res.data.inv_id);
+
+          // ✅ Save unit price based on initial data
+        const unitPrice = res.data.ci_amount / res.data.ci_quantity;
+        setAmount(res.data.ci_amount);
+        setUnitPrice(unitPrice);
+
+      })
+      .catch((err) => {
+        console.error("Error fetching item:", err);
+      });
+  }
+}, [ci_id]);
+
+useEffect(() => {
+  if (quantity && amount) {
+    setTotal(quantity * amount);
+  }
+}, [quantity, amount]);
+
+
+const handleUpdate = async (e) => {
+  e.preventDefault();
+  try {
+    await axios.put(
+      `http://localhost:3000/auth/updatebilling/${ci_id}`,
+      {
+        inv_id: selectedInvId,
+        ci_item_name: itemName,
+        ci_quantity: quantity,
+        ci_amount: amount,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`, // ✅ send JWT
+        },
+      }
+    );
+
+    alert("✅ Billing item updated successfully!");
+    navigate(-1); // go back after confirmation
+  } catch (err) {
+    console.error("Error updating charged item:", err);
+    alert("❌ Failed to update billing item.");
+  }
+};
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -152,15 +218,46 @@ const adminbillingedititem = () => {
                                         <br />
                                         <div class="mb-4 text-left">
                                                 <label class="block text-[#00458b] font-semibold mb-1">Charge Item</label>
-                                                    <select  class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
-                                                        <option value="...">Gloves</option>
-                                                        <option value="...">Hairnet</option>
-                                                    </select>
+                                                <input
+                                                type="text"
+                                                value={itemName}
+                                                onChange={(e) => setItemName(e.target.value)}
+                                                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                                readOnly
+                                                />
                                         </div>
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Amount</label>
-                                            <input type="number" class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                        </div>
+                                        <div className="mb-4 text-left">
+                                        <label className="block text-[#00458b] font-semibold mb-1">Quantity</label>
+                                        <input
+                                          type="number"
+                                          value={quantity ?? ""}
+                                          onChange={(e) => setQuantity(Number(e.target.value))}
+                                          min="1"
+                                          className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                        />
+                                      </div>
+
+                                      <div className="mb-4 text-left">
+                                        <label className="block text-[#00458b] font-semibold mb-1">Price per Item</label>
+                                        <input
+                                          type="number"
+                                          value={amount ?? ""}
+                                          onChange={(e) => setAmount(Number(e.target.value))}
+                                          min="0"
+                                          readOnly
+                                          className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                        />
+                                      </div>
+
+                                      <div className="mb-4 text-left">
+                                        <label className="block text-[#00458b] font-semibold mb-1">Total</label>
+                                        <input
+                                          type="number"
+                                          value={total ?? ""}
+                                          readOnly
+                                          className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none bg-gray-100"
+                                        />
+                                      </div>
                                     </div>
                                     <div className="col-sm-3">
 
@@ -174,10 +271,20 @@ const adminbillingedititem = () => {
                                         <div className="col-sm-6">
                                             <div className="row">
                                                 <div className="col-sm-6">
-                                                    <button class="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminbillingedit")}>Back to List</button>
+                                                     <button
+                                                        className="bg-gray-300 text-black px-6 py-2 rounded-full"
+                                                        onClick={() => navigate("/adminbillingedit")}
+                                                        >
+                                                        Back
+                                                    </button>
                                                 </div>
                                             <div className="col-sm-6">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminbillingedit")}>Save</button>
+                                                <button
+                                                    className="bg-[#00c3b8] text-white px-6 py-2 rounded-full"
+                                                    onClick={handleUpdate}
+                                                    >
+                                                    Save
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -196,4 +303,4 @@ const adminbillingedititem = () => {
   );
 };
 
-export default adminbillingedititem;
+export default AdminBillingEditItem;

@@ -60,6 +60,16 @@ const Navbar = () => {
               <Link to="/" state={{ scrollTo: "section4" }} className="px-3 py-2 rounded">Contact Us</Link> 
             </div>
             )}
+
+            {role ==! "admin" && (
+            <div className="hidden md:flex space-x-4"> 
+              <Link to="/" state={{ scrollTo: "section1" }} className="px-3 py-2 rounded">Home</Link> 
+              <Link to="/" state={{ scrollTo: "section2" }} className="px-3 py-2 rounded">About Us</Link> 
+              <Link to="/" state={{ scrollTo: "section3" }} className="px-3 py-2 rounded">Services</Link> 
+              <Link to="/" state={{ scrollTo: "section4" }} className="px-3 py-2 rounded">Contact Us</Link> 
+            </div>
+            )}
+            
             {role === "admin" && (
             <div className="hidden md:flex space-x-4"> 
             </div>

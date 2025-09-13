@@ -1,105 +1,99 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { useParams } from "react-router-dom";
 
-const admininventoryedit = () => {
-const { id } = useParams();
-const location = useLocation();
-const navigate = useNavigate();
-const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-const [errorMessage, setErrorMessage] = useState("");
-const [successMessage, setSuccessMessage] = useState("");
+const AdminInventoryEditItem = () => {
+  const { id } = useParams();   // ✅ use inv_id instead of ci_id
+  const navigate = useNavigate();
+  const [item, setItem] = useState(null);
 
-const [registerData, setRegisterData] = useState({
-    inv_item_name: "",
-    inv_quantity: "",
-  });
+  const [loading, setLoading] = useState(true);   // ✅ added
+  const [error, setError] = useState("");   
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);      
 
-const [loading, setLoading] = useState(true);
-const [error, setError] = useState("");
+  // form states
+  const [itemName, setItemName] = useState("");
+  const [itemType, setItemType] = useState("");
+  const [quantity, setQuantity] = useState("");
+  const [price, setPrice] = useState("");
+  const [ml, setML] = useState("");
+  const [expiration, setExpiration] = useState("");
 
+ // fetch item details
 useEffect(() => {
-  const fetchUser = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      navigate("/login");
-      return;
-    }
-
+  const fetchItem = async () => {
     try {
-      const res = await fetch(`http://localhost:3000/auth/displayitem/${id}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch Item");
-      }
-
-      const data = await res.json();
-      setRegisterData({
-        inv_item_name: data.inv_item_name,
-        inv_quantity: data.inv_quantity,
-      });
-      setLoading(false);
+      const res = await axios.get(
+        `http://localhost:3000/auth/displayitem/${id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`, // or sessionStorage
+          },
+        }
+      );
+      setItem(res.data);
     } catch (err) {
       console.error("Error fetching item:", err);
-      setError("Could not fetch Item. Please login again.");
-      localStorage.removeItem("token");
-      navigate("/login");
+    } finally {
+      setLoading(false);
     }
   };
+  fetchItem();
+}, [id]);
 
-  fetchUser();
-}, [id, navigate]);
-
-const updateFormData = (field, value) => {
-  setRegisterData((prev) => ({ ...prev, [field]: value }));
-};
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setErrorMessage("");
-  setSuccessMessage("");
-
-  try {
-    const response = 
-    await axios.put(`http://localhost:3000/auth/edititem/${id}`, registerData, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-    });
-
-    setSuccessMessage(response.data.message || "Item updated successfully!");
-    setTimeout(() => navigate("/admininventory"), 1500);
-  } catch (error) {
-    if (error.response) {
-      setErrorMessage(error.response.data.message || "Something went wrong");
-      console.error("Response error:", error.response.data);
-    } else if (error.request) {
-      setErrorMessage("No response from server. Please try again later.");
-      console.error("Request error:", error.request);
-    } else {
-      setErrorMessage("Error: " + error.message);
-      console.error("Axios error:", error.message);
+  // populate states when item is loaded
+  useEffect(() => {
+    if (item) {
+      setItemName(item.inv_item_name || "");
+      setItemType(item.inv_item_type || "");
+      setQuantity(item.inv_quantity ?? "");
+      setPrice(item.inv_price_per_item !== null ? String(item.inv_price_per_item) : "");
+      setML(item.inv_ml ?? "");
+      setExpiration(item.inv_exp_date || "");
     }
+  }, [item]);
+
+  // handle update
+const handleUpdate = async (e) => {
+  e.preventDefault();
+  try {
+    await axios.put(
+      `http://localhost:3000/auth/edititem/${id}`,
+      {
+        inv_item_name: itemName,
+        inv_item_type: itemType,
+        inv_quantity: Number(quantity),
+        inv_price_per_item: Number(price),
+        inv_ml: itemType === "medicine" ? ml : null,
+        inv_exp_date: itemType === "medicine" ? expiration : null,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    alert("✅ Item updated successfully!");
+    navigate(-1);
+  } catch (err) {
+    console.error("Error updating item:", err);
   }
 };
 
-  // Scroll to the section if state.scrollTo is passed
-  useEffect(() => {
+
+useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100);
       }
     }
   }, [location]);
+
+  if (loading) return <p>Loading...</p>;
 
   return (
     <div>
@@ -237,9 +231,7 @@ const handleSubmit = async (e) => {
                 >
                   <div className="row">
                     <div className="col-sm-9">
-                      <h1 className="text-2xl font-bold">
-                        Inventory Management
-                      </h1>
+                      <h1 className="text-2xl font-bold">Inventory Management</h1>
                     </div>
                     <div className="col-sm-3">
                       <button
@@ -259,76 +251,123 @@ const handleSubmit = async (e) => {
                   style={{ border: "solid", borderColor: "#01D5C4" }}
                 >
                   <div className="row">
-                    <h1
-                      className="text-xl font-bold"
-                      style={{ color: "#00458B" }}
-                    >
-                      Add New Item
+                    <h1 className="text-xl font-bold" style={{ color: "#00458B" }}>
+                      Edit Item
                     </h1>
 
                     <div className="col-sm-3"></div>
-
                     <div className="col-sm-6">
                       <br />
-                      <br />
-                      <form onSubmit={handleSubmit}>
-                        <div className="mb-4 text-left">
-                          <label className="block text-[#00458b] font-semibold mb-1">
-                            Item Name
+                      <form onSubmit={handleUpdate} className="space-y-4">
+                        {/* Item Name */}
+                        <div>
+                          <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
+                            Item Name:
                           </label>
                           <input
                             type="text"
-                            value={registerData.inv_item_name}
-                            onChange={(e) =>
-                              updateFormData("inv_item_name", e.target.value)
-                            }
-                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                            value={itemName}
+                            onChange={(e) => setItemName(e.target.value)}
+                            required
+                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
                           />
                         </div>
-                        <div className="mb-4 text-left">
-                          <label className="block text-[#00458b] font-semibold mb-1">
-                            Quantity
+
+                        {/* Item Type */}
+                        <div>
+                          <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
+                            Item Type:
                           </label>
-                          <input
-                            type="text"
-                            value={registerData.inv_quantity}
-                            onChange={(e) =>
-                              updateFormData("inv_quantity", e.target.value)
-                            }
-                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                          />
-                        </div>
-
-                        {errorMessage && (
-                          <p className="text-red-500 font-medium mt-4">
-                            {errorMessage}
-                          </p>
-                        )}
-                        {successMessage && (
-                          <p className="text-green-600 font-medium mt-4">
-                            {successMessage}
-                          </p>
-                        )}
-
-                        <div className="flex justify-end gap-4 mt-6">
-                          <button
-                            type="button"
-                            className="bg-[#FFFFFF] text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full"
-                            onClick={() => navigate("/admininventory")}
+                          <select
+                            value={itemType}
+                            onChange={(e) => setItemType(e.target.value)}
+                            required
+                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
                           >
-                            Back to List
-                          </button>
+                            <option value="">--Select--</option>
+                            <option value="medicine">Medicine</option>
+                            <option value="tool">Tool</option>
+                          </select>
+                        </div>
 
+                        {/* Quantity */}
+                        <div>
+                          <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
+                            Quantity:
+                          </label>
+                          <input
+                            type="number"
+                            value={quantity}
+                            onChange={(e) => setQuantity(e.target.value)}
+                            required
+                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
+                          />
+                        </div>
+
+                        {/* Price */}
+                        <div>
+                          <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
+                            Price per Item: ₱
+                          </label>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={price}
+                            onChange={(e) => setPrice(e.target.value)}
+                            required
+                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
+                          />
+                        </div>
+
+                        {/* Medicine-specific fields */}
+                        {itemType === "medicine" && (
+                          <>
+                            <div>
+                              <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
+                                mL:
+                              </label>
+                              <input
+                                type="text"
+                                value={ml}
+                                onChange={(e) => setML(e.target.value)}
+                                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
+                                Expiration Date:
+                              </label>
+                              <input
+                                type="date"
+                                value={expiration}
+                                onChange={(e) => setExpiration(e.target.value)}
+                                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {/* Buttons */}
+                        <div className="flex justify-between mt-6">
                           <button
                             type="submit"
-                            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full"
+                            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full hover:bg-[#01d5c4] transition"
                           >
-                            Save
+                            Update Item
                           </button>
+
+                          <Link to="/admininventory">
+                            <button
+                              type="button"
+                              className="bg-gray-400 text-white font-semibold px-6 py-2 rounded-full hover:bg-gray-500 transition"
+                            >
+                              Cancel
+                            </button>
+                          </Link>
                         </div>
                       </form>
-                    </div>
 
+                    </div>
                     <div className="col-sm-3"></div>
                   </div>
                 </div>
@@ -343,4 +382,4 @@ const handleSubmit = async (e) => {
   );
 };
 
-export default admininventoryedit;
+export default AdminInventoryEditItem;

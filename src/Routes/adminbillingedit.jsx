@@ -16,6 +16,7 @@ const Adminbillingedit = () => {
 
   const [newItem, setNewItem] = useState("");
   const [newAmount, setNewAmount] = useState("");
+  const [newQuantity, setNewQuantity] = useState(1);
 
     useEffect(() => {
     const fetchBilling = async () => {
@@ -47,7 +48,7 @@ const handleAddItem = async () => {
         appoint_id: appointId,
         inv_id: newInvId,
         ci_item_name: newItem,
-        ci_quantity: 1, // or you can add another input for quantity
+        ci_quantity: newQuantity, // 👈 use user input
         ci_amount: parseFloat(newAmount),
       },
       {
@@ -59,8 +60,24 @@ const handleAddItem = async () => {
     setNewItem("");
     setNewAmount("");
     setNewInvId(null);
+    setNewQuantity(1); // reset
   } catch (err) {
     console.error("Error adding billing item:", err);
+  }
+};
+
+const handleDeleteItem = async (ci_id) => {
+  if (!window.confirm("Are you sure you want to delete this item?")) return;
+
+  try {
+    await axios.delete(`http://localhost:3000/auth/deletebilling/${ci_id}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+    });
+
+    // Remove from state
+    setChargedItems(chargedItems.filter((item) => item.ci_id !== ci_id));
+  } catch (err) {
+    console.error("Error deleting billing item:", err);
   }
 };
 
@@ -252,14 +269,17 @@ useEffect(() => {
                                                 ))}
                                                 </select>
                                                 <label className="block text-[#00458b] font-semibold mb-1">
-                                                Amount
+                                                Amount Used
                                                 </label>
                                                 <input
                                                 type="number"
-                                                value={newAmount}
-                                                onChange={(e) => setNewAmount(e.target.value)}
-                                                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none mb-3"
+                                                min="1"
+                                                value={newQuantity}
+                                                onChange={(e) => setNewQuantity(parseInt(e.target.value))}
+                                                placeholder="Quantity"
+                                                className="px-3 py-2 border rounded-lg w-full"
                                                 />
+
                                             </div>
                                         <div className="col-sm-6">
 
@@ -302,35 +322,66 @@ useEffect(() => {
 
                                     {/* Table */}
                                     <div className="overflow-x-auto">
-                                        <table className="w-full border-collapse border border-gray-200">
+                                    <table className="w-full border-collapse border border-gray-200">
                                         <thead>
-                                            <tr className="bg-white text-[#00458B] border-b border-gray-200">
+                                        <tr className="bg-white text-[#00458B] border-b border-gray-200">
                                             <th className="px-4 py-2 text-center">Charged Item</th>
-                                            <th className="px-4 py-2 text-center">Amount</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            </tr>
+                                            <th className="px-4 py-2 text-center">Quantity</th>
+                                            <th className="px-4 py-2 text-center">Unit Price</th>
+                                            <th className="px-4 py-2 text-center">Total Price</th>
+                                            <th className="px-4 py-2 text-center"></th>
+                                            <th className="px-4 py-2 text-center"></th>
+                                        </tr>
                                         </thead>
                                         <tbody>
-                                            {chargedItems.length > 0 ? (
+                                        {chargedItems.length > 0 ? (
                                             chargedItems.map((item, index) => (
-                                                <tr key={index} className="border-b border-gray-200 text-center">
-                                                    <td className="px-4 py-2 text-blue-700">{item.item}</td>
-                                                    <td className="px-4 py-2 text-blue-700">₱{item.amount}</td>
-                                                </tr>
-                                            ))
-                                            ) : (
-                                            <tr>
-                                                <td colSpan="2" className="text-center text-gray-500 py-4">
-                                                No items found
+                                            <tr key={index} className="border-b border-gray-200 text-center">
+                                                <td className="px-4 py-2 text-blue-700">{item.item}</td>
+                                                <td className="px-4 py-2 text-blue-700">{item.ci_quantity}</td>
+                                                <td className="px-4 py-2 text-blue-700">₱{item.ci_amount}</td>
+                                                <td className="px-4 py-2 text-blue-700">
+                                                ₱{(item.ci_quantity * item.ci_amount).toFixed(2)}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <button
+                                                    onClick={() => navigate(`/adminbillingedititem/${item.ci_id}`)}
+                                                    className="bg-green-500 text-white px-3 py-1 rounded-full w-full"
+                                                    >
+                                                    Edit
+                                                    </button>
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <button
+                                                        onClick={() => handleDeleteItem(item.ci_id)}
+                                                        className="bg-red-500 text-white px-3 py-1 rounded-full w-full"
+                                                    >
+                                                        Delete
+                                                    </button>
                                                 </td>
                                             </tr>
-                                            )}
-                                            <tr className="px-4 py-2 text-blue-700">
-                                            <td>Total: ₱{chargedItems.reduce((sum, item) => sum + Number(item.amount), 0)}</td>
+                                            ))
+                                        ) : (
+                                            <tr>
+                                            <td colSpan="6" className="text-center text-gray-500 py-4">
+                                                No items found
+                                            </td>
                                             </tr>
+                                        )}
+                                        {/* Grand Total */}
+                                        <tr className="font-bold bg-gray-100">
+                                            <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">
+                                            Grand Total:
+                                            </td>
+                                            <td colSpan="3" className="px-4 py-2 text-blue-700">
+                                            ₱
+                                            {chargedItems
+                                                .reduce((sum, item) => sum + item.ci_quantity * item.ci_amount, 0)
+                                                .toFixed(2)}
+                                            </td>
+                                        </tr>
                                         </tbody>
-                                        </table>
+                                    </table>
                                     </div>
                                 </div>
                             </div>

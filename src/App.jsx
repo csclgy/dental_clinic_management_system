@@ -40,7 +40,7 @@ import Adminpatientsedit from "./Routes/adminpatientsedit";
 import Adminconsultationview from "./Routes/adminconsultationview";
 import Adminconsultationadd from "./Routes/adminconsultationadd";
 import Adminbillingedit from "./Routes/adminbillingedit";
-import Adminbillingedititem from "./Routes/adminbillingedititem";
+import AdminBillingEditItem from "./Routes/adminbillingedititem";
 import Notification from "./Routes/notification";
 import Registergcash from "./Routes/registergcash";
 import Adminschedule from "./Routes/adminschedule";
@@ -162,7 +162,7 @@ function App() {
             <Route path="/adminconsultationview/:appointId" element={<Adminconsultationview />} />
             <Route path="/adminconsultationadd" element={<Adminconsultationadd />} />
             <Route path="/adminbillingedit/:appointId" element={<Adminbillingedit />} />
-            <Route path="/adminbillingedititem" element={<Adminbillingedititem />} />
+            <Route path="/adminbillingedititem/:ci_id" element={<AdminBillingEditItem />} />  
             <Route path="/notification" element={<Notification />} />
             <Route path="/adminschedule" element={<Adminschedule />} />
              <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />

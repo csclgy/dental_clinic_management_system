@@ -742,14 +742,19 @@ router.get("/billing/:appointId", authenticateToken, async (req, res) => {
     const db = await connectToDatabase();
     const { appointId } = req.params;
 
-    const [rows] = await db.query(
-      `SELECT ci_item_name AS item, ci_quantity, ci_amount AS amount
-       FROM chargeditem
-       WHERE appoint_id = ?`,
-      [appointId]
-    );
+  const [rows] = await db.query(
+    `SELECT 
+      ci_id,
+      ci_item_name AS item, 
+      ci_quantity, 
+      ci_amount 
+    FROM chargeditem
+    WHERE appoint_id = ?`,
+    [appointId]
+  );
 
-    res.json(rows);
+  res.json(rows);
+
   } catch (err) {
     console.error("Error fetching billing items:", err);
     res.status(500).json({ message: "Internal server error" });
@@ -776,17 +781,93 @@ router.post("/billing", authenticateToken, async (req, res) => {
       [inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id]
     );
 
-    // Return the inserted item
+    // ✅ Return consistent fields (match GET)
     res.status(201).json({
-      id: result.insertId,
-      inv_id,
-      ci_item_name,
+      ci_id: result.insertId,
+      item: ci_item_name,       // <-- renamed to match GET
       ci_quantity,
       ci_amount,
       appoint_id,
+      inv_id,
     });
   } catch (err) {
     console.error("Add billing item error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Update charged item
+router.put("/updatebilling/:ci_id", authenticateToken, async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const { ci_id } = req.params;
+    const { inv_id, ci_item_name, ci_quantity, ci_amount } = req.body;
+
+    // Update query
+    // Update charged item (no inv_id)
+    const [result] = await db.query(
+      `UPDATE chargeditem 
+      SET ci_item_name = ?, ci_quantity = ?, ci_amount = ? 
+      WHERE ci_id = ?`,
+      [ci_item_name, ci_quantity, ci_amount, ci_id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Charged item not found" });
+    }
+
+    res.json({ message: "Charged item updated successfully" });
+  } catch (err) {
+    console.error("Error updating charged item:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Delete charged item
+router.delete("/deletebilling/:ci_id", authenticateToken, async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const { ci_id } = req.params;
+    const token = req.headers.authorization?.split(" ")[1];
+
+    const [result] = await db.query(
+      `DELETE FROM chargeditem WHERE ci_id = ?`,
+      [ci_id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Charged item not found" });
+    }
+
+    res.json({ message: "Charged item deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting charged item:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Get a single charged item by ci_id
+router.get("/billing/item/:ci_id", authenticateToken, async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const { ci_id } = req.params;
+    const token = req.headers.authorization?.split(" ")[1];
+    console.log("➡️ GET /billing/item/:ci_id called with:", ci_id);
+
+    const [rows] = await db.query(
+      `SELECT ci_id, inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id
+       FROM chargeditem
+       WHERE ci_id = ?`,
+      [ci_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Charged item not found" });
+    }
+
+    res.json(rows[0]); // return single object instead of array
+  } catch (err) {
+    console.error("Error fetching charged item:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -910,19 +991,33 @@ router.post('/additem', async (req, res) => {
 router.put("/edititem/:id", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-
   if (!token) return res.status(401).json({ message: "No token provided" });
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const { inv_item_name, inv_quantity } = req.body;
-    const { id } = req.params;
+    const { 
+      inv_item_name, 
+      inv_item_type, 
+      inv_quantity, 
+      inv_price_per_item, 
+      inv_ml, 
+      inv_exp_date 
+    } = req.body;
 
+    const { id } = req.params;
     const db = await connectToDatabase();
+
     const [result] = await db.query(
-      "UPDATE inventory SET inv_item_name = ?, inv_price_per_item = ?, inv_quantity = ? WHERE inv_id = ?",
-      [inv_item_name, inv_quantity, id]
+      `UPDATE inventory 
+       SET inv_item_name = ?, 
+           inv_item_type = ?, 
+           inv_quantity = ?, 
+           inv_price_per_item = ?, 
+           inv_ml = ?, 
+           inv_exp_date = ? 
+       WHERE inv_id = ?`,
+      [inv_item_name, inv_item_type, inv_quantity, inv_price_per_item, inv_ml, inv_exp_date, id]
     );
 
     if (result.affectedRows === 0) {
@@ -981,7 +1076,9 @@ router.get("/displayitem/:id", async (req, res) => {
     const itemId = req.params.id;
     const db = await connectToDatabase();
     const [rows] = await db.query(
-      "SELECT inv_id, inv_item_name, inv_quantity FROM inventory WHERE inv_id = ?",
+      `SELECT inv_id, inv_item_name, inv_item_type, inv_quantity, inv_price_per_item, inv_ml, inv_exp_date 
+      FROM inventory 
+      WHERE inv_id = ?`,
       [itemId]
     );
 

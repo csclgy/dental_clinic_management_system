@@ -232,7 +232,7 @@ const AdminPatients = () => {
                         <th className="px-4 py-2">Gender</th>
                         <th className="px-4 py-2">Contact No.</th>
                         <th className="px-4 py-2">Email</th>
-                        <th className="px-4 py-2">Actions</th>
+                        <th className="px-4 py-2"></th>
                       </tr>
                     </thead>
                     <tbody>

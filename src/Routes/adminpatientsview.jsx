@@ -321,6 +321,7 @@ const AdminPatientsView = () => {
                                                 <th className=" px-2 py-1"></th>
                                                 <th className=" px-2 py-1"></th>
                                                 <th className=" px-2 py-1"></th>
+                                                <th className=" px-2 py-1"></th>
                                             </tr>
                                             </thead>
                                             <tbody>
@@ -330,7 +331,7 @@ const AdminPatientsView = () => {
                                                 <td className="px-4 py-2 text-blue-700">{c.procedure_type}</td>
                                                 <td className="px-4 py-2 text-blue-700">{c.attending_dentist}</td>
                                                 <td className="px-4 py-2 text-blue-700">{c.payment_status}</td>
-                                                <td className="px-4 py-2 text-blue-700">{c.total_charged}</td>
+                                                <td className="px-4 py-2 text-blue-700">₱{c.total_charged}</td>
                                                 <td className="px-4 py-2">
                                                     <button 
                                                         onClick={() => navigate(`/adminconsultationview/${c.appoint_id}`)}
@@ -343,6 +344,11 @@ const AdminPatientsView = () => {
                                                 </td>
                                                 <td className="px-4 py-2">
                                                     <button className="bg-[#e7e7e7] text-black px-3 py-1 rounded-full">Cancel</button>
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <button className="bg-[green] text-white px-3 py-1 rounded-full">
+                                                    Complete
+                                                    </button>
                                                 </td>
                                                 <td className="px-4 py-2">
                                                     <button className="bg-[#00c3b8] text-white px-3 py-1 rounded-full">+ Follow Up</button>

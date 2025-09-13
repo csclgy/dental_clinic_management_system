@@ -1,8 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
+import { Calendar, momentLocalizer } from "react-big-calendar";  
+import moment from "moment";
+import "react-big-calendar/lib/css/react-big-calendar.css";
+
+const localizer = momentLocalizer(moment);
+
 
 const AdminSchedule = () => {
-const { id } = useParams();
+  const { id } = useParams();
   const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -11,8 +17,28 @@ const { id } = useParams();
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [error, setError] = useState("");
   const [records, setRecords] = useState([]);
+  const [viewMode, setViewMode] = useState("table"); // 🔹 toggle between table & calendar
 
-  // Scroll to section
+  const [view, setView] = useState("week");   // default = week view
+  const [date, setDate] = useState(new Date()); // default = today
+
+  const events = records.map((record) => {
+  const date = new Date(record.pref_date);
+
+  // Example: assume 1-hour appointments starting at 9:00 AM
+  // (you can replace with actual start/end times if you have them in DB)
+  const start = new Date(date.setHours(9, 0, 0));  
+  const end = new Date(date.setHours(10, 0, 0));
+
+  return {
+    title: `${record.p_fname} ${record.p_lname} - ${record.procedure_type}`, 
+    start,
+    end,
+    dentist: record.attending_dentist, // optional, in case you need tooltip/details
+  };
+});
+
+
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -49,7 +75,6 @@ const { id } = useParams();
         }
 
         const data = await res.json();
-        console.log("Fetched consultations:", data); // 👀 debug
         setRecords(Array.isArray(data.consultations) ? data.consultations : []);
       } catch (err) {
         console.error("Error fetching consultation:", err);
@@ -58,12 +83,11 @@ const { id } = useParams();
     };
 
     fetchConsultation();
-
-    const interval = setInterval(fetchConsultation, 5000); // refresh every 5s
+    const interval = setInterval(fetchConsultation, 5000);
     return () => clearInterval(interval);
   }, []);
 
-      // 🔹 Handle delete consultation
+    // 🔹 Handle delete consultation
   const handleDelete = async (appointId) => {
     if (!window.confirm("Are you sure you want to delete this consultation?")) return;
 
@@ -76,7 +100,7 @@ const { id } = useParams();
 
       if (!res.ok) throw new Error("Failed to delete consultation");
 
-      setConsultations(consultations.filter((record) => record.appoint_id !== appointId));
+      setConsultations(consultations.filter((c) => c.appoint_id !== appointId));
       alert("Consultation deleted successfully");
     } catch (err) {
       console.error("Error deleting consultation:", err);
@@ -84,7 +108,18 @@ const { id } = useParams();
     }
   };
 
-  // Filtered records
+    // Scroll effect
+    useEffect(() => {
+      if (location.state?.scrollTo) {
+        const element = document.getElementById(location.state.scrollTo);
+        if (element) {
+          setTimeout(() => {
+            element.scrollIntoView({ behavior: "smooth" });
+          }, 100);
+        }
+      }
+    }, [location]);
+
   const filteredRecords = records.filter((record) =>
     Object.values(record).some((value) =>
       String(value).toLowerCase().includes(searchTerm.toLowerCase())
@@ -202,7 +237,7 @@ const { id } = useParams();
               </Link>
             </div>
 
-            {/* Main Content */}
+                       {/* Main Content */}
             <div className="col-sm-8">
               <div className="row">
                 <div
@@ -210,99 +245,145 @@ const { id } = useParams();
                   style={{ color: "white" }}
                 >
                   <h1 className="text-2xl font-bold">Schedules</h1>
+                  <div className="mt-3">
+                    <button
+                      onClick={() => setViewMode("table")}
+                      className={`px-4 py-2 rounded-full mr-2 ${
+                        viewMode === "table"
+                          ? "bg-[#00c3b8] text-white"
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      Table View
+                    </button>
+                    <button
+                      onClick={() => setViewMode("calendar")}
+                      className={`px-4 py-2 rounded-full ${
+                        viewMode === "calendar"
+                          ? "bg-[#00c3b8] text-white"
+                          : "bg-gray-200 text-gray-700"
+                      }`}
+                    >
+                      Calendar View
+                    </button>
+                  </div>
                 </div>
 
-                <p style={{ color: "transparent" }}>...</p>
-
                 <div
-                  className="col-sm-12 p-10 rounded-lg shadow-lg"
+                  className="col-sm-12 p-10 rounded-lg shadow-lg mt-4"
                   style={{ border: "solid", borderColor: "#01D5C4" }}
                 >
-                  {/* Search bar */}
-                  <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                    <div className="flex justify-between items-center mb-1">
-                      <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                        <input
-                          type="text"
-                          placeholder="Search"
-                          value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
-                          className="flex-1 outline-none text-sm text-gray-700"
-                        />
-                        <i className="fa fa-search text-[#00458B]"></i>
+                  {viewMode === "table" ? (
+                    // 🔹 Table View
+                    <div>
+                      {/* Search bar */}
+                      <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
+                        <div className="flex justify-between items-center mb-1">
+                          <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
+                            <input
+                              type="text"
+                              placeholder="Search"
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="flex-1 outline-none text-sm text-gray-700"
+                            />
+                            <i className="fa fa-search text-[#00458B]"></i>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Table */}
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse border border-gray-200">
+                          <thead>
+                            <tr className="bg-white text-[#00458B] border-b border-gray-200">
+                              <th className="px-4 py-2 text-center">Visit Date</th>
+                              <th className="px-4 py-2 text-center">Last Name</th>
+                              <th className="px-4 py-2 text-center">First Name</th>
+                              <th className="px-4 py-2 text-center">Services</th>
+                              <th className="px-4 py-2 text-center">Dentist</th>
+                              <th className="px-4 py-2 text-center">Status</th>
+                              <th className="px-4 py-2 text-center"></th>
+                              <th className="px-4 py-2 text-center"></th>
+                              <th className="px-4 py-2 text-center"></th>
+                              <th className="px-4 py-2 text-center"></th>
+                              <th className="px-4 py-2 text-center"></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredRecords.length > 0 ? (
+                              filteredRecords.map((record, index) => (
+                                <tr key={index} className="border-b border-gray-200 text-center">
+                                  <td className="px-4 py-2 text-blue-700">{record.pref_date}</td>
+                                  <td className="px-4 py-2 text-blue-700">{record.p_lname}</td>
+                                  <td className="px-4 py-2 text-blue-700">{record.p_fname}</td>
+                                  <td className="px-4 py-2 text-blue-700">{record.procedure_type}</td>
+                                  <td className="px-4 py-2 text-blue-700">{record.attending_dentist}</td>
+                                  <td className="px-4 py-2 text-blue-700">{record.appointment_status}</td>
+                                  <td className="px-4 py-2">
+                                    <button 
+                                      onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
+                                      className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-4 py-1 rounded-full">
+                                        View
+                                    </button>
+                                  </td>
+                                  <td className="px-4 py-2"> 
+                                    <button 
+                                        onClick={() => handleDelete(record.appoint_id)}
+                                        className="bg-[#f44336] text-white px-4 py-1 rounded-full">
+                                        Delete
+                                    </button>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <button className="bg-[#e7e7e7] text-black px-3 py-1 rounded-full">
+                                      Cancel
+                                    </button>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                    <button className="bg-[green] text-white px-3 py-1 rounded-full">
+                                      Complete
+                                    </button>
+                                  </td>
+                                  <td className="px-4 py-2">
+                                      <button className="bg-[#00c3b8] text-white px-3 py-1 rounded-full">
+                                      + Follow Up
+                                      </button>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan="6" className="text-center text-gray-500 py-4">
+                                  No records found
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Table */}
-                  <div className="overflow-x-auto mt-4">
-                    <table className="w-full border-collapse border border-gray-200">
-                      <thead>
-                        <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                          <th className="px-4 py-2 text-center">Visit Date</th>
-                          <th className="px-4 py-2 text-center">Last Name</th>
-                          <th className="px-4 py-2 text-center">First Name</th>
-                          <th className="px-4 py-2 text-center">Services</th>
-                          <th className="px-4 py-2 text-center">Dentist</th>
-                          <th className="px-4 py-2 text-center">Status</th>
-                          <th className="px-4 py-2 text-center"></th>
-                          <th className="px-4 py-2 text-center"></th>
-                          <th className="px-4 py-2 text-center"></th>
-                          <th className="px-4 py-2 text-center"></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredRecords.length > 0 ? (
-                          filteredRecords.map((record, index) => (
-                            <tr
-                              key={index}
-                              className="border-b border-gray-200 text-center"
-                            >
-                              <td className="px-4 py-2 text-blue-700">{record.pref_date}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.p_lname}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.p_fname}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.procedure_type}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.attending_dentist}</td>
-                              <td className="px-4 py-2 text-blue-700">{record.appointment_status}</td>
-                              <td className="px-4 py-2 space-x-2">
-                                <Link to={`/adminconsultationview/${record.appoint_id}`}>
-                                  <button 
-                                    className="bg-[#008CBA] text-white font-semibold px-3 py-1 rounded-full">
-                                    View
-                                  </button>  
-                                </Link>
-                              </td>
-                              <td className="px-4 py-2 space-x-2">
-                                <button 
-                                    onClick={() => handleDelete(record.appoint_id)}
-                                    className="bg-[#f44336] text-white px-4 py-1 rounded-full">Delete
-                                </button>
-                              </td>
-                              <td className="px-4 py-2 space-x-2">
-                                <button className="bg-[#e7e7e7] text-black px-3 py-1 rounded-full">
-                                  Cancel
-                                </button>
-                              </td>
-                              <td className="px-4 py-2 space-x-2">
-                                <button className="bg-[#00c3b8] text-white font-semibold px-3 py-1 rounded-full">
-                                  + Follow Up
-                                </button>
-                              </td>
-                            </tr>
-                          ))
-                        ) : (
-                          <tr>
-                            <td
-                              colSpan="7"
-                              className="text-center text-gray-500 py-4"
-                            >
-                              No records found
-                            </td>
-                          </tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                  ) : (
+                    // 🔹 Calendar View
+                    <div className="bg-white rounded-lg shadow-lg p-4">
+                    <Calendar
+                      localizer={localizer}
+                      events={events}
+                      startAccessor="start"
+                      endAccessor="end"
+                      style={{ height: "100%" }}
+                      views={["month", "week", "day"]}
+                      view={view}
+                      onView={setView}
+                      date={date}
+                      onNavigate={setDate}
+                      step={30}
+                      timeslots={2}
+                      min={view !== "month" ? new Date(1970, 1, 1, 8, 0) : undefined}   // ✅ only apply on week/day
+                      max={view !== "month" ? new Date(1970, 1, 1, 16, 0) : undefined}  // ✅ only apply on week/day
+                      toolbar={true}
+                    />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -228,8 +228,8 @@ const handleDelete = async (id) => {
                                         <th className="px-4 py-2 text-center">Item Name</th>
                                         <th className="px-4 py-2 text-center">Status</th>
                                         <th className="px-4 py-2 text-center">Quantity</th>
-                                        <th className="px-4 py-2 text-center">Edit</th>
-                                        <th className="px-4 py-2 text-center">Delete</th>
+                                        <th className="px-4 py-2 text-center"></th>
+                                        <th className="px-4 py-2 text-center"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
