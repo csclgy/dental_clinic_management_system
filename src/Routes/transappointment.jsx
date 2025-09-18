@@ -1,10 +1,25 @@
-import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import axios from 'axios';
+import { useEffect, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const TransAppointment = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
+  const [records, setRecords] = useState([]);
+
+  // Fetch appointments from API
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const res = await axios.get('http://localhost:8000/api/appointments');
+        setRecords(res.data);
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+      }
+    };
+    fetchAppointments();
+  }, []);
 
   // Scroll to section if state.scrollTo is passed
   useEffect(() => {
@@ -12,33 +27,16 @@ const TransAppointment = () => {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth" });
+          element.scrollIntoView({ behavior: 'smooth' });
         }, 100);
       }
     }
   }, [location]);
 
-  const records = [
-    {
-      date: "05-30-2025",
-      time: "10:00 AM",
-      services: "Oral Exam & Periapical X-ray",
-      dentist: "Dr. A. Reyes",
-      status: "Completed",
-    },
-    {
-      date: "07-15-2025",
-      time: "2:30 PM",
-      services: "Extraction of Wisdom Tooth",
-      dentist: "Dr. M. Santos",
-      status: "Ongoing",
-    },
-  ];
-
   // Filter records by search
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      value.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredRecords = records.filter(record =>
+    Object.values(record).some(value =>
+      String(value).toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -53,13 +51,13 @@ const TransAppointment = () => {
           <nav className="flex flex-col gap-2">
             <Link to="/transmed">
               <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
-                <i className="fa fa-user-circle-o mr-2" aria-hidden="true"></i>
+                <i className="fa fa-user-circle-o mr-2"></i>
                 Medical Records
               </button>
             </Link>
             <Link to="/transappointment">
               <button className="w-full text-left px-4 py-2 rounded-md font-medium bg-[#E6FCF9] text-[#00c3b8] hover:bg-[#d0f8f5]">
-                <i className="fa fa-history mr-2" aria-hidden="true"></i>
+                <i className="fa fa-history mr-2"></i>
                 Appointment History
               </button>
             </Link>
@@ -77,7 +75,7 @@ const TransAppointment = () => {
 
           <div
             className="p-6 rounded-lg shadow-lg"
-            style={{ border: "solid", borderColor: "#01D5C4" }}
+            style={{ border: 'solid', borderColor: '#01D5C4' }}
           >
             {/* Search Bar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -87,7 +85,7 @@ const TransAppointment = () => {
                   type="text"
                   placeholder="Search"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="flex-1 outline-none text-sm text-gray-700"
                 />
                 <i className="fa fa-search text-[#00458B]"></i>
@@ -111,8 +109,12 @@ const TransAppointment = () => {
                   {filteredRecords.length > 0 ? (
                     filteredRecords.map((record, index) => (
                       <tr key={index} className="border-b border-gray-200">
-                        <td className="px-4 py-2 text-blue-700">{record.date}</td>
-                        <td className="px-4 py-2 text-blue-700">{record.time}</td>
+                        <td className="px-4 py-2 text-blue-700">
+                          {record.date}
+                        </td>
+                        <td className="px-4 py-2 text-blue-700">
+                          {record.time}
+                        </td>
                         <td className="px-4 py-2 text-blue-700">
                           {record.services}
                         </td>
@@ -133,7 +135,7 @@ const TransAppointment = () => {
                         colSpan="6"
                         className="text-center text-gray-500 py-4"
                       >
-                        No appointments found
+                        No record found
                       </td>
                     </tr>
                   )}
@@ -145,7 +147,7 @@ const TransAppointment = () => {
             <div className="flex justify-end mt-6">
               <button
                 className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full hover:bg-teal-600 w-full sm:w-auto"
-                onClick={() => navigate("/register2")}
+                onClick={() => navigate('/register2')}
               >
                 Print
               </button>
