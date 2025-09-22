@@ -44,6 +44,9 @@ import Adminbillingedititem from "./Routes/adminbillingedititem";
 import Notification from "./Routes/notification";
 import Registergcash from "./Routes/registergcash";
 import Adminschedule from "./Routes/adminschedule";
+import AdminCoaView from "./Routes/admincoaview";
+import AdminCoaViewAdd from "./Routes/admincoaviewadd";
+import AdminCoaViewEdit from "./Routes/admincoaviewedit";
 import { RegisterProvider } from "./context/RegisterContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminCoaEdit from "./Routes/admincoaedit"; 
@@ -170,6 +173,10 @@ function App() {
             <Route path="/notification" element={<Notification />} />
             <Route path="/adminschedule" element={<Adminschedule />} />
             <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
+             <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
+             <Route path="/admincoaview/:id" element={<AdminCoaView/>} />
+             <Route path="/admincoaviewadd/:id" element={<AdminCoaViewAdd/>} />
+             <Route path="/admincoaviewedit/:id" element={<AdminCoaViewEdit/>} />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

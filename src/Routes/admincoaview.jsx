@@ -2,17 +2,43 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 
-
-
-const admincoa = () => {
+const adminCoaView = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [accounts, setAccounts] = useState([]);
-  
+  // const [accounts, setAccounts] = useState([]);
+  const { id } = useParams(); // get id from URL
+  const [account, setAccount] = useState(null);
+    const [sub, setSubAccounts] = useState([]);
+
+  useEffect(() => {
+    const fetchAccount = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/coa/${id}`);
+        setAccount(res.data);
+      } catch (err) {
+        console.error("Error fetching account:", err);
+      }
+    };
+
+    const fetchSubAccounts = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/coa/${id}/subaccounts`);
+        setSubAccounts(res.data);
+      } catch (err) {
+        console.error("Error fetching subaccounts:", err);
+      }
+    };
+
+    if (id) {
+      fetchAccount();
+      fetchSubAccounts();
+    }
+  }, [id]);
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -21,43 +47,33 @@ const admincoa = () => {
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100); 
       }
     }
   }, [location]);
 
-     useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/auth/coa"); 
-        setAccounts(res.data); 
-      } catch (err) {
-        console.error("Error fetching accounts:", err);
-      }
-    };
-    fetchAccounts();
-  }, []);
+ 
+  
 
-  // Filter accounts by search term
-  const filteredAccounts = accounts.filter((account) => {
-    if (!searchTerm) return true; // if search bar empty, show all
-    return (
-      account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.account_type.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
-//delete acc
-  const handleDelete = async (id) => {
-  if (window.confirm("Are you sure you want to delete this account?")) {
-    try {
-      await axios.delete(`http://localhost:3000/auth/coa/${id}`);
-      setAccounts(accounts.filter((a) => a.account_id !== id)); // update UI
-    } catch (err) {
-      console.error("Error deleting account:", err);
-      alert("Failed to delete account");
-    }
-  }
-};
+// Filter subaccounts by search term
+const filteredSubAccounts = sub.filter((sub) => {
+  if (!searchTerm) return true;
+  return sub.account_name.toLowerCase().includes(searchTerm.toLowerCase());
+});
+
+
+// //delete acc
+//   const handleDelete = async (id) => {
+//   if (window.confirm("Are you sure you want to delete this account?")) {
+//     try {
+//       await axios.delete(`http://localhost:3000/auth/coa/${id}`);
+//       setAccounts(accounts.filter((a) => a.account_id !== id)); // update UI
+//     } catch (err) {
+//       console.error("Error deleting account:", err);
+//       alert("Failed to delete account");
+//     }
+//   }
+// };
 
   return (
     <div>
@@ -174,9 +190,10 @@ const admincoa = () => {
                             <div className="row">
                                 <div className="col-sm-10">
                                     <h1 className="text-2xl font-bold">Charts of Account</h1>
+                                    <h1 className="text-1xl font-bold">Sub Accounts</h1>
                                 </div>
                                 <div className="col-sm-2">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admincoaadd")}>Add</button>
+                                        <button className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate(`/admincoaviewadd/${account?.account_id}`)}>Add</button>
                                 </div>
                             </div>
                         </div>
@@ -188,6 +205,8 @@ const admincoa = () => {
                                 <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
                                     {/* Header */}
                                     <div className="flex justify-between items-center mb-1">
+                                          <h1 className="text-1xl font-bold">{account?.account_name}</h1>
+
                                         <h1 className=" font-bold text-[#00458B]"></h1>
                                         {/* Search bar */}
                                         <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
@@ -200,6 +219,7 @@ const admincoa = () => {
                                         />
                                         <i className="fa fa-search text-[#00458B]"></i>
                                         </div>
+
                                     </div>
                                 </div>
 
@@ -209,40 +229,32 @@ const admincoa = () => {
                                         <thead>
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
                                             <th className="px-4 py-2 text-center">Account Name</th>
-                                            <th className="px-4 py-2 text-center">Account Type</th>
-                                            <th className="px-4 py-2 text-center">Sub Accounts</th>
                                             <th className="px-4 py-2 text-center">Action</th>
                                             <th className="px-4 py-2 text-center">Action</th>
+                                            
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredAccounts.length > 0 ? (
-                                            filteredAccounts.map((account, index) => (
-                                              
+                                           {filteredSubAccounts.length > 0 ? (
+    filteredSubAccounts.map((sub, index) => (
                                                 <tr key={index} className="border-b border-gray-200 text-center item-center">
-                                                <td className="px-4 py-2 text-blue-700">{account.account_name}</td>
-                                                <td className="px-4 py-2 text-blue-700">{account.account_type}</td>
+                                                
+                                                <td className="px-4 py-2 text-blue-700">{sub.account_name}</td>
                                                 <td className="px-4 py-2">
-                                                     <Link to={`/admincoaview/${account.account_id}`}>
-                                                    <button className="bg-[#EF7722] text-white px-4 py-1 rounded-full hover:bg-teal-500">
-                                                      View
+                                                    
+                                                    <button className="bg-[#04AA6D] text-white px-5 py-1 rounded-full hover:bg-teal-500" onClick={() => navigate(`/admincoaviewedit/${sub?.id}`)}>
+                                                    Edit 
                                                     </button>
-                                                    </Link>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <Link to={`/admincoaedit/${account.account_id}`}>
-                                                    <button className="bg-[#04AA6D] text-white font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
-                                                    Edit
-                                                    </button>
-                                                    </Link>
+                                                    
                                                 </td>
                                                 <td className="px-4 py-2">
                                                     <Link to="/admincoa">
-                                                    <button  onClick={() => handleDelete(account.account_id)} className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
+                                                    <button   className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
                                                     Delete
                                                     </button>
                                                     </Link>
                                                 </td>
+                                              
                                                 </tr>
                                             ))
                                             ) : (
@@ -258,6 +270,13 @@ const admincoa = () => {
                                         </tbody>
                                         </table>
                                     </div>
+                                    <Link to="/admincoa">
+                                    <br/>
+                                            <button  className="bg-[#EBEBEB] text-black px-4 py-1 rounded-full hover:bg-teal-500">
+                                            back
+                                            </button>
+                                    </Link>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -290,4 +309,4 @@ const admincoa = () => {
   );
 };
 
-export default admincoa;
+export default adminCoaView;

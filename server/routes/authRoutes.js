@@ -112,6 +112,50 @@ router.post("/journal", async (req, res) => {
 });
 
 //get  Chart of Accounts
+//add new sub account
+router.post("/coa/:id/subaccounts", async (req, res) => {
+  const { id } = req.params; 
+  const { account_name } = req.body;
+  const db = await connectToDatabase();
+
+  if (!account_name) {
+    return res.status(400).json({ error: "Subaccount name is required" });
+  }
+  //if subacount already exists
+  try {
+    const [existing] = await db.query(
+      "SELECT * FROM subaccount WHERE account_id = ? AND account_name = ?",
+      [id, account_name]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ error: "Subaccount name already exists" });
+    }
+
+    // insert
+    const [result] = await db.query(
+      "INSERT INTO subaccount (account_id, account_name) VALUES (?, ?)",
+      [id, account_name]
+    );
+
+    return res.status(201).json({
+      message: "Subaccount added successfully",
+      subaccountId: result.insertId,
+    });
+  } catch (err) {
+    console.error("❌ MySQL Error inserting subaccount:", {
+      code: err.code,
+      sqlMessage: err.sqlMessage,
+      sql: err.sql,
+    });
+    return res.status(500).json({
+      error: "Database error",
+      details: err.sqlMessage,
+    });
+  }
+});
+
+//get Chart of Accounts
 router.get("/coa", async (req, res) => {
   try {
     const db = await connectToDatabase();
@@ -134,6 +178,30 @@ router.get("/journal1", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+// get subaccounts by account_id -> admincoaview.jsx
+router.get("/coa/:id/subaccounts", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [rows] = await db.query(
+      "SELECT * FROM subaccount WHERE account_id = ?",
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "No subaccounts found" });
+    }
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching subaccounts:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
 //delete chart of accounts
 router.delete("/coa/:id", async (req, res) => {
   try {
@@ -202,6 +270,55 @@ router.put("/coa/:id", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+//------SUB ACCOUNTS---------
+
+//get subaccount by sub id
+router.get("/subacc/:id", async (req, res) => { 
+  try { 
+    const { id } = req.params; 
+    const db = await connectToDatabase();
+    const [result] = await db.query
+    ( "SELECT * FROM subaccount WHERE id = ?", 
+      [id] ); 
+      
+      if (result.length === 0) 
+        { return res.status(404).json({ message: "Account not found" }); 
+      } 
+      res.json(result[0]);
+     } catch (err) { 
+      console.error("Fetch COA error:", err);
+       return res.status(500).json({ message: "Internal server error" }); } });
+
+// edit subaccount
+ router.put("/sub/:id", async (req, res) => {
+  const { id } = req.params;
+  const { account_name } = req.body;
+
+  try {
+    const db = await connectToDatabase();
+
+    const [existing] = await db.query(
+      "SELECT * FROM subaccount WHERE account_name = ? AND id != ?",
+      [account_name, id]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: "Account name already exists" });
+    }
+
+
+    await db.query(
+      "UPDATE subaccount SET account_name = ? WHERE id = ?",
+      [account_name, id]
+    );
+
+    res.json({ message: "Account updated successfully!" });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+      
 
 
 // ============ GET CURRENT USER ============
