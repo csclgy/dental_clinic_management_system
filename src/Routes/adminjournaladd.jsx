@@ -34,7 +34,7 @@ const adminjournaladd = () => {
 
     const fetchAccount = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/coa`);
+        const res = await axios.get(`http://localhost:3000/auth/coa1`);
         setAccount(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);

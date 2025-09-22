@@ -15,6 +15,7 @@ const admincoaedit = () => {
     const [account, setAccount] = useState({
     account_name: "",
     account_type: "",
+    status: ""
   });
 
 
@@ -212,6 +213,17 @@ const admincoaedit = () => {
                                                  <option value="Equity">Equity</option>
                                                  <option value="Income">Income</option>
                                                  <option value="Expense">Expense</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-4 text-left">
+                                            <label class="block text-[#00458b] font-semibold mb-1">Account Status</label>
+                                            <select  
+                                            name="status"
+                                            value={account.status}
+                                            onChange={handleChange}
+                                            class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
+                                                 <option value="Active"> Active </option>
+                                                 <option value="Inactive">Inactive</option>
                                             </select>
                                         </div>
                                     </div>

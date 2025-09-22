@@ -212,7 +212,7 @@ const admincoa = () => {
                                             <th className="px-4 py-2 text-center">Account Type</th>
                                             <th className="px-4 py-2 text-center">Sub Accounts</th>
                                             <th className="px-4 py-2 text-center">Action</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
+                                            {/* <th className="px-4 py-2 text-center">Action</th> */}
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -236,13 +236,13 @@ const admincoa = () => {
                                                     </button>
                                                     </Link>
                                                 </td>
-                                                <td className="px-4 py-2">
+                                                {/* <td className="px-4 py-2">
                                                     <Link to="/admincoa">
                                                     <button  onClick={() => handleDelete(account.account_id)} className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
                                                     Delete
                                                     </button>
                                                     </Link>
-                                                </td>
+                                                </td> */}
                                                 </tr>
                                             ))
                                             ) : (

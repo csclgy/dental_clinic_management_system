@@ -82,6 +82,18 @@ router.get("/coa", async (req, res) => {
   }
 });
 
+// get accounts if active
+router.get("/coa1", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query("SELECT * FROM chartofaccounts  WHERE status = 'active' ORDER BY account_name ASC");
+    return res.json(rows); // Send back as JSON array
+  } catch (err) {
+    console.error("Fetch COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 // Get a single account by ID
 router.get("/coa/:id", async (req, res) => {
@@ -130,14 +142,14 @@ router.post("/coa", async (req, res) => {
 router.put("/coa/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { account_name, account_type } = req.body;
+    const { account_name, account_type, status } = req.body;
 
     const db = await connectToDatabase();
 
     // Update record
     const [result] = await db.query(
-      "UPDATE chartofaccounts SET account_name = ?, account_type = ? WHERE account_id = ?",
-      [account_name, account_type, id]
+      "UPDATE chartofaccounts SET account_name = ?, account_type = ? , status = ?  WHERE account_id = ?",
+      [account_name, account_type, status, id]
     );
 
     if (result.affectedRows === 0) {
