@@ -177,9 +177,7 @@ const admincoaedit = () => {
                                 <div className="col-sm-10">
                                     <h1 className="text-2xl font-bold">Charts of Account</h1>
                                 </div>
-                                <div className="col-sm-2">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admincoaadd")}>Add</button>
-                                </div>
+                                
                             </div>
                         </div>
                         <p style={{color:"transparent"}}>...</p>
