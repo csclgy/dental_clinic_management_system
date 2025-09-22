@@ -43,21 +43,21 @@ const adminjournaladd = () => {
     fetchAccount();
   }, [location]);
   
-  useEffect(()=>{
-    if (formData.account) {
-   const fetchSubAccounts = async () => {
-  try {
-axios.get(`http://localhost:3000/auth/subaccs/${formData.account}`);
-    setSub(res.data);
-  } catch (err) {
-    console.error("Error fetching subaccounts:", err);
+useEffect(() => {
+  if (formData.account) {
+    const fetchSubAccounts = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/subaccs/${formData.account}`);
+        setSub(res.data); 
+      } catch (err) {
+        console.error("Error fetching subaccounts:", err);
+      }
+    };
+    fetchSubAccounts();
+  } else {
+    setSub([]); // reset if no account selected
   }
-};
-fetchSubAccounts();
-    } else {
-      setSub([]); // reset if no account selected
-    }
-  }, [formData.account]);
+}, [formData.account]);
 
    const handleChange = (e) => {
     const { name, value } = e.target;
@@ -80,7 +80,8 @@ fetchSubAccounts();
       await axios.post("http://localhost:3000/auth/journal", {
         date: formData.date,
         description: formData.description,
-        accounts: formData.account,
+        account_id: formData.account,
+        subaccount_id: formData.subaccount,
         debit,
         credit,
         comment: formData.comment
@@ -210,12 +211,7 @@ fetchSubAccounts();
                                 <div className="col-sm-6">
                                     <h1 className="text-2xl font-bold">Journal Entries</h1>
                                 </div>
-                                <div className="col-sm-4">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/")}>Generate Report</button>
-                                </div>
-                                <div className="col-sm-2">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminjournaladd")}>Add</button>
-                                </div>
+                               
                             </div>
                         </div>
                         <p style={{color:"transparent"}}>...</p>
@@ -254,14 +250,19 @@ fetchSubAccounts();
                                             <div className="col-sm-4">
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Sub Account</label>
-                                                    <select name="subaccount" value={formData.subaccounts} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
-                                                           <option value="">-- Select Subaccount --</option>
-                                                            {sub.map((sub) => (
+                                                   <select 
+                                                        name="subaccount" 
+                                                        value={formData.subaccount}   // <-- fix here
+                                                        onChange={handleChange} 
+                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                                        >
+                                                        <option value="">-- Select Subaccount --</option>
+                                                        {sub.map((sub) => (
                                                             <option key={sub.id} value={sub.id}>
-                                                                {sub.account_name}
+                                                            {sub.account_name}
                                                             </option>
-                                                            ))}
-                                                    </select>
+                                                        ))}
+                                                        </select>
                                                 </div>
                                             </div>
                                         </div>
