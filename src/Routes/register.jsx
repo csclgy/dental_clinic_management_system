@@ -26,7 +26,14 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4">
+    <div 
+      className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
+      style={{
+      backgroundImage:
+        "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center"}}
+    >
       <div className="w-full max-w-md bg-white p-6 sm:p-10 rounded-lg shadow-lg text-center">
         <h2 className="text-[#00c3b8] text-2xl sm:text-3xl font-bold mb-2">SIGN UP</h2>
         <p className="text-[#00458B] text-sm sm:text-base mb-6">

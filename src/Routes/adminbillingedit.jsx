@@ -3,98 +3,141 @@ import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";   // ✅ make sure axios is installed
 
 const Adminbillingedit = () => {
-  const location = useLocation();
+    const location = useLocation();
   const navigate = useNavigate();
+  const { appointId } = useParams();
+
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const { appointId } = useParams();  // ✅ Accept appointId from route
-  const [newInvId, setNewInvId] = useState(null);
-  const [inventory, setInventory] = useState([]);
 
-  const [chargedServices, setChargedServices] = useState([]);
+  const [inventory, setInventory] = useState([]);
   const [chargedItems, setChargedItems] = useState([]);
 
-  const [newItem, setNewItem] = useState("");
-  const [newAmount, setNewAmount] = useState("");
+  // Payment / service fields
+  const [paymentMode, setPaymentMode] = useState("");
+  const [paymentStatus, setPaymentStatus] = useState("");
+
+  // Service charge (receptionist-entered)
+  const [serviceCharge, setServiceCharge] = useState(0);
+
+  // New item inputs
+  const [newInvId, setNewInvId] = useState("");
   const [newQuantity, setNewQuantity] = useState(1);
+  const [newAmount, setNewAmount] = useState(0);
+  const [newItemName, setNewItemName] = useState("");
 
-    useEffect(() => {
-    const fetchBilling = async () => {
-        try {
-        const token = localStorage.getItem("token"); // or wherever you store it
-        const response = await axios.get(
-            `http://localhost:3000/auth/billing/${appointId}`,
-            {
-            headers: { Authorization: `Bearer ${token}` }, // <--- important
-            }
-        );
-        console.log("Billing data:", response.data);
-        setChargedItems(response.data);
-        } catch (err) {
-        console.error("Error fetching billing:", err);
-        }
-    };
-
-    fetchBilling();
-    }, [appointId]);
-
-const handleAddItem = async () => {
-  if (!newItem || !newAmount || !newInvId) return;
-
+const fetchBillingData = async () => {
   try {
-    const response = await axios.post(
-      "http://localhost:3000/auth/billing",
-      {
-        appoint_id: appointId,
-        inv_id: newInvId,
-        ci_item_name: newItem,
-        ci_quantity: newQuantity, // 👈 use user input
-        ci_amount: parseFloat(newAmount),
-      },
-      {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      }
-    );
+    const token = localStorage.getItem("token");
 
-    setChargedItems([...chargedItems, response.data]);
-    setNewItem("");
-    setNewAmount("");
-    setNewInvId(null);
-    setNewQuantity(1); // reset
+    const [billingRes, invRes] = await Promise.all([
+      axios.get(`http://localhost:3000/auth/billing/${appointId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      axios.get("http://localhost:3000/auth/inventory", {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    ]);
+
+    // ✅ correct extraction
+    setChargedItems(billingRes.data.chargedItems || []);
+    setInventory(invRes.data || []);
+
+    const appoint = billingRes.data.appointment;
+    if (appoint) {
+      setPaymentMode(appoint.payment_mode || "");
+      setPaymentStatus(appoint.payment_status || "");
+      setServiceCharge(Number(appoint.total_service_charged || 0));
+    }
   } catch (err) {
-    console.error("Error adding billing item:", err);
+    console.error("Error fetching billing data:", err);
   }
 };
 
-const handleDeleteItem = async (ci_id) => {
-  if (!window.confirm("Are you sure you want to delete this item?")) return;
+  useEffect(() => {
+    fetchBillingData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointId]);
 
-  try {
-    await axios.delete(`http://localhost:3000/auth/deletebilling/${ci_id}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-    });
+  // computed totals
+  const itemsTotal = chargedItems.reduce((sum, item) => {
+    const qty = Number(item.ci_quantity ?? item.quantity ?? 0);
+    const price = Number(item.ci_amount ?? item.amount ?? 0);
+    return sum + qty * price;
+  }, 0);
 
-    // Remove from state
-    setChargedItems(chargedItems.filter((item) => item.ci_id !== ci_id));
-  } catch (err) {
-    console.error("Error deleting billing item:", err);
-  }
-};
+  const totalCharged = itemsTotal + Number(serviceCharge || 0);
 
-useEffect(() => {
-  const fetchInventory = async () => {
+  // add item
+  const handleAddItem = async () => {
+    if (!newInvId || !newQuantity || !newAmount) {
+      return alert("Please select item, quantity, and amount.");
+    }
     try {
-      const response = await axios.get("http://localhost:3000/auth/inventory", {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      setInventory(response.data); // assuming the API returns an array of inventory items
+      const token = localStorage.getItem("token");
+      const inv = inventory.find((i) => String(i.inv_id) === String(newInvId));
+      await axios.post(
+        `http://localhost:3000/auth/billing/${appointId}`,
+        {
+          inv_id: inv.inv_id,
+          ci_item_name: inv.inv_item_name,
+          ci_quantity: newQuantity,
+          ci_amount: parseFloat(newAmount),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // refresh charged items (so itemsTotal updates)
+      await fetchBillingData();
+
+      // reset new item fields
+      setNewInvId("");
+      setNewQuantity(1);
+      setNewAmount(0);
+      setNewItemName("");
     } catch (err) {
-      console.error("Error fetching inventory:", err);
+      console.error("Error adding billing item:", err);
+      alert("Failed to add item");
     }
   };
 
-  fetchInventory();
-}, []);
+  // delete item
+  const handleDeleteItem = async (ci_id) => {
+    if (!window.confirm("Delete this item?")) return;
+    try {
+      const token = localStorage.getItem("token");
+      await axios.delete(`http://localhost:3000/auth/deletebilling/${ci_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      await fetchBillingData(); // refresh
+    } catch (err) {
+      console.error("Error deleting item:", err);
+      alert("Failed to delete item");
+    }
+  };
+
+  // Save appointment billing (backend will compute total_charged using chargeditems + total_service_charged)
+  const handleSaveBilling = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `http://localhost:3000/auth/billing/${appointId}`,
+        {
+          payment_method: paymentMode,
+          payment_status: paymentStatus,
+          total_service_charged: Number(serviceCharge || 0),
+          // backend will compute total_charged by summing chargeditem totals + total_service_charged
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert("Billing saved successfully");
+      // refresh data (so UI shows backend-computed totals)
+      await fetchBillingData();
+    } catch (err) {
+      console.error("Error saving billing:", err);
+      alert("Failed to save billing");
+    }
+  };
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -232,7 +275,7 @@ useEffect(() => {
                                 <div className="col-sm-12">
                                     <div className="row">
                                         <div className="col-sm-9">
-                                            <h1 className="text-2xl font-bold" style={{color:"#00458B"}}>Manage Billing</h1>
+                                            <h2 className="text-2xl font-bold mb-4">Billing for Appointment #{appointId}</h2>
                                             <br />
                                         </div>
                                         <div className="col-sm-3">
@@ -240,171 +283,176 @@ useEffect(() => {
                                     </div>
                                 </div>
                                 <hr></hr>
+                                    <br></br>
+                                     {/* Payment Info */}
+      <div className="mb-4 grid grid-cols-2 gap-4">
+        <div>
+          <label className="block font-medium">Mode of Payment</label>
+          <select
+            className="border p-2 w-full rounded"
+            value={paymentMode}
+            onChange={(e) => setPaymentMode(e.target.value)}
+          >
+            <option value="">--Select--</option>
+            <option value="Cash">Cash</option>
+            <option value="GCash">GCash</option>
+          </select>
+        </div>
+        <div>
+          <label className="block font-medium">Payment Status</label>
+          <select
+            className="border p-2 w-full rounded"
+            value={paymentStatus}
+            onChange={(e) => setPaymentStatus(e.target.value)}
+          >
+            <option value="">--Select--</option>
+            <option value="Unpaid">Unpaid</option>
+            <option value="Paid">Paid</option>
+            <option value="Partial">Partial</option>
+          </select>
+        </div>
+        <div>
+            <label className="block font-semibold">Service Charge</label>
+            <input
+              type="number"
+              className="w-full border rounded px-3 py-2"
+              value={serviceCharge}
+              onChange={(e) => setServiceCharge(e.target.value)}
+              min="0"
+            />
+          </div>
+      </div>
 
-                                <div className="col-sm-12">
-                                    <div className="row">
-                                              <div className="mb-6">
-                                                {/* Charge Item Dropdown */}
-                                                <label className="block text-[#00458b] font-semibold mb-1">
-                                                Charge Item
-                                                </label>
-                                                <select
-                                                value={newItem}
-                                                onChange={(e) => {
-                                                    const selected = inventory.find(
-                                                    (inv) => inv.inv_item_name === e.target.value
-                                                    );
-                                                    if (selected) {
-                                                    setNewItem(selected.inv_item_name);
-                                                    setNewAmount(selected.inv_price_per_item); // default unit price
-                                                    setNewInvId(selected.inv_id); // store inv_id for backend
-                                                    }
-                                                }}
-                                                >
-                                                <option value="">Select Item</option>
-                                                {inventory.map((item) => (
-                                                    <option key={item.inv_id} value={item.inv_item_name}>
-                                                    {item.inv_item_name} (₱{item.inv_price_per_item}, Stock: {item.inv_quantity})
-                                                    </option>
-                                                ))}
-                                                </select>
-                                                <label className="block text-[#00458b] font-semibold mb-1">
-                                                Amount Used
-                                                </label>
-                                                <input
-                                                type="number"
-                                                min="1"
-                                                value={newQuantity}
-                                                onChange={(e) => setNewQuantity(parseInt(e.target.value))}
-                                                placeholder="Quantity"
-                                                className="px-3 py-2 border rounded-lg w-full"
-                                                />
+      {/* Charged Items Table */}
+      <table className="w-full border mb-4">
+        <thead className="bg-gray-100">
+          <tr>
+                <th className="px-4 py-2 text-center">Charged Item</th>
+                <th className="px-4 py-2 text-center">Quantity</th>
+                <th className="px-4 py-2 text-center">Unit Price</th>
+                <th className="px-4 py-2 text-center">Total Price</th>
+                <th className="px-4 py-2 text-center"></th>
+          </tr>
+        </thead>
+<tbody>
+              {chargedItems.length > 0 ? (
+                chargedItems.map((item) => {
+                  const name = item.ci_item_name ?? item.item ?? "(no name)";
+                  const qty = Number(item.ci_quantity ?? 0);
+                  const price = Number(item.ci_amount ?? 0);
+                  return (
+                    <tr key={item.ci_id} className="border-b border-gray-200 text-center">
+                      <td className="px-4 py-2 text-blue-700">{name}</td>
+                      <td className="px-4 py-2 text-blue-700">{qty}</td>
+                      <td className="px-4 py-2 text-blue-700">₱{price.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-blue-700">₱{(qty * price).toFixed(2)}</td>
+                      <td className="px-4 py-2">
+                        <button
+                          onClick={() => navigate(`/adminbillingedititem/${item.ci_id}`)}
+                          className="bg-green-500 text-white px-3 py-1 rounded-full mr-2"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteItem(item.ci_id)}
+                          className="bg-red-500 text-white px-3 py-1 rounded-full"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="5" className="text-center py-4 text-gray-500">
+                    No items found
+                  </td>
+                </tr>
+              )}
 
-                                            </div>
-                                        <div className="col-sm-6">
+              {/* Grand totals row */}
+              <tr className="font-bold bg-gray-100">
+                <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">Items Total:</td>
+                <td className="px-4 py-2 text-blue-700">₱{itemsTotal.toFixed(2)}</td>
+                <td></td>
+              </tr>
 
-                                        </div>
-                                    </div>
-                                </div>
+              <tr className="font-bold bg-gray-100">
+                <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">Service Charge:</td>
+                <td className="px-4 py-2 text-blue-700">₱{Number(serviceCharge || 0).toFixed(2)}</td>
+                <td></td>
+              </tr>
 
-                                <div className="col-sm-12">
-                                    <div className="row">
-                                        <div className="col-sm-10">
-                                            <h1 className="text-2xl font-bold" style={{color:"#00458B"}}></h1>
-                                        </div>
-                                        <div className="col-sm-2">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={handleAddItem}>Add</button>
-                                        </div>
-                                    </div>
-                                </div>
+              <tr className="font-bold bg-gray-200">
+                <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">Total Charged:</td>
+                <td className="px-4 py-2 text-blue-700">₱{Number(totalCharged).toFixed(2)}</td>
+                <td></td>
+              </tr>
+            </tbody>
+      </table>
 
-                                <hr></hr>
-                                    <br />
-                                <div className="col-sm-12">
-                                {/* Search bar */}
-                                <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-center mb-1">
-                                        <h1 className=" font-bold text-[#00458B]"></h1>
-                                        {/* Search bar */}
-                                        <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                                        <input
-                                            type="text"
-                                            placeholder="Search"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 outline-none text-sm text-gray-700"
-                                        />
-                                        <i className="fa fa-search text-[#00458B]"></i>
-                                        </div>
-                                    </div>
-                                </div>
+       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+          <select
+            className="border rounded px-3 py-2"
+            value={newInvId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setNewInvId(id);
+              const sel = inventory.find((i) => String(i.inv_id) === String(id));
+              if (sel) {
+                setNewAmount(sel.inv_price_per_item);
+                setNewItemName(sel.inv_item_name);
+              } else {
+                setNewAmount(0);
+                setNewItemName("");
+              }
+            }}
+          >
+            <option value="">Select Item</option>
+            {inventory.map((inv) => (
+              <option key={inv.inv_id} value={inv.inv_id}>
+                {inv.inv_item_name} (₱{inv.inv_price_per_item}, Stock: {inv.inv_quantity})
+              </option>
+            ))}
+          </select>
 
-                                    {/* Table */}
-                                    <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse border border-gray-200">
-                                        <thead>
-                                        <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                            <th className="px-4 py-2 text-center">Charged Item</th>
-                                            <th className="px-4 py-2 text-center">Quantity</th>
-                                            <th className="px-4 py-2 text-center">Unit Price</th>
-                                            <th className="px-4 py-2 text-center">Total Price</th>
-                                            <th className="px-4 py-2 text-center"></th>
-                                            <th className="px-4 py-2 text-center"></th>
-                                        </tr>
-                                        </thead>
-                                        <tbody>
-                                        {chargedItems.length > 0 ? (
-                                            chargedItems.map((item, index) => (
-                                            <tr key={index} className="border-b border-gray-200 text-center">
-                                                <td className="px-4 py-2 text-blue-700">{item.item}</td>
-                                                <td className="px-4 py-2 text-blue-700">{item.ci_quantity}</td>
-                                                <td className="px-4 py-2 text-blue-700">₱{item.ci_amount}</td>
-                                                <td className="px-4 py-2 text-blue-700">
-                                                ₱{(item.ci_quantity * item.ci_amount).toFixed(2)}
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <button
-                                                    onClick={() => navigate(`/adminbillingedititem/${item.ci_id}`)}
-                                                    className="bg-green-500 text-white px-3 py-1 rounded-full w-full"
-                                                    >
-                                                    Edit
-                                                    </button>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <button
-                                                        onClick={() => handleDeleteItem(item.ci_id)}
-                                                        className="bg-red-500 text-white px-3 py-1 rounded-full w-full"
-                                                    >
-                                                        Delete
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            ))
-                                        ) : (
-                                            <tr>
-                                            <td colSpan="6" className="text-center text-gray-500 py-4">
-                                                No items found
-                                            </td>
-                                            </tr>
-                                        )}
-                                        {/* Grand Total */}
-                                        <tr className="font-bold bg-gray-100">
-                                            <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">
-                                            Grand Total:
-                                            </td>
-                                            <td colSpan="3" className="px-4 py-2 text-blue-700">
-                                            ₱
-                                            {chargedItems
-                                                .reduce((sum, item) => sum + item.ci_quantity * item.ci_amount, 0)
-                                                .toFixed(2)}
-                                            </td>
-                                        </tr>
-                                        </tbody>
-                                    </table>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="col-sm-12">
-                                <div className="row">
-                                    <div className="col-sm-12">
-                                    </div>
-                                        <div className="col-sm-12">
-                                            <br></br>
-                                            <div className="row">
-                                                <button
-                                                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full"
-                                                onClick={() => navigate(`/adminconsultationview/${appointId}`)}
-                                                >
-                                                Done
-                                                </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+          <input
+            type="number"
+            min="1"
+            className="px-3 py-2 border rounded"
+            value={newQuantity}
+            onChange={(e) => setNewQuantity(parseInt(e.target.value || "1"))}
+            placeholder="Quantity"
+          />
+
+          <input
+            type="number"
+            className="px-3 py-2 border rounded"
+            value={newAmount}
+            onChange={(e) => setNewAmount(e.target.value)}
+            placeholder="Unit Price"
+          />
+
+          <button onClick={handleAddItem} className="bg-[#00c3b8] text-white px-4 py-2 rounded">
+            Add
+          </button>
+        </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-2">
+         <button onClick={() => navigate(`/adminconsultationview/${appointId}`)} className="bg-gray-500 text-white px-6 py-2 rounded-full">
+            Done
+          </button>
+
+          <button onClick={handleSaveBilling} className="bg-[#00458B] text-white px-6 py-2 rounded-full">
+            Save Billing
+          </button>
+      </div>
+            </div>
+            </div>                  
+            </div>
+            </div>
             <div className="col-sm-2">
             </div>
           </div>

@@ -6,6 +6,7 @@ const AdminPatientsView = () => {
   const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const [statusFilter, setStatusFilter] = useState(""); // "" means show all
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
@@ -48,27 +49,6 @@ const AdminPatientsView = () => {
     fetchPatient();
   }, [id]);
 
-    // 🔹 Handle delete consultation
-  const handleDelete = async (appointId) => {
-    if (!window.confirm("Are you sure you want to delete this consultation?")) return;
-
-    const token = localStorage.getItem("token");
-    try {
-      const res = await fetch(`http://localhost:3000/auth/deleteconsultation/${appointId}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) throw new Error("Failed to delete consultation");
-
-      setConsultations(consultations.filter((c) => c.appoint_id !== appointId));
-      alert("Consultation deleted successfully");
-    } catch (err) {
-      console.error("Error deleting consultation:", err);
-      alert("Could not delete consultation");
-    }
-  };
-
   // Scroll effect
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -85,11 +65,14 @@ const AdminPatientsView = () => {
   if (!patient) return <p>Loading...</p>;
 
   // ✅ filter consultation history
-  const filteredConsultations = consultations.filter((c) =>
+const filteredConsultations = consultations
+  .filter((c) =>
     Object.values(c).some((val) =>
       String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
-  );
+  )
+  .filter((c) => (statusFilter ? c.appointment_status === statusFilter : true));
+  
 
   return (
     <div>
@@ -257,7 +240,8 @@ const AdminPatientsView = () => {
                                         <p className="font-bold text-2xl">Health Information & Medical History</p>
                                         <hr></hr>
                                         <br />
-                                        <p className="font-bold">Blood Type:</p><p>...</p>
+                                        <p className="font-bold">Blood Type:</p><p>{patient.blood_type}</p>
+                                        <p className="font-bold"></p><p style={{color:"transparent"}}>{patient.user_name}</p>
                                     </div>
                                 </div>
                                     <br />
@@ -275,7 +259,7 @@ const AdminPatientsView = () => {
                                             className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"
                                             onClick={() =>
                                                 navigate("/adminconsultationadd", {
-                                                state: { patient }   // ✅ send patient info to next page
+                                                state: { patient } 
                                                 })
                                             }
                                             >
@@ -302,13 +286,30 @@ const AdminPatientsView = () => {
                                     />
                                     <i className="fa fa-search text-[#00458B]"></i>
                                     </div>
-                                </div>
-
+                                    <br></br>
+                                    <div className="mb-4 flex items-center gap-4">
+                                        <label className="font-semibold text-[#00458B]">Filter by Status:</label>
+                                        <select
+                                            value={statusFilter}
+                                            onChange={(e) => setStatusFilter(e.target.value)}
+                                            className="border border-[#00458B] rounded px-2 py-1"
+                                        >
+                                            <option value="">All</option>
+                                            <option value="pending">Pending</option>
+                                            <option value="done">Done</option>
+                                        </select>
+                                        </div>
+                                    </div>
                                 {/* Table */}
                                         {filteredConsultations.length === 0 ? (
                                         <p className="text-gray-500">No consultations found.</p>
                                         ) : (
-                                    <div className="overflow-x-auto">
+                                    <div className="overflow-x-auto"
+                                     style={{
+                                            maxHeight: "300px",
+                                            overflowY: "auto",  
+                                            border: "1px solid #ddd",
+                                        }}>
                                         <table className="w-full border-collapse border border-gray-200">
                                             <thead>
                                             <tr className="bg-gray-100 text-[#00458B] text-center">
@@ -321,39 +322,59 @@ const AdminPatientsView = () => {
                                                 <th className=" px-2 py-1"></th>
                                                 <th className=" px-2 py-1"></th>
                                                 <th className=" px-2 py-1"></th>
-                                                <th className=" px-2 py-1"></th>
                                             </tr>
                                             </thead>
-                                            <tbody>
+                                           <tbody>
                                             {filteredConsultations.map((c) => (
-                                                <tr key={c.appoint_id} className="border-b border-gray-200 text-center">
+                                            <tr key={c.appoint_id} className="border-b border-gray-200 text-center">
                                                 <td className="px-4 py-2 text-blue-700">{c.pref_date}</td>
                                                 <td className="px-4 py-2 text-blue-700">{c.procedure_type}</td>
                                                 <td className="px-4 py-2 text-blue-700">{c.attending_dentist}</td>
                                                 <td className="px-4 py-2 text-blue-700">{c.payment_status}</td>
                                                 <td className="px-4 py-2 text-blue-700">₱{c.total_charged}</td>
                                                 <td className="px-4 py-2">
-                                                    <button 
-                                                        onClick={() => navigate(`/adminconsultationview/${c.appoint_id}`)}
-                                                        className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-4 py-1 rounded-full">View</button>
+                                                <button 
+                                                    onClick={() => navigate(`/adminconsultationview/${c.appoint_id}`)}
+                                                    className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-4 py-1 rounded-full"
+                                                >
+                                                    View
+                                                </button>
                                                 </td>
-                                                <td className="px-4 py-2"> 
-                                                    <button 
-                                                        onClick={() => handleDelete(c.appoint_id)}
-                                                        className="bg-[#f44336] text-white px-4 py-1 rounded-full">Delete</button>
-                                                </td>
+
+                                                {/* ✅ Cancel + Follow Up visible if status is incomplete or pending */}
+                                                {(c.appointment_status === "incomplete" || c.appointment_status === "pending") ? (
+                                                <>
+                                                    <td className="px-4 py-2">
+                                                    <button className="bg-[#e7e7e7] text-black px-3 py-1 rounded-full">
+                                                        Cancel
+                                                    </button>
+                                                    </td>
+                                                    <td className="px-4 py-2">
+                                                    <button className="bg-[#00c3b8] text-white px-3 py-1 rounded-full">
+                                                        + Follow Up
+                                                    </button>
+                                                    </td>
+                                                </>
+                                                ) : (
+                                                <>
+                                                    <td></td>
+                                                    <td></td>
+                                                </>
+                                                )}
+
+                                                {/* ✅ Complete button visible only if status is incomplete */}
+                                                {c.appointment_status === "incomplete" ? (
                                                 <td className="px-4 py-2">
-                                                    <button className="bg-[#e7e7e7] text-black px-3 py-1 rounded-full">Cancel</button>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <button className="bg-[green] text-white px-3 py-1 rounded-full">
+                                                    <button 
+                                                    onClick={() => navigate(`/adminconsultationcomplete/${c.appoint_id}`)}
+                                                    className="bg-[#4CAF50] text-white px-3 py-1 rounded-full">
                                                     Complete
                                                     </button>
                                                 </td>
-                                                <td className="px-4 py-2">
-                                                    <button className="bg-[#00c3b8] text-white px-3 py-1 rounded-full">+ Follow Up</button>
-                                                </td>
-                                                </tr>
+                                                ) : (
+                                                <td></td>
+                                                )}
+                                            </tr>
                                             ))}
                                             </tbody>
                                         </table>

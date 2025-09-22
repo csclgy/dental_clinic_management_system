@@ -29,7 +29,14 @@ const Appointment = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4">
+    <div 
+      className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
+      style={{
+      backgroundImage:
+        "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center"}}
+    >
       <br />
       <div className="w-full max-w-5xl bg-white p-6 sm:p-10 rounded-lg shadow-lg">
         <h2 className="text-[#00c3b8] text-xl sm:text-2xl font-bold mb-2 text-center">
@@ -71,8 +78,8 @@ const Appointment = () => {
               </label>
               <select
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                value={appointmentData.blood_type}
-                onChange={(e) => updateAppointment("blood_type", e.target.value)}
+                value={appointmentData.p_blood_type}
+                onChange={(e) => updateAppointment("p_blood_type", e.target.value)}
               >
                 <option value="">-- Select Blood Type --</option>
                 <option value="O">O</option>

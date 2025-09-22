@@ -472,7 +472,7 @@ router.delete("/deleteuserinfo/:id", async (req, res) => {
 
 // for adminuserpatient.jsx (ADD NEW PATIENT)
 router.post('/addpatient', async (req, res) => {
-  const { user_name, user_password, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation } = req.body;
+  const { user_name, user_password, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation, blood_type } = req.body;
 
   if (!user_name || !email || !user_password) {
     return res.status(400).json({ message: "Username and password are required" });
@@ -486,9 +486,9 @@ router.post('/addpatient', async (req, res) => {
     const hashedPassword = await bcrypt.hash(user_password, 10);
     await db.query(
       `INSERT INTO users 
-      (user_name, user_password, role, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation) 
-      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user_name, hashedPassword, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation]
+      (user_name, user_password, role, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation, blood_type) 
+      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user_name, hashedPassword, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation, blood_type]
     );
 
     return res.status(201).json({ message: "Patient created successfully" });
@@ -553,34 +553,6 @@ router.get('/displayconsultations', async (req, res) => {
   }
 });
 
-//(DELETE PATIENT)
-router.delete("/deletepatient/:id", async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "No token provided" });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
-    const { id } = req.params;
-    const db = await connectToDatabase();
-
-    const [result] = await db.query("DELETE FROM users WHERE user_id = ?", [id]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json({ message: "User deleted successfully" });
-  } catch (err) {
-    console.error("Error deleting user:", err);
-    res.status(500).json({ error: "Failed to delete user" });
-  }
-});
-
 // (DISPLAY SPECIFIC PATIENT BY ID + CONSULTATION HISTORY)
 router.get('/displaypatient/:id', async (req, res) => {
   const authHeader = req.headers["authorization"];
@@ -600,7 +572,7 @@ router.get('/displaypatient/:id', async (req, res) => {
     // Fetch patient info
     const [userRows] = await db.query(
       `SELECT user_id, user_name, email, contact_no, fname, mname, lname, 
-              date_birth, gender, age, religion, nationality, home_address, city 
+              date_birth, gender, age, religion, nationality, home_address, city, blood_type 
        FROM users WHERE user_id = ? AND role = 'patient'`,
       [id]
     );
@@ -673,7 +645,6 @@ router.post("/createconsultation", authenticateToken, async (req, res) => {
       payment_status,
       appointment_status,
       total_service_charged,
-      chargedItems, // array of { inv_id, ci_item_name, ci_quantity, ci_amount }
       p_fname,
       p_mname,
       p_lname,
@@ -683,29 +654,36 @@ router.post("/createconsultation", authenticateToken, async (req, res) => {
       p_home_address,
       p_email,
       p_contact_no,
+      p_blood_type,
     } = req.body;
 
-    // Insert appointment (admin creates directly)
+    // Basic validation for required fields
+    if (!procedure_type || !pref_date || !pref_time || !p_fname || !p_lname) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // Insert appointment
     const [appointmentResult] = await db.query(
       `INSERT INTO appointment
-      (procedure_type, pref_date, pref_time, payment_method, attending_dentist,
+      (user_name, procedure_type, pref_date, pref_time, payment_method, attending_dentist,
       or_num, payment_status, appointment_status, total_service_charged,
       p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
-      p_home_address, p_email, p_contact_no)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      p_home_address, p_email, p_contact_no, p_blood_type)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
+        user_name,
         procedure_type,
         pref_date,
         pref_time,
-        payment_method,
+        payment_method || "cash",
         attending_dentist || "Unassigned",
         or_num || null,
         payment_status || "pending",
         appointment_status || "pending",
         total_service_charged || 0,
         p_fname,
-        p_mname,
+        p_mname || null,
         p_lname,
         p_gender,
         p_age,
@@ -713,21 +691,11 @@ router.post("/createconsultation", authenticateToken, async (req, res) => {
         p_home_address,
         p_email,
         p_contact_no,
+        p_blood_type,
       ]
     );
 
     const appoint_id = appointmentResult.insertId;
-
-    // Insert charged items (if any)
-    if (chargedItems && chargedItems.length > 0) {
-      for (const item of chargedItems) {
-        await db.query(
-          `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id)
-           VALUES (?, ?, ?, ?, ?)`,
-          [item.inv_id, item.ci_item_name, item.ci_quantity, item.ci_amount, appoint_id]
-        );
-      }
-    }
 
     res.status(201).json({ message: "Consultation added successfully!", appoint_id });
   } catch (err) {
@@ -736,62 +704,51 @@ router.post("/createconsultation", authenticateToken, async (req, res) => {
   }
 });
 
-// Get charged items for an appointment
+// Get full billing details for an appointment
 router.get("/billing/:appointId", authenticateToken, async (req, res) => {
   try {
     const db = await connectToDatabase();
     const { appointId } = req.params;
 
-  const [rows] = await db.query(
-    `SELECT 
-      ci_id,
-      ci_item_name AS item, 
-      ci_quantity, 
-      ci_amount 
-    FROM chargeditem
-    WHERE appoint_id = ?`,
-    [appointId]
-  );
-
-  res.json(rows);
-
-  } catch (err) {
-    console.error("Error fetching billing items:", err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-// Add a new billing item
-// Add billing item
-router.post("/billing", authenticateToken, async (req, res) => {
-  try {
-    const db = await connectToDatabase();
-
-    const { inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id } = req.body;
-
-    // Validate required fields
-    if (!appoint_id || !inv_id || !ci_item_name || !ci_quantity || !ci_amount) {
-      return res.status(400).json({ message: "Missing required fields" });
-    }
-
-    // Insert into chargeditem table
-    const [result] = await db.query(
-      `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id)
-       VALUES (?, ?, ?, ?, ?)`,
-      [inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id]
+    // 1) Get charged items
+    const [items] = await db.query(
+      `SELECT 
+        ci_id,
+        ci_item_name,
+        ci_quantity, 
+        ci_amount 
+      FROM chargeditem
+      WHERE appoint_id = ?`,
+      [appointId]
     );
 
-    // ✅ Return consistent fields (match GET)
-    res.status(201).json({
-      ci_id: result.insertId,
-      item: ci_item_name,       // <-- renamed to match GET
-      ci_quantity,
-      ci_amount,
-      appoint_id,
-      inv_id,
+    // 2) Get appointment billing info
+    const [appointmentRows] = await db.query(
+      `SELECT 
+        appoint_id,
+        payment_method,
+        payment_status,
+        total_service_charged,
+        total_charged
+      FROM appointment
+      WHERE appoint_id = ?`,
+      [appointId]
+    );
+
+    if (appointmentRows.length === 0) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    const appointment = appointmentRows[0];
+
+    // 3) Combine into one response
+    res.json({
+      appointment,   // ✅ contains payment info + totals
+      chargedItems: items, // ✅ contains charged items list
     });
+
   } catch (err) {
-    console.error("Add billing item error:", err);
+    console.error("Error fetching billing:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -852,7 +809,6 @@ router.get("/billing/item/:ci_id", authenticateToken, async (req, res) => {
     const db = await connectToDatabase();
     const { ci_id } = req.params;
     const token = req.headers.authorization?.split(" ")[1];
-    console.log("➡️ GET /billing/item/:ci_id called with:", ci_id);
 
     const [rows] = await db.query(
       `SELECT ci_id, inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id
@@ -872,32 +828,114 @@ router.get("/billing/item/:ci_id", authenticateToken, async (req, res) => {
   }
 });
 
-
-//(DELETE PATIENTS CONSULTATION)
-router.delete("/deleteconsultation/:appointId", async (req, res) => {
-  const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-  if (!token) return res.status(401).json({ message: "No token provided" });
-
+// Add charged item AND/OR update appointment billing totals + payment info
+router.post("/billing/:appointId", authenticateToken, async (req, res) => {
+  let db;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
+    db = await connectToDatabase();
     const { appointId } = req.params;
-    const db = await connectToDatabase();
 
-    const [result] = await db.query("DELETE FROM appointment WHERE appoint_id = ?", [appointId]);
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Consultation not found" });
+    const {
+      inv_id,
+      ci_item_name,
+      ci_quantity,
+      ci_amount,
+      payment_method,   // optional
+      payment_status,   // optional
+      total_service_charged // optional
+    } = req.body;
+
+    // Start transaction
+    await db.query("START TRANSACTION");
+
+    let insertRes = null;
+
+    // 🔹 CASE 1: Insert charged item if item fields are present
+    if (inv_id != null && ci_item_name && ci_quantity != null && ci_amount != null) {
+      const qty = Number(ci_quantity);
+      const amt = Number(ci_amount);
+
+      if (Number.isNaN(qty) || Number.isNaN(amt)) {
+        return res.status(400).json({ message: "Quantity and amount must be numbers" });
+      }
+
+      [insertRes] = await db.query(
+        `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id)
+         VALUES (?, ?, ?, ?, ?)`,
+        [inv_id, ci_item_name, qty, amt, appointId]
+      );
     }
 
-    res.json({ message: "Consultation deleted successfully" });
+    // 🔹 Always compute totals
+    const [sumRows] = await db.query(
+      `SELECT COALESCE(SUM(ci_quantity * ci_amount), 0) AS items_total
+       FROM chargeditem
+       WHERE appoint_id = ?`,
+      [appointId]
+    );
+    const itemsTotal = sumRows[0]?.items_total || 0;
+
+    // Get current service charge (unless new one is provided)
+    const [appRows] = await db.query(
+      `SELECT COALESCE(total_service_charged, 0) AS svc
+       FROM appointment
+       WHERE appoint_id = ?`,
+      [appointId]
+    );
+    const svc = total_service_charged != null ? Number(total_service_charged) : appRows[0]?.svc || 0;
+
+    // Compute total_charged
+    const total_charged = Number(itemsTotal) + Number(svc);
+
+    // 🔹 Update appointment table (include appoint_status = 'done')
+    let updateQuery = `UPDATE appointment SET total_charged = ?, total_service_charged = ?, appointment_status = 'incomplete'`;
+    const updateParams = [total_charged, svc];
+
+    if (payment_method != null) {
+      updateQuery += `, payment_method = ?`;
+      updateParams.push(payment_method);
+    }
+    if (payment_status != null) {
+      updateQuery += `, payment_status = ?`;
+      updateParams.push(payment_status);
+    }
+
+    updateQuery += ` WHERE appoint_id = ?`;
+    updateParams.push(appointId);
+
+    await db.query(updateQuery, updateParams);
+
+    // Commit transaction
+    await db.query("COMMIT");
+
+    // Fetch updated appointment
+    const [updatedAppRows] = await db.query(
+      `SELECT payment_method, payment_status, total_service_charged, total_charged, appointment_status
+       FROM appointment
+       WHERE appoint_id = ?`,
+      [appointId]
+    );
+
+    res.status(insertRes ? 201 : 200).json({
+      message: insertRes ? "Charged item added + billing updated" : "Billing updated",
+      ci_id: insertRes?.insertId ?? null,
+      appoint_id: appointId,
+      items_total: itemsTotal,
+      total_service_charged: updatedAppRows[0]?.total_service_charged ?? svc,
+      total_charged: updatedAppRows[0]?.total_charged ?? total_charged,
+      payment_method: updatedAppRows[0]?.payment_method ?? null,
+      payment_status: updatedAppRows[0]?.payment_status ?? null,
+      appointment_status: updatedAppRows[0]?.appointment_status ?? "done"
+    });
+
   } catch (err) {
-    console.error("Error deleting Consultation:", err);
-    res.status(500).json({ error: "Failed to delete COnsultation" });
+    try {
+      if (db) await db.query("ROLLBACK");
+    } catch (rbErr) {
+      console.error("Rollback error:", rbErr);
+    }
+    console.error("Billing POST error:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -942,6 +980,46 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
   } catch (err) {
     console.error("Update patient error:", err);
     return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ✅ Mark consultation as done or incomplete
+router.put("/completeconsultation/:appointId", async (req, res) => {
+  const { appointId } = req.params;
+  const { attending_dentist, p_diagnosis, appointment_status } = req.body;
+  // status should be either "done" or "incomplete"
+
+  if (!["done", "incomplete"].includes(appointment_status)) {
+    return res.status(400).json({ message: "Invalid status value." });
+  }
+
+  try {
+    const db = await connectToDatabase();
+
+    const query = `
+      UPDATE appointment 
+      SET attending_dentist = ?, 
+          p_diagnosis = ?, 
+          appointment_status = ?, 
+          p_date_completed = NOW()
+      WHERE appoint_id = ?
+    `;
+
+    const [result] = await db.query(query, [
+      attending_dentist,
+      p_diagnosis,
+      appointment_status,
+      appointId,
+    ]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Appointment not found." });
+    }
+
+    res.json({ message: `Consultation marked as ${appointment_status}.` });
+  } catch (error) {
+    console.error("Error updating appointment:", error);
+    res.status(500).json({ message: "Server error while updating appointment." });
   }
 });
 

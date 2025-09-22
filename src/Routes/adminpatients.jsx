@@ -40,27 +40,6 @@ const AdminPatients = () => {
     fetchUsers();
   }, []);
 
-  // 🔹 Handle delete patient
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this patient?")) return;
-
-    const token = localStorage.getItem("token");
-    try {
-      const res = await fetch(`http://localhost:3000/auth/deletepatient/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!res.ok) throw new Error("Failed to delete patient");
-
-      setUsers(users.filter((u) => u.user_id !== id));
-      alert("Patient deleted successfully");
-    } catch (err) {
-      console.error("Error deleting patient:", err);
-      alert("Could not delete patient");
-    }
-  };
-
   // 🔹 Scroll to section if location.state.scrollTo exists
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -261,12 +240,6 @@ const AdminPatients = () => {
                                   View
                                 </button>
                               </Link>
-                              <button
-                                onClick={() => handleDelete(record.user_id)}
-                                className="bg-[#f44336] text-white px-4 py-1 rounded-full"
-                              >
-                                Delete
-                              </button>
                             </td>
                           </tr>
                         ))

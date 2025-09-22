@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 
-const Adminconsultationview = () => {
+const Adminconsultationcomplete = () => {
   const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -11,6 +11,11 @@ const Adminconsultationview = () => {
   const [consultation, setConsultation] = useState(null);
   const [chargedItems, setChargedItems] = useState([]);
   const [error, setError] = useState("");
+
+    //For editable fields
+  const [assignedDentist, setAssignedDentist] = useState("");
+  const [diagnosis, setDiagnosis] = useState("");
+
 
 useEffect(() => {
     const fetchConsultation = async () => {
@@ -28,6 +33,10 @@ useEffect(() => {
         const data = await res.json();
         setConsultation(data.consultation);
         setChargedItems(data.chargedItems || []);
+
+        // Set defaults if missing
+        setAssignedDentist(data.consultation.attending_dentist || "Unassigned");
+        setDiagnosis(data.consultation.p_diagnosis || "");
       } catch (err) {
         console.error("Error fetching consultation:", err);
         setError("Could not load consultation");
@@ -51,6 +60,41 @@ useEffect(() => {
 
   if (error) return <p className="text-red-500">{error}</p>;
   if (!consultation) return <p>Loading consultation...</p>;
+
+const handleComplete = async () => {
+  if (assignedDentist === "Unassigned") {
+    alert("Please assign a dentist before completion.");
+    return;
+  }
+  if (!diagnosis.trim()) {
+    alert("Please enter a diagnosis before completion.");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`http://localhost:3000/auth/completeconsultation/${appointId}`, {
+      method: "PUT", // or POST depending on your backend
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        attending_dentist: assignedDentist,
+        p_diagnosis: diagnosis,
+        appointment_status: "done",
+      }),
+    });
+
+    if (!res.ok) throw new Error("Failed to complete consultation");
+
+    alert("Consultation marked as complete!");
+    navigate("/adminpatients");
+  } catch (err) {
+    console.error("Error completing consultation:", err);
+    alert("Error completing consultation. Try again.");
+  }
+};
 
   return (
     <div>
@@ -166,7 +210,7 @@ useEffect(() => {
                         <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
                             <div className="row">
                                 <div className="col-sm-10">
-                                    <h1 className="text-2xl font-bold">Patients Record</h1>
+                                    <h1 className="text-2xl font-bold">Complete</h1>
                                 </div>
                                 <div className="col-sm-2">
                                 </div>
@@ -181,15 +225,11 @@ useEffect(() => {
                                             <h1 className="text-2xl font-bold" style={{color:"#00458B"}}>Patients Information</h1>
                                         </div>
                                         <div className="col-sm-3">
-                                                <button className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" 
-                                                    onClick={() => navigate(`/adminpatientsedit/${patient.user_id}`)}
-                                                >
-                                                    Edit Profile
-                                                </button>
                                         </div>
                                     </div>
                                 </div>
-
+                                <br></br>
+                                <br></br>
                                 <hr></hr>
 
                                 <div className="col-sm-12">
@@ -232,29 +272,54 @@ useEffect(() => {
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
                                             <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date}</p>
                                             <br />
-                                            <p className="font-bold">Attending Dentist:</p><p>{consultation.attending_dentist}</p>
+                                            <p className="font-bold">Attending Dentist:</p>
+                                            {consultation.attending_dentist === "Unassigned" ? (
+                                            <select
+                                                value={assignedDentist}
+                                                onChange={(e) => setAssignedDentist(e.target.value)}
+                                                className="border p-2 rounded w-full"
+                                            >
+                                                <option value="Unassigned">-- Select Dentist --</option>
+                                                <option value="Dr. Smith">Dr. Smith</option>
+                                                <option value="Dr. Garcia">Dr. Garcia</option>
+                                                <option value="Dr. Cruz">Dr. Cruz</option>
+                                            </select>
+                                            ) : (
+                                            <p>{consultation.attending_dentist}</p>
+                                            )}
+                                            <br></br>
                                             <br />
-                                            <p className="font-bold">Diagnosis:</p>{consultation.p_diagnosis}<p></p>
+                                            <p className="font-bold">Diagnosis:</p>
+                                            {consultation.p_diagnosis ? (
+                                            <p>{consultation.p_diagnosis}</p>
+                                            ) : (
+                                            <input
+                                                type="text"
+                                                value={diagnosis}
+                                                onChange={(e) => setDiagnosis(e.target.value)}
+                                                placeholder="Enter diagnosis"
+                                                className="border p-2 rounded w-full"
+                                            />
+                                            )}
+                                            <br />
                                             <br />
                                             <p className="font-bold">Services:</p><p>{consultation.procedure_type}</p>
                                             <br />
                                             <p className="font-bold">Follow-Up:</p><p>{consultation.pref_date}</p>
-                                            <br />
-                                            <p className="font-bold">Consultation Completed:</p><p>{consultation.p_date_completed}</p>
                                             <br />
                                         </div>
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
                                         <p className="font-bold">Billing Information</p>
                                         <br />
 
-                                        {consultation.appointment_status !== "incomplete" && consultation.appointment_status !== "done" ? (
-                                          <button
-                                            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full"
-                                            onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
-                                          >
-                                            Edit Billing
-                                          </button>
-                                        ) : (
+                                       {consultation.appointment_status !== "incomplete" && consultation.appointment_status !== "done" ? (
+                                        <button
+                                          className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full"
+                                          onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
+                                        >
+                                          Edit Billing
+                                        </button>
+                                      ) : (
                                         <div
                                           className="p-4 rounded-lg shadow-md"
                                           style={{
@@ -299,11 +364,14 @@ useEffect(() => {
                                         <div className="col-sm-6">
                                             <div className="row">
                                                 <div className="col-sm-6">
-                                                    <button class="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/")}>Print</button>
-
                                                 </div>
                                                 <div className="col-sm-6">
-                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatients")}>Back to List</button>
+                                                    <button
+                                                        className="bg-[#00458B] text-[white] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full"
+                                                        onClick={handleComplete}
+                                                    >
+                                                        Complete
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -321,4 +389,4 @@ useEffect(() => {
   );
 };
 
-export default Adminconsultationview;
+export default Adminconsultationcomplete;

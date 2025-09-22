@@ -46,6 +46,8 @@ import Registergcash from "./Routes/registergcash";
 import Adminschedule from "./Routes/adminschedule";
 import { RegisterProvider } from "./context/RegisterContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminScheduleCancel from "./Routes/adminschedulecancel";
+import Adminconsultationcomplete from "./Routes/adminconsultationcomplete";
 
 function App() {
   return (
@@ -166,6 +168,8 @@ function App() {
             <Route path="/notification" element={<Notification />} />
             <Route path="/adminschedule" element={<Adminschedule />} />
              <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
+             <Route path="/adminschedulecancel" element={<AdminScheduleCancel />} />
+             <Route path="/adminconsultationcomplete/:appointId" element={<Adminconsultationcomplete />} />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

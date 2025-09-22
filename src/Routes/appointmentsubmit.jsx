@@ -65,7 +65,14 @@ const AppointmentSubmit = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4">
+    <div 
+      className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
+      style={{
+      backgroundImage:
+        "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center"}}
+    >
       <div className="w-full sm:w-4/5 md:w-2/3 lg:w-1/2 xl:w-2/5 bg-white p-6 sm:p-8 md:p-10 rounded-lg shadow-lg text-center">
         <h2 className="text-[#00c3b8] text-xl sm:text-2xl font-bold mb-2">
           APPOINTMENT REQUEST FORM
@@ -96,16 +103,13 @@ const AppointmentSubmit = () => {
             <p><b>Date of Birth:</b> {appointmentData.p_date_birth || "N/A"}</p>
             <p><b>Middle Name:</b> {appointmentData.p_mname || "N/A"}</p>
             <p><b>Age:</b> {appointmentData.p_age || "N/A"}</p>
-            <br></br>
+            <p><b>Email:</b> {appointmentData.p_email || "N/A"}</p>
+            <p><b>Contact No:</b> {appointmentData.p_contact_no || "N/A"}</p>
+            <p><b>Blood Type:</b> {appointmentData.p_blood_type || "N/A"}</p>
             <p className="sm:col-span-2">
               <b>Home Address:</b> {appointmentData.p_home_address || "N/A"}
             </p>
-            <p><b>City:</b> {appointmentData.city || "N/A"}</p>
-            <p><b>Email:</b> {appointmentData.p_email || "N/A"}</p>
-            <p><b>Province:</b> {appointmentData.province || "N/A"}</p>
-            <p><b>Contact No:</b> {appointmentData.p_contact_no || "N/A"}</p>
-            <br></br>
-            <p><b>Blood Type:</b> {appointmentData.p_blood_type || "N/A"}</p>
+        
           </div>
           <br></br>
 
