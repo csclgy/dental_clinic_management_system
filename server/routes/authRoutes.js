@@ -171,17 +171,29 @@ router.put("/change-password", async (req, res) => {
 
 //for appointment (BOOKING AN APPOINTMENT)
 // Multer storage configuration
-const storage = multer.diskStorage({
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, path.join(__dirname, "../uploads")); // all files go to uploads/
+//   },
+//   filename: (req, file, cb) => {
+//     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+//     cb(null, uniqueSuffix + "-" + file.originalname);
+//   },
+// });
+
+// For Appointments
+const appointmentStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "../uploads")); // all files go to uploads/
+    cb(null, path.join(__dirname, "../uploads/appointments"));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + "-" + file.originalname);
   },
 });
+const upload = multer({ storage: appointmentStorage });
 
-const upload = multer({ storage });
+// const upload = multer({ storage });
 
 // Fields configuration: downpayment + multiple photos
 const cpUpload = upload.fields([
@@ -202,6 +214,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
       attending_dentist,
       or_num,
       payment_status,
+      total_service_charged,
       total_charged,
       appointment_status,
       p_fname,
@@ -225,10 +238,10 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
     const [appointmentResult] = await db.query(
       `INSERT INTO appointment
       (user_name, procedure_type, pref_date, pref_time, payment_method, downpayment_proof,
-       attending_dentist, or_num, payment_status, total_charged, appointment_status,
+       attending_dentist, or_num, payment_status, total_service_charged, total_charged, appointment_status,
        p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
        p_home_address, p_email, p_contact_no, p_blood_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         req.user.user_name,
         procedure_type,
@@ -239,7 +252,8 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
         attending_dentist || "Unassigned",
         or_num || null,
         payment_status || "pending",
-        total_charged || null,
+        total_service_charged || 0,
+        total_charged || 0,
         appointment_status || "pending",
         p_fname,
         p_mname,
@@ -273,6 +287,74 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
   }
 });
 
+// for transmed.js
+router.get("/my-upcoming", authenticateToken, async (req, res) => {
+  const db = await connectToDatabase();
+
+  try {
+    const patientUsername = req.user.user_name;
+    const query = `
+      SELECT *
+      FROM appointment
+      WHERE user_name = ? AND appointment_status = 'pending'
+      ORDER BY pref_date ASC
+    `;
+    const [rows] = await db.query(query, [patientUsername]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching upcoming appointments:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// for transappointment.js
+router.get("/myappointmenthistory", authenticateToken, async (req, res) => {
+  const db = await connectToDatabase();
+
+  try {
+    const patientUsername = req.user.user_name;
+    const query = `
+      SELECT *
+      FROM appointment
+      WHERE user_name = ? AND appointment_status = 'done'
+      ORDER BY pref_date ASC
+    `;
+    const [rows] = await db.query(query, [patientUsername]);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching upcoming appointments:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// DISPLAY CONSULTATION with charged items
+router.get("/viewmyconsultation/:appointId", async (req, res) => {
+  try {
+    const { appointId } = req.params;
+    const db = await connectToDatabase();
+
+    const [rows] = await db.query(
+      "SELECT * FROM appointment WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    if (rows.length === 0) return res.status(404).json({ message: "Consultation not found" });
+
+    const consultation = rows[0];
+
+    const [chargedItems] = await db.query(
+      "SELECT ci_id, inv_id, ci_item_name, ci_quantity, ci_amount FROM chargeditem WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems });
+  } catch (err) {
+    console.error("Display consultation error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 //=============================================== ADMIN BACKEND ROUTES =============================================== 
 
@@ -542,7 +624,7 @@ router.get('/displayconsultations', async (req, res) => {
              p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
              p_home_address, p_email, p_contact_no, p_blood_type
       FROM appointment
-      WHERE appointment_status = 'pending'
+      WHERE appointment_status = 'pending' OR appointment_status = 'incomplete'
       ORDER BY pref_date ASC
     `);
 
@@ -586,9 +668,9 @@ router.get('/displaypatient/:id', async (req, res) => {
       `SELECT appoint_id, procedure_type, pref_date, pref_time, payment_method, 
               downpayment_proof, attending_dentist, or_num, payment_status, 
               total_charged, appointment_status 
-       FROM appointment WHERE p_email = ? 
+       FROM appointment WHERE user_name = ? 
        ORDER BY pref_date DESC`,
-      [patient.email] 
+      [patient.user_name] 
     );
 
     return res.json({
@@ -645,6 +727,7 @@ router.post("/createconsultation", authenticateToken, async (req, res) => {
       payment_status,
       appointment_status,
       total_service_charged,
+      total_charged,
       p_fname,
       p_mname,
       p_lname,
@@ -666,10 +749,10 @@ router.post("/createconsultation", authenticateToken, async (req, res) => {
     const [appointmentResult] = await db.query(
       `INSERT INTO appointment
       (user_name, procedure_type, pref_date, pref_time, payment_method, attending_dentist,
-      or_num, payment_status, appointment_status, total_service_charged,
+      or_num, payment_status, appointment_status, total_service_charged, total_charged,
       p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
       p_home_address, p_email, p_contact_no, p_blood_type)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
       [
         user_name,
@@ -682,6 +765,7 @@ router.post("/createconsultation", authenticateToken, async (req, res) => {
         payment_status || "pending",
         appointment_status || "pending",
         total_service_charged || 0,
+        total_charged || 0,
         p_fname,
         p_mname || null,
         p_lname,
@@ -983,7 +1067,7 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
   }
 });
 
-// ✅ Mark consultation as done or incomplete
+// Mark consultation as DONE or INCOMPLETE
 router.put("/completeconsultation/:appointId", async (req, res) => {
   const { appointId } = req.params;
   const { attending_dentist, p_diagnosis, appointment_status } = req.body;
@@ -1022,6 +1106,68 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
     res.status(500).json({ message: "Server error while updating appointment." });
   }
 });
+
+// 📌 For Refunds
+const refundStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../uploads/refunds"));
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + "-" + file.originalname);
+  },
+});
+const uploadRefund = multer({ storage: refundStorage });
+
+// Cancel appointment
+router.post("/cancelappointment/:appointId", upload.single("refund_photo"), async (req, res) => {
+
+    const db = await connectToDatabase();
+    try {
+      const { appointId } = req.params;
+      const {
+        cc_reason,
+        cc_notes,
+        cc_label,
+        refund_method,
+      } = req.body;
+
+      const refund_photo = req.file ? req.file.filename : null;
+      const refund_date = refund_method ? new Date() : null;
+
+      // 1. Insert into Cancelled table
+      const insertCancelQuery = `
+        INSERT INTO cancelled 
+          (appoint_id, cc_reason, cc_notes, cc_date, cc_label, refund_photo, refund_date, refund_method) 
+        VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)
+      `;
+
+      await db.query(insertCancelQuery, [
+        appointId,
+        cc_reason,
+        cc_notes,
+        cc_label,
+        refund_photo,
+        refund_date,
+        refund_method,
+      ]);
+
+      // 2. Update appointment status
+      const updateAppointmentQuery = `
+        UPDATE appointment
+        SET appointment_status = 'cancelled' 
+        WHERE appoint_id = ?
+      `;
+      await db.query(updateAppointmentQuery, [appointId]);
+
+      res.json({ message: "Appointment cancelled successfully!" });
+    } catch (error) {
+      console.error("Cancel error:", error);
+      res.status(500).json({ message: "Failed to cancel appointment" });
+    }
+  }
+);
+
 
 //################################ INVENTORY MANAGEMENT ################################
 // for admininventoryadd.jsx (ADD NEW ITEM)

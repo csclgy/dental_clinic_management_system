@@ -240,7 +240,7 @@ const AdminInventoryAdd = () => {
                             className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                           >
                             <option value="">-- Select Type --</option>
-                            <option value="tool">Tool</option>
+                            <option value="tool">Medical Supplies</option>
                             <option value="medicine">Medicine</option>
                           </select>
                         </div>

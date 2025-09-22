@@ -179,7 +179,7 @@ const handleComplete = async () => {
                 <Link to="/adminpatients">
                     <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00c3b8" }}
+                    style={{ color: "#00458B" }}
                     >
                     <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
                     </button>
@@ -210,7 +210,7 @@ const handleComplete = async () => {
                         <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
                             <div className="row">
                                 <div className="col-sm-10">
-                                    <h1 className="text-2xl font-bold">Complete</h1>
+                                    <h1 className="text-2xl font-bold">Complete Appointment</h1>
                                 </div>
                                 <div className="col-sm-2">
                                 </div>

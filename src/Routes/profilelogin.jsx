@@ -165,7 +165,7 @@ const ProfileLogin = () => {
                 />
               </div>
 
-              {/* GCash Number */}
+              {/* GCash Number
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
                   GCash Number
@@ -178,7 +178,7 @@ const ProfileLogin = () => {
                   }
                   className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                 />
-              </div>
+              </div> */}
             </div>
 
             {/* Buttons */}

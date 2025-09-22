@@ -234,7 +234,7 @@ const fetchBillingData = async () => {
                 <Link to="/adminpatients">
                     <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00c3b8" }}
+                    style={{ color: "#00458B" }}
                     >
                     <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
                     </button>

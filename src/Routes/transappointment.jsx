@@ -9,17 +9,26 @@ const TransAppointment = () => {
   const [records, setRecords] = useState([]);
 
   // Fetch appointments from API
+  // Fetch records from API
   useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const res = await axios.get('http://localhost:8000/api/appointments');
-        setRecords(res.data);
-      } catch (err) {
-        console.error('Error fetching appointments:', err);
-      }
-    };
-    fetchAppointments();
-  }, []);
+  const fetchRecords = async () => {
+    try {
+      const token = localStorage.getItem("token"); // or however you store it
+      const res = await axios.get("http://localhost:3000/auth/myappointmenthistory", {
+        headers: {
+          Authorization: `Bearer ${token}`, // 👈 send token
+        },
+        withCredentials: true,
+      });
+      setRecords(res.data);
+    } catch (error) {
+      console.error("Error fetching records:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchRecords();
+}, []);
 
   // Scroll to section if state.scrollTo is passed
   useEffect(() => {
@@ -110,22 +119,22 @@ const TransAppointment = () => {
                     filteredRecords.map((record, index) => (
                       <tr key={index} className="border-b border-gray-200">
                         <td className="px-4 py-2 text-blue-700">
-                          {record.date}
+                          {record.pref_date}
                         </td>
                         <td className="px-4 py-2 text-blue-700">
-                          {record.time}
+                          {record.pref_time}
                         </td>
                         <td className="px-4 py-2 text-blue-700">
-                          {record.services}
+                          {record.procedure_type}
                         </td>
-                        <td className="px-4 py-2">{record.dentist}</td>
-                        <td className="px-4 py-2">{record.status}</td>
+                        <td className="px-4 py-2">{record.attending_dentist}</td>
+                        <td className="px-4 py-2">{record.appointment_status}</td>
                         <td className="px-4 py-2 text-center">
-                          <Link to="/transviewmed">
-                            <button className="bg-[#00c3b8] text-white px-4 py-1 rounded-full w-full sm:w-auto hover:bg-teal-500">
+                            <button 
+                            onClick={() => navigate(`/transviewmed/${record.appoint_id}`)}
+                            className="bg-[#00c3b8] text-white px-4 py-1 rounded-full w-full sm:w-auto hover:bg-teal-500">
                               View
                             </button>
-                          </Link>
                         </td>
                       </tr>
                     ))

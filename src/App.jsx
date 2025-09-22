@@ -127,7 +127,7 @@ function App() {
               }
             />
             <Route
-              path="/transviewmed"
+              path="/transviewmed/:appointId"
               element={
                 <ProtectedRoute>
                   <Transviewmed />
@@ -168,7 +168,7 @@ function App() {
             <Route path="/notification" element={<Notification />} />
             <Route path="/adminschedule" element={<Adminschedule />} />
              <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
-             <Route path="/adminschedulecancel" element={<AdminScheduleCancel />} />
+             <Route path="/adminschedulecancel/:appointId" element={<AdminScheduleCancel />} />
              <Route path="/adminconsultationcomplete/:appointId" element={<Adminconsultationcomplete />} />
           </Routes>
         </AppointmentProvider>

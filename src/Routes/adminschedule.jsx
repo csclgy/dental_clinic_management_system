@@ -17,7 +17,7 @@ const AdminSchedule = () => {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [error, setError] = useState("");
   const [records, setRecords] = useState([]);
-  const [viewMode, setViewMode] = useState("table"); // 🔹 toggle between table & calendar
+  const [viewMode, setViewMode] = useState("table"); // toggle between table & calendar
 
   const [view, setView] = useState("week");   // default = week view
   const [date, setDate] = useState(new Date()); // default = today
@@ -120,11 +120,16 @@ const AdminSchedule = () => {
       }
     }, [location]);
 
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  const filteredRecords = records.filter((record) => {
+    console.log(records.map(r => r.appointment_status));
+    const status = record.appointment_status?.toLowerCase().trim();
+    return (
+      (status === "incomplete" || status === "pending") &&
+      Object.values(record).some((value) =>
+        String(value).toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  });
 
   return (
     <div>
@@ -244,7 +249,7 @@ const AdminSchedule = () => {
                   className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg"
                   style={{ color: "white" }}
                 >
-                  <h1 className="text-2xl font-bold">Schedules</h1>
+                  <h1 className="text-2xl font-bold">Upcoming Appointments</h1>
                   <div className="mt-3">
                     <button
                       onClick={() => setViewMode("table")}
@@ -276,22 +281,22 @@ const AdminSchedule = () => {
                   {viewMode === "table" ? (
                     // 🔹 Table View
                     <div>
-                      {/* Search bar */}
-                      <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                        <div className="flex justify-between items-center mb-1">
-                          <div className="flex items-center border border-[#00458B] rounded-full px-3 py-2 w-80">
-                            <input
-                              type="text"
-                              placeholder="Search"
-                              value={searchTerm}
-                              onChange={(e) => setSearchTerm(e.target.value)}
-                              className="flex-1 outline-none text-sm text-gray-700"
-                            />
-                            <i className="fa fa-search text-[#00458B] text-lg"></i>
-                          </div>
+                    {/* Search Bar */}
+                    <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
+                      <div className="flex justify-between items-center">
+                        <div></div>
+                        <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
+                          <input
+                            type="text"
+                            placeholder="Search"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="flex-1 outline-none text-sm text-gray-700"
+                          />
+                          <i className="fa fa-search text-[#00458B]"></i>
                         </div>
                       </div>
-
+                    </div>
                       {/* Table */}
                       <div className="overflow-x-auto">
                         <table className="w-full border-collapse border border-gray-200">
@@ -319,67 +324,67 @@ const AdminSchedule = () => {
                                   <td className="px-4 py-2 text-blue-700">{record.procedure_type}</td>
                                   <td className="px-4 py-2 text-blue-700">{record.attending_dentist}</td>
                                   <td className="px-4 py-2 text-blue-700">{record.appointment_status}</td>
+
+                                  {/* View button always enabled */}
                                   <td className="px-2 py-3 whitespace-nowrap">
-                                    <button 
+                                    <button
                                       onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
-                                      className="bg-[#008CBA] hover:bg-[#0079A5] transition text-white font-semibold px-4 py-2 rounded-full">
-                                        View
+                                      className="bg-[#008CBA] hover:bg-[#0079A5] transition text-white font-semibold px-4 py-2 rounded-full"
+                                    >
+                                      View
                                     </button>
                                   </td>
-                                <td className="px-2 py-3 whitespace-nowrap">
-                                  {record.status === "Completed" ? (
-                                    <button
-                                      disabled
-                                      className="bg-gray-300 text-gray-600 px-4 py-2 rounded-full cursor-not-allowed"
-                                    >
-                                      Cancel
-                                    </button>
-                                  ) : (
-                                    <Link to="/adminschedulecancel" state={{ schedule: record }}>
-                                      <button className="bg-[#e7e7e7] hover:bg-gray-300 transition text-black px-4 py-2 rounded-full">
+
+                                  {/* Cancel button → visible if pending/incomplete */}
+                                  <td className="px-2 py-3 whitespace-nowrap">
+                                      <button
+                                        onClick={() => navigate(`/adminschedulecancel/${record.appoint_id}`)}
+                                        disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending")}
+                                        className={`px-4 py-2 rounded-full transition ${
+                                          record.appointment_status === "incomplete" || record.appointment_status === "pending"
+                                            ? "bg-[#e7e7e7] hover:bg-gray-300 text-black font-semibold"
+                                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                        }`}
+                                      >
                                         Cancel
                                       </button>
-                                    </Link>
-                                  )}
-                                </td>
-                                <td className="px-2 py-3 whitespace-nowrap">
-                                  {record.appointment_status === "done" ? (
-                                    <button
-                                      disabled
-                                      className="bg-green-200 text-white px-4 py-2 rounded-full cursor-not-allowed"
-                                    >
-                                      Complete
-                                    </button>
-                                  ) : (
-                                    <Link to="/adminschedulecomplete" state={{ schedule: record }}>
-                                      <button className="bg-green-600 hover:bg-green-700 transition text-white font-semibold px-4 py-2 rounded-full">
-                                        Complete
-                                      </button>
-                                    </Link>
-                                  )}
-                                </td>
-                                {/* Follow Up */}
-                                <td className="px-2 py-3 whitespace-nowrap">
-                                  {record.appointment_status === "done" || record.appointment_status === "incomplete" ? (
-                                    <button
-                                      disabled
-                                      className="bg-[#00a89d] text-white px-4 py-2 rounded-full cursor-not-allowed"
-                                    >
-                                      + Follow Up
-                                    </button>
-                                  ) : (
+                                  </td>
+
+                                  {/* Follow Up button → visible if pending/incomplete */}
+                                  <td className="px-2 py-3 whitespace-nowrap">
                                     <Link to="/admininventoryedit" state={{ schedule: record }}>
-                                      <button className="bg-[#00c3b8] hover:bg-[#00a89d] transition text-white font-semibold px-4 py-2 rounded-full">
+                                      <button
+                                        disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending")}
+                                        className={`px-4 py-2 rounded-full transition font-semibold ${
+                                          record.appointment_status === "incomplete" || record.appointment_status === "pending"
+                                            ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
+                                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                        }`}
+                                      >
                                         + Follow Up
                                       </button>
                                     </Link>
-                                  )}
-                                </td>
+                                  </td>
+
+                                  {/* Complete button → visible only if status = incomplete */}
+                                  <td className="px-2 py-3 whitespace-nowrap">
+                                      <button
+                                        onClick={() => navigate(`/adminconsultationcomplete/${record.appoint_id}`)}
+                                        disabled={record.appointment_status !== "incomplete"}
+                                        className={`px-4 py-2 rounded-full transition font-semibold ${
+                                          record.appointment_status === "incomplete"
+                                            ? "bg-green-600 hover:bg-green-700 text-white"
+                                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                        }`}
+                                      >
+                                        Complete
+                                      </button>
+                                  </td>
                                 </tr>
                               ))
                             ) : (
                               <tr>
-                                <td colSpan="6" className="text-center text-gray-500 py-4">
+                                <td colSpan="10" className="text-center text-gray-500 py-4">
                                   No records found
                                 </td>
                               </tr>
@@ -404,8 +409,8 @@ const AdminSchedule = () => {
                       onNavigate={setDate}
                       step={30}
                       timeslots={2}
-                      min={view !== "month" ? new Date(1970, 1, 1, 8, 0) : undefined}   // ✅ only apply on week/day
-                      max={view !== "month" ? new Date(1970, 1, 1, 16, 0) : undefined}  // ✅ only apply on week/day
+                      min={view !== "month" ? new Date(1970, 1, 1, 8, 0) : undefined}   // only apply on week/day
+                      max={view !== "month" ? new Date(1970, 1, 1, 16, 0) : undefined}
                       toolbar={true}
                     />
                     </div>

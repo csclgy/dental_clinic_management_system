@@ -135,7 +135,7 @@ useEffect(() => {
                 <Link to="/adminpatients">
                     <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00c3b8" }}
+                    style={{ color: "#00458B" }}
                     >
                     <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
                     </button>
@@ -298,10 +298,23 @@ useEffect(() => {
                                     </div>
                                         <div className="col-sm-6">
                                             <div className="row">
-                                                <div className="col-sm-6">
-                                                    <button class="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/")}>Print</button>
-
-                                                </div>
+                                              <div className="col-sm-6">
+                                                <button
+                                                  disabled={consultation.appointment_status !== "done"}
+                                                  className={`px-6 py-2 rounded-full font-semibold w-full mb-4 border ${
+                                                    consultation.appointment_status === "done"
+                                                      ? "bg-white text-[#00c3b8] border-[#00458b] hover:bg-gray-100 cursor-pointer"
+                                                      : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
+                                                  }`}
+                                                  onClick={() => {
+                                                    if (consultation.appointment_status === "done") {
+                                                      navigate("/"); // 👉 replace with your actual print page route
+                                                    }
+                                                  }}
+                                                >
+                                                  Print
+                                                </button>
+                                              </div>
                                                 <div className="col-sm-6">
                                                     <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatients")}>Back to List</button>
                                                 </div>

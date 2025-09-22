@@ -64,15 +64,16 @@ const AdminPatientsView = () => {
   if (error) return <p className="text-red-500">{error}</p>;
   if (!patient) return <p>Loading...</p>;
 
-  // ✅ filter consultation history
+// ✅ filter consultation history
 const filteredConsultations = consultations
   .filter((c) =>
     Object.values(c).some((val) =>
       String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
   )
-  .filter((c) => (statusFilter ? c.appointment_status === statusFilter : true));
-  
+  .filter((c) => (statusFilter ? c.appointment_status === statusFilter : true))
+  // 🔽 sort by appoint_id DESC (latest first)
+  .sort((a, b) => b.appoint_id - a.appoint_id);
 
   return (
     <div>
@@ -205,7 +206,7 @@ const filteredConsultations = consultations
                                         <div className="col-sm-3">
                                             <button 
                                                 className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"
-                                                onClick={() => navigate(`/adminpatientsedit/${patient.user_id}`)}
+                                                onClick={() => navigate(`/adminpatientsedit/${patient?.user_id}`)}
                                                 >
                                                 Edit Profile
                                             </button>
@@ -324,57 +325,69 @@ const filteredConsultations = consultations
                                                 <th className=" px-2 py-1"></th>
                                             </tr>
                                             </thead>
-                                           <tbody>
+                                            <tbody>
                                             {filteredConsultations.map((c) => (
-                                            <tr key={c.appoint_id} className="border-b border-gray-200 text-center">
+                                                <tr key={c.appoint_id} className="border-b border-gray-200 text-center">
                                                 <td className="px-4 py-2 text-blue-700">{c.pref_date}</td>
                                                 <td className="px-4 py-2 text-blue-700">{c.procedure_type}</td>
                                                 <td className="px-4 py-2 text-blue-700">{c.attending_dentist}</td>
                                                 <td className="px-4 py-2 text-blue-700">{c.payment_status}</td>
                                                 <td className="px-4 py-2 text-blue-700">₱{c.total_charged}</td>
-                                                <td className="px-4 py-2">
-                                                <button 
+
+                                                {/* View button always enabled */}
+                                                <td className="px-2 py-3 whitespace-nowrap">
+                                                    <button
                                                     onClick={() => navigate(`/adminconsultationview/${c.appoint_id}`)}
-                                                    className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-4 py-1 rounded-full"
-                                                >
+                                                    className="bg-[#008CBA] hover:bg-[#0079A5] transition text-white font-semibold px-4 py-2 rounded-full"
+                                                    >
                                                     View
-                                                </button>
+                                                    </button>
                                                 </td>
 
-                                                {/* ✅ Cancel + Follow Up visible if status is incomplete or pending */}
-                                                {(c.appointment_status === "incomplete" || c.appointment_status === "pending") ? (
-                                                <>
-                                                    <td className="px-4 py-2">
-                                                    <button className="bg-[#e7e7e7] text-black px-3 py-1 rounded-full">
-                                                        Cancel
+                                                {/* Cancel button */}
+                                                <td className="px-2 py-3 whitespace-nowrap">
+                                                    <button
+                                                    onClick={() => navigate(`/adminschedulecancel/${c.appoint_id}`)}
+                                                    disabled={!(c.appointment_status === "incomplete" || c.appointment_status === "pending")}
+                                                    className={`px-3 py-1 rounded-full ${
+                                                        c.appointment_status === "incomplete" || c.appointment_status === "pending"
+                                                        ? "bg-[#e7e7e7] hover:bg-gray-300 transition text-black font-semibold px-4 py-2 rounded-full"
+                                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                    }`}
+                                                    >
+                                                    Cancel
                                                     </button>
-                                                    </td>
-                                                    <td className="px-4 py-2">
-                                                    <button className="bg-[#00c3b8] text-white px-3 py-1 rounded-full">
-                                                        + Follow Up
-                                                    </button>
-                                                    </td>
-                                                </>
-                                                ) : (
-                                                <>
-                                                    <td></td>
-                                                    <td></td>
-                                                </>
-                                                )}
+                                                </td>
 
-                                                {/* ✅ Complete button visible only if status is incomplete */}
-                                                {c.appointment_status === "incomplete" ? (
-                                                <td className="px-4 py-2">
-                                                    <button 
+                                                {/* Follow Up button */}
+                                                <td className="px-2 py-3 whitespace-nowrap">
+                                                    <button
+                                                    disabled={!(c.appointment_status === "incomplete" || c.appointment_status === "pending")}
+                                                    className={`px-3 py-1 rounded-full ${
+                                                        c.appointment_status === "incomplete" || c.appointment_status === "pending"
+                                                        ? "bg-[#00c3b8] hover:bg-[#00a89d] transition text-white font-semibold px-4 py-2 rounded-full"
+                                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                    }`}
+                                                    >
+                                                    + Follow Up
+                                                    </button>
+                                                </td>
+
+                                                {/* Complete button */}
+                                                <td className="px-2 py-3 whitespace-nowrap">
+                                                    <button
+                                                    disabled={c.appointment_status !== "incomplete"}
                                                     onClick={() => navigate(`/adminconsultationcomplete/${c.appoint_id}`)}
-                                                    className="bg-[#4CAF50] text-white px-3 py-1 rounded-full">
+                                                    className={`px-3 py-1 rounded-full ${
+                                                        c.appointment_status === "incomplete"
+                                                        ? "bg-green-600 hover:bg-green-700 transition text-white font-semibold px-4 py-2 rounded-full"
+                                                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                                    }`}
+                                                    >
                                                     Complete
                                                     </button>
                                                 </td>
-                                                ) : (
-                                                <td></td>
-                                                )}
-                                            </tr>
+                                                </tr>
                                             ))}
                                             </tbody>
                                         </table>
