@@ -136,7 +136,9 @@ const TransMed = () => {
                               </button>
                           </td>
                           <td className="px-4 py-2 text-center">
-                            <button className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-red-600">
+                            <button 
+                            onClick={() => navigate(`/cancelappointment/${record.appoint_id}`)}
+                            className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-red-600">
                               Cancel
                             </button>
                           </td>

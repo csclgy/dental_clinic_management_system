@@ -48,6 +48,7 @@ import { RegisterProvider } from "./context/RegisterContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminScheduleCancel from "./Routes/adminschedulecancel";
 import Adminconsultationcomplete from "./Routes/adminconsultationcomplete";
+import Cancelappointment from "./Routes/cancelappointment";
 
 function App() {
   return (
@@ -139,6 +140,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Transappointment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cancelappointment/:appointId"
+              element={
+                <ProtectedRoute>
+                  <Cancelappointment />
                 </ProtectedRoute>
               }
             />

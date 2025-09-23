@@ -121,10 +121,9 @@ const AdminSchedule = () => {
     }, [location]);
 
   const filteredRecords = records.filter((record) => {
-    console.log(records.map(r => r.appointment_status));
     const status = record.appointment_status?.toLowerCase().trim();
     return (
-      (status === "incomplete" || status === "pending") &&
+      (status === "incomplete" || status === "pending" || status === "cancel with refund request") &&
       Object.values(record).some((value) =>
         String(value).toLowerCase().includes(searchTerm.toLowerCase())
       )
@@ -339,9 +338,9 @@ const AdminSchedule = () => {
                                   <td className="px-2 py-3 whitespace-nowrap">
                                       <button
                                         onClick={() => navigate(`/adminschedulecancel/${record.appoint_id}`)}
-                                        disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending")}
+                                        disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending"  || record.appointment_status === "cancel with refund request")}
                                         className={`px-4 py-2 rounded-full transition ${
-                                          record.appointment_status === "incomplete" || record.appointment_status === "pending"
+                                          record.appointment_status === "incomplete" || record.appointment_status === "pending" || record.appointment_status === "cancel with refund request"
                                             ? "bg-[#e7e7e7] hover:bg-gray-300 text-black font-semibold"
                                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                         }`}

@@ -7,6 +7,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import { authenticateToken } from "../middleware/authMiddleware.js";
+import bodyParser from "body-parser";
 
 dotenv.config();
 
@@ -20,7 +21,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 
 // for register.jsx (REGISTRATION)
 router.post('/register', async (req, res) => {
-  const { user_name, user_password, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num } = req.body;
+  const { user_name, user_password, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type } = req.body;
 
   if (!user_name || !email || !user_password) {
     return res.status(400).json({ message: "Username, email, and password are required" });
@@ -34,9 +35,9 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(user_password, 10);
     await db.query(
       `INSERT INTO users 
-      (user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num) 
-      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user_name, hashedPassword, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num]
+      (user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type) 
+      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user_name, hashedPassword, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type]
     );
 
     return res.status(201).json({ message: "User created successfully" });
@@ -296,7 +297,8 @@ router.get("/my-upcoming", authenticateToken, async (req, res) => {
     const query = `
       SELECT *
       FROM appointment
-      WHERE user_name = ? AND appointment_status = 'pending'
+      WHERE user_name = ?
+        AND (appointment_status = 'pending' OR appointment_status = 'cancel with refund request')
       ORDER BY pref_date ASC
     `;
     const [rows] = await db.query(query, [patientUsername]);
@@ -308,7 +310,6 @@ router.get("/my-upcoming", authenticateToken, async (req, res) => {
   }
 });
 
-// for transappointment.js
 router.get("/myappointmenthistory", authenticateToken, async (req, res) => {
   const db = await connectToDatabase();
 
@@ -317,14 +318,15 @@ router.get("/myappointmenthistory", authenticateToken, async (req, res) => {
     const query = `
       SELECT *
       FROM appointment
-      WHERE user_name = ? AND appointment_status = 'done'
+      WHERE user_name = ?
+        AND (appointment_status = 'done' OR appointment_status = 'cancelled')
       ORDER BY pref_date ASC
     `;
     const [rows] = await db.query(query, [patientUsername]);
 
     res.json(rows);
   } catch (err) {
-    console.error("Error fetching upcoming appointments:", err);
+    console.error("Error fetching appointment history:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -629,7 +631,7 @@ router.get('/displayconsultations', async (req, res) => {
              p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
              p_home_address, p_email, p_contact_no, p_blood_type
       FROM appointment
-      WHERE appointment_status = 'pending' OR appointment_status = 'incomplete'
+      WHERE appointment_status = 'pending' OR appointment_status = 'incomplete' OR appointment_status = 'cancel with refund request'
       ORDER BY pref_date ASC
     `);
 
@@ -1142,54 +1144,59 @@ const refundStorage = multer.diskStorage({
 });
 const uploadRefund = multer({ storage: refundStorage });
 
-// Cancel appointment
-router.post("/cancelappointment/:appointId", upload.single("refund_photo"), async (req, res) => {
+//patient's side Cancel Appointment
+router.post("/cancelappointment/:appointId", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const { appointId } = req.params;
+    const { cc_reason} = req.body;
 
-    const db = await connectToDatabase();
-    try {
-      const { appointId } = req.params;
-      const {
-        cc_reason,
-        cc_notes,
-        cc_label,
-        refund_method,
-      } = req.body;
-
-      const refund_photo = req.file ? req.file.filename : null;
-      const refund_date = refund_method ? new Date() : null;
-
-      // 1. Insert into Cancelled table
-      const insertCancelQuery = `
-        INSERT INTO cancelled 
-          (appoint_id, cc_reason, cc_notes, cc_date, cc_label, refund_photo, refund_date, refund_method) 
-        VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)
-      `;
-
-      await db.query(insertCancelQuery, [
-        appointId,
-        cc_reason,
-        cc_notes,
-        cc_label,
-        refund_photo,
-        refund_date,
-        refund_method,
-      ]);
-
-      // 2. Update appointment status
-      const updateAppointmentQuery = `
-        UPDATE appointment
-        SET appointment_status = 'cancelled' 
-        WHERE appoint_id = ?
-      `;
-      await db.query(updateAppointmentQuery, [appointId]);
-
-      res.json({ message: "Appointment cancelled successfully!" });
-    } catch (error) {
-      console.error("Cancel error:", error);
-      res.status(500).json({ message: "Failed to cancel appointment" });
+    if (cc_reason === "Refund request") {
+      await db.query(
+        `UPDATE appointment 
+         SET appointment_status = 'cancel with refund request' 
+         WHERE appoint_id = ?`,
+        [appointId]
+      );
+      return res.json({ message: "Refund request sent successfully!" });
     }
+
+    res.json({ message: "Appointment cancelled successfully!" });
+  } catch (error) {
+    console.error("Cancel error:", error);
+    res.status(500).json({ message: "Failed to cancel appointment" });
   }
-);
+});
+
+// Admin/receptionist completes refund cancellation
+router.post("/processRefund/:appointId", upload.single("refund_photo"), async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const { appointId } = req.params;
+    const { refund_method, cc_notes } = req.body;
+
+    const refund_photo = req.file ? req.file.filename : null;
+
+    await db.query(
+      `INSERT INTO cancelled 
+        (appoint_id, cc_reason, cc_notes, cc_date, cc_label, refund_photo, refund_date, refund_method)
+       VALUES (?, 'Refund', ?, NOW(), 'cancelled', ?, NOW(), ?)`,
+      [appointId, cc_notes, refund_photo, refund_method]
+    );
+
+    await db.query(
+      `UPDATE appointment 
+       SET payment_status = 'cancelled', appointment_status = 'cancelled'  
+       WHERE appoint_id = ?`,
+      [appointId]
+    );
+
+    res.json({ message: "Refund processed and appointment cancelled." });
+  } catch (error) {
+    console.error("Refund process error:", error);
+    res.status(500).json({ message: "Failed to process refund" });
+  }
+});
 
 
 //################################ INVENTORY MANAGEMENT ################################
