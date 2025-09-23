@@ -4,6 +4,8 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import multer from "multer";
+import xlsx from "xlsx";  
+
 import path from "path";
 import { fileURLToPath } from "url";
 import { authenticateToken } from "../middleware/authMiddleware.js";
@@ -1187,29 +1189,8 @@ router.get('/inventory', async (req, res) => {
 //################################ LEDGER MANAGEMENT ################################
 
 //********************* CHARTS OF ACCOUNT ********************* 
-// Add a new Chart of Account
-router.post("/coa", async (req, res) => {
-  const { account_name, account_type } = req.body;
 
-  if (!account_name || !account_type) {
-    return res.status(400).json({ message: "All fields required" });
-  }
-
-  try {
-    const db = await connectToDatabase();
-    await db.query(
-      "INSERT INTO chartofaccounts (account_name, account_type) VALUES (?, ?)",
-      [account_name, account_type]
-    );
-
-    return res.status(201).json({ message: "Account saved successfully!" });
-  } catch (err) {
-    console.error("COA insert error:", err);
-    return res.status(500).json({ message: "Internal server error" });
-  }
-});
-
-//get Chart of Accounts
+//get Chart of Accounts ->admincoa
 router.get("/coa", async (req, res) => {
   try {
     const db = await connectToDatabase();
@@ -1221,24 +1202,18 @@ router.get("/coa", async (req, res) => {
   }
 });
 
-//delete chart of accounts
-router.delete("/coa/:id", async (req, res) => {
+// get accounts if active
+router.get("/coa1", async (req, res) => {
   try {
-    const { id } = req.params;
     const db = await connectToDatabase();
-
-    const [result] = await db.query("DELETE FROM chartofaccounts WHERE account_id = ?", [id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Account not found" });
-    }
-
-    return res.json({ message: "Account deleted successfully" });
+    const [rows] = await db.query("SELECT * FROM chartofaccounts  WHERE status = 'active' ORDER BY account_name ASC");
+    return res.json(rows); // Send back as JSON array
   } catch (err) {
-    console.error("Delete COA error:", err);
+    console.error("Fetch COA error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 // Get a single account by ID
 router.get("/coa/:id", async (req, res) => {
@@ -1262,18 +1237,39 @@ router.get("/coa/:id", async (req, res) => {
   }
 });
 
+// Add a new Chart of Account ->admincoaadd
+router.post("/coa", async (req, res) => {
+  const { account_name, account_type } = req.body;
+
+  if (!account_name || !account_type) {
+    return res.status(400).json({ message: "All fields required" });
+  }
+
+  try {
+    const db = await connectToDatabase();
+    await db.query(
+      "INSERT INTO chartofaccounts (account_name, account_type,status) VALUES (?, ?,?)",
+      [account_name, account_type,]
+    );
+
+    return res.status(201).json({ message: "Account saved successfully!" });
+  } catch (err) {
+    console.error("COA insert error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
 // Update account by ID
 router.put("/coa/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { account_name, account_type } = req.body;
+    const { account_name, account_type, status } = req.body;
 
     const db = await connectToDatabase();
 
     // Update record
     const [result] = await db.query(
-      "UPDATE chartofaccounts SET account_name = ?, account_type = ? WHERE account_id = ?",
-      [account_name, account_type, id]
+      "UPDATE chartofaccounts SET account_name = ?, account_type = ? , status = ?  WHERE account_id = ?",
+      [account_name, account_type, status, id]
     );
 
     if (result.affectedRows === 0) {
@@ -1288,21 +1284,229 @@ router.put("/coa/:id", async (req, res) => {
 });
 
 
-//********************* JOURNAL ENTRIES ********************* 
- // Add a new journal enrty
-router.post("/journal", async (req, res) => {
-  const { date, description, accounts, debit, credit, comment } = req.body;
+//delete chart of accounts
+router.delete("/coa/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
 
+    const [result] = await db.query("DELETE FROM chartofaccounts WHERE account_id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    return res.json({ message: "Account deleted successfully" });
+  } catch (err) {
+    console.error("Delete COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+//========== SUB ACCOUNTS ==========
+
+//get subaccount by sub id ->
+router.get("/subacc/:id", async (req, res) => { 
+  try { 
+    const { id } = req.params; 
+    const db = await connectToDatabase();
+    const [result] = await db.query
+    ( "SELECT * FROM subaccount WHERE id = ?", 
+      [id] ); 
+      
+      if (result.length === 0) 
+        { return res.status(404).json({ message: "Account not found" }); 
+      } 
+      res.json(result[0]);
+     } catch (err) { 
+      console.error("Fetch COA error:", err);
+       return res.status(500).json({ message: "Internal server error" }); } });
+
+  //add new sub account ->admincoaviewadd
+router.post("/coa/:id/subaccounts", async (req, res) => {
+  const { id } = req.params; 
+  const { account_name } = req.body;
+  const db = await connectToDatabase();
+
+  if (!account_name) {
+    return res.status(400).json({ error: "Subaccount name is required" });
+  }
+  //if subacount already exists
+  try {
+    const [existing] = await db.query(
+      "SELECT * FROM subaccount WHERE account_id = ? AND account_name = ?",
+      [id, account_name]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ error: "Subaccount name already exists" });
+    }
+
+    // insert
+    const [result] = await db.query(
+      "INSERT INTO subaccount (account_id, account_name) VALUES (?, ?)",
+      [id, account_name]
+    );
+
+    return res.status(201).json({
+      message: "Subaccount added successfully",
+      subaccountId: result.insertId,
+    });
+  } catch (err) {
+    console.error("❌ MySQL Error inserting subaccount:", {
+      code: err.code,
+      sqlMessage: err.sqlMessage,
+      sql: err.sql,
+    });
+    return res.status(500).json({
+      error: "Database error",
+      details: err.sqlMessage,
+    });
+  }
+});
+
+  // get subaccounts by account_id -> admincoaview.jsx
+router.get("/coa/:id/subaccounts", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [rows] = await db.query(
+      "SELECT * FROM subaccount WHERE account_id = ?",
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "No subaccounts found" });
+    }
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching subaccounts:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+// edit subaccount ->admincoaviewedit
+ router.put("/sub/:id", async (req, res) => {
+  const { id } = req.params;
+  const { account_name } = req.body;
+
+  try {
+    const db = await connectToDatabase();
+
+    const [existing] = await db.query(
+      "SELECT * FROM subaccount WHERE account_name = ? AND id != ?",
+      [account_name, id]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: "Account name already exists" });
+    }
+
+
+    await db.query(
+      "UPDATE subaccount SET account_name = ? WHERE id = ?",
+      [account_name, id]
+    );
+
+    res.json({ message: "Account updated successfully!" });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// get all subaccount based on account id -> adminjournaladd.jsx
+router.get("/subaccs/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [rows] = await db.query(
+      "SELECT id, account_name FROM subaccount WHERE account_id = ? ORDER BY account_name ASC",
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.json([]); // return empty array if no subaccounts
+    }
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Fetch Subaccounts error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}); 
+      
+//========== JOURNAL ENTRY ==========
+// get journal entry(foradminjournal)
+router.get("/journal1", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+     SELECT 
+  j.date, 
+  j.description, 
+  CONCAT_WS(' - ', ca.account_name, sa.account_name) AS Account, 
+  j.debit,
+  j.credit,
+  j.comment
+  FROM journalentry j
+  LEFT JOIN subaccount sa ON j.id = sa.id 
+  LEFT JOIN chartofaccounts ca ON sa.account_id = ca.account_id;
+    `);
+
+    
+    return res.json(rows); 
+  } catch (err) {
+    console.error("Fetch journal entries error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+// // Add a new journal enrty
+// router.post("/journal", async (req, res) => {
+//   const { date, description, accounts, debit, credit, comment } = req.body;
+
+//   // Validation
+//   if (!date || !description || !accounts || (!debit && !credit)) {
+//     return res.status(400).json({ message: "All required fields must be filled" });
+//   }
+
+//   try {
+//     const db = await connectToDatabase();
+//     await db.query(
+//       "INSERT INTO journalentry (`date`, description, accounts, debit, credit, comment) VALUES (?,?,?,?,?,?)",
+//       [date, description, accounts, debit || 0, credit || 0, comment || ""]
+//     );
+
+//     return res.status(201).json({ message: "Journal entry saved successfully!" });
+//   } catch (err) {
+//     console.error("Journal insert error:", err);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
+// Add a new journal entry
+router.post("/journal", async (req, res) => {
+  const { date, description, account_id, subaccount_id, debit, credit, comment } = req.body;
+
+  let debitAmount = parseFloat(debit) || 0;
+  let creditAmount = parseFloat(credit) || 0;
+
+  // Ensure two decimal places
+  debitAmount = Number(debitAmount.toFixed(2));
+  creditAmount = Number(creditAmount.toFixed(2));
   // Validation
-  if (!date || !description || !accounts || (!debit && !credit)) {
+  if (!date || !description || !account_id || (!debit && !credit)) {
     return res.status(400).json({ message: "All required fields must be filled" });
   }
 
   try {
     const db = await connectToDatabase();
     await db.query(
-      "INSERT INTO journalentry (`date`, description, accounts, debit, credit, comment) VALUES (?,?,?,?,?,?)",
-      [date, description, accounts, debit || 0, credit || 0, comment || ""]
+      "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id) VALUES (?,?,?,?,?,?,?)",
+      [date, description, account_id, debit || 0, credit || 0, comment || "", subaccount_id]
     );
 
     return res.status(201).json({ message: "Journal entry saved successfully!" });
@@ -1312,15 +1516,78 @@ router.post("/journal", async (req, res) => {
   }
 });
 
-// get journal entry(foradminjournal)
-router.get("/journal1", async (req, res) => {
+// upload excel to journal entry
+router.post("/journal/upload", upload.single("file"), async (req, res) => {
   try {
-    const db = await connectToDatabase();
-    const [rows] = await db.query("SELECT * FROM journalentry ORDER BY date DESC");
-    return res.json(rows); 
+    const workbook = xlsx.readFile(req.file.path);
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = xlsx.utils.sheet_to_json(sheet);
+
+    for (let row of rows) {
+      const accountField = row["Account"]?.trim();
+      let accountId = null;
+
+      if (accountField.includes("-")) {
+        // "Main - Sub"
+        const [mainName, subName] = accountField.split("-").map(s => s.trim());
+
+        const [mainAccount] = await db.query(
+          "SELECT id FROM chartofaccounts WHERE account_name = ?",
+          [mainName]
+        );
+
+        if (mainAccount.length > 0) {
+          const [subAccount] = await db.query(
+            "SELECT id FROM subaccount WHERE account_id = ? AND account_name = ?",
+            [mainAccount[0].id, subName]
+          );
+
+          if (subAccount.length > 0) {
+            accountId = subAccount[0].id;
+          } else {
+            console.warn(`⚠️ Subaccount '${subName}' not found under '${mainName}'`);
+          }
+        } else {
+          console.warn(`⚠️ Main account '${mainName}' not found`);
+        }
+      } else {
+        // only main account
+        const [mainAccount] = await db.query(
+          "SELECT id FROM chartofaccounts WHERE account_name = ?",
+          [accountField]
+        );
+        if (mainAccount.length > 0) {
+          accountId = mainAccount[0].id;
+        } else {
+          console.warn(`⚠️ Account '${accountField}' not found`);
+        }
+      }
+
+      if (!accountId) {
+        console.error(`❌ Could not resolve account: ${accountField}`);
+        continue; // skip this row
+      }
+
+      // ✅ Insert into journalentry
+      await db.query(
+        `INSERT INTO journalentry 
+         (date, description, account_id, debit, credit, comment) 
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [
+          row["Date"],
+          row["Description"],
+          accountId,
+          row["Debit"] || 0,
+          row["Credit"] || 0,
+          row["Comment"] || null
+        ]
+      );
+    }
+
+    res.json({ success: true, message: "Journal entries uploaded successfully." });
   } catch (err) {
-    console.error("Fetch journal entries error:", err);
-    return res.status(500).json({ message: "Internal server error" });
+    console.error(err);
+    res.status(500).json({ error: "Upload failed. Please check your file format." });
   }
 });
 

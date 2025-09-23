@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import adminjournaladd from "./adminjournaladd";
 
-const AdminCoaAdd = () => {
-  const location = useLocation();
+const AdminJournalUpload = () => {
+   const location = useLocation();
   const navigate = useNavigate();
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
-  // COA form state
-  const [accountName, setAccountName] = useState("");
-  const [accountType, setAccountType] = useState("Asset");
+  // Upload state
+  const [file, setFile] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -25,31 +25,40 @@ const AdminCoaAdd = () => {
     }
   }, [location]);
 
-  // Save COA
-  const handleSave = async () => {
+  // Handle file select
+  const handleFileChange = (e) => {
+    setFile(e.target.files[0]);
     setErrorMessage("");
     setSuccessMessage("");
+  };
 
-    if (!accountName) {
-      setErrorMessage("Account Name is required");
+  // Upload journal
+  const handleUpload = async () => {
+    if (!file) {
+      setErrorMessage("Please select an Excel file first.");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:3000/auth/coa", {
-        account_name: accountName,
-        account_type: accountType,
-      });
+      const formData = new FormData();
+      formData.append("file", file);
 
-      setSuccessMessage(response.data.message || "Account saved successfully!");
-      setAccountName("");
-      setAccountType("Asset");
+      const response = await axios.post(
+        "http://localhost:3000/auth/journal/upload",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
 
-      // Optionally redirect after save
-      setTimeout(() => navigate("/admincoa"), 1500);
+      setSuccessMessage(response.data.message || "Upload successful!");
+      setFile(null);
+
+      // Optionally redirect after success
+      setTimeout(() => navigate("/adminjournal"), 1500);
     } catch (err) {
       console.error(err);
-      setErrorMessage(err.response?.data?.message || "Something went wrong");
+      setErrorMessage(err.response?.data?.message || "Upload failed.");
     }
   };
 
@@ -168,50 +177,27 @@ const AdminCoaAdd = () => {
                 >
                   <div className="row">
                     <div className="col-sm-10">
-                      <h1 className="text-2xl font-bold">Charts of Account</h1>
+                      <h1 className="text-2xl font-bold">Upload Journal Entry</h1>
                     </div>
                   </div>
                 </div>
 
-                <p style={{ color: "transparent" }}>...</p>
-
-                {/* Add New Account Form */}
+                <p style={{ color: "transparent" }}>...</p> 
                 <div
                   className="col-sm-12 p-10 rounded-lg shadow-lg"
                   style={{ border: "solid", borderColor: "#01D5C4" }}
                 >
                   <h1 className="text-xl font-bold" style={{ color: "#00458B" }}>
-                    Add New Account
+                    Insert Excel File
                   </h1>
-
+                  <br/>  
                   <div className="col-sm-6 mx-auto">
                     <div className="mb-4 text-left">
-                      <label className="block text-[#00458b] font-semibold mb-1">
-                        Name
-                      </label>
-                      <input
-                        type="text"
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
-                        className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                      
+                      <br/>
+                      <input type="file" accept=".xlsx,.xls" onChange={handleFileChange}
+                       className="w-full border border-[#00458b] px-4 py-2 outline-none"
                       />
-                    </div>
-
-                    <div className="mb-4 text-left">
-                      <label className="block text-[#00458b] font-semibold mb-1">
-                        Account Type
-                      </label>
-                      <select
-                        value={accountType}
-                        onChange={(e) => setAccountType(e.target.value)}
-                        className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                      >
-                        <option value="Asset">Asset</option>
-                        <option value="Liability">Liability</option>
-                        <option value="Equity">Equity</option>
-                        <option value="Income">Income</option>
-                        <option value="Expense">Expense</option>
-                      </select>
                     </div>
 
                     {errorMessage && (
@@ -225,15 +211,15 @@ const AdminCoaAdd = () => {
                       <div className="col-sm-6">
                         <button
                           className="bg-[#FFFFFF] text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full mb-4"
-                          onClick={() => navigate("/admincoa")}
+                          onClick={() => navigate("/adminjournal")}
                         >
-                          Back to List
+                          Back
                         </button>
                       </div>
                       <div className="col-sm-6">
                         <button
                           className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"
-                          onClick={handleSave}
+                           onClick={handleUpload}
                         >
                           Save
                         </button>
@@ -252,4 +238,4 @@ const AdminCoaAdd = () => {
   );
 };
 
-export default AdminCoaAdd;
+export default AdminJournalUpload ;

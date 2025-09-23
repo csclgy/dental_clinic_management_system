@@ -2,16 +2,43 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import axios from "axios";
 
-const adminjournal = () => {
+const adminCoaView = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [journalData, setJournalData] = useState([]);
+  // const [accounts, setAccounts] = useState([]);
+  const { id } = useParams(); // get id from URL
+  const [account, setAccount] = useState(null);
+    const [sub, setSubAccounts] = useState([]);
+
+  useEffect(() => {
+    const fetchAccount = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/coa/${id}`);
+        setAccount(res.data);
+      } catch (err) {
+        console.error("Error fetching account:", err);
+      }
+    };
+
+    const fetchSubAccounts = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/coa/${id}/subaccounts`);
+        setSubAccounts(res.data);
+      } catch (err) {
+        console.error("Error fetching subaccounts:", err);
+      }
+    };
+
+    if (id) {
+      fetchAccount();
+      fetchSubAccounts();
+    }
+  }, [id]);
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -20,38 +47,34 @@ const adminjournal = () => {
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100); 
       }
     }
   }, [location]);
 
-   // Fetch journal entries from backend 
-    useEffect(() => { const fetchJournalEntries = async () => {
-    try { const response = await axios.get("http://localhost:3000/auth/journal1"); 
-    setJournalData(response.data);  } 
-    catch (err) {
-         console.error(err); 
-         alert("Failed to fetch journal entries"); 
-        } }; 
-        fetchJournalEntries(); 
-    }, 
-    []);
+ 
+  
 
-  const filteredRecords = journalData.filter((record) => {
-      if (!searchTerm && !startDate && !endDate) return true;
-    const recordDate = new Date(record.date); 
+// Filter subaccounts by search term
+const filteredSubAccounts = sub.filter((sub) => {
+  if (!searchTerm) return true;
+  return sub.account_name.toLowerCase().includes(searchTerm.toLowerCase());
+});
 
-    const start = startDate ? new Date(startDate) : null;
-    const end = endDate ? new Date(endDate) : null;
 
-    const matchesSearch = Object.values(record).some((value) =>
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    );
+// //delete acc
+//   const handleDelete = async (id) => {
+//   if (window.confirm("Are you sure you want to delete this account?")) {
+//     try {
+//       await axios.delete(`http://localhost:3000/auth/coa/${id}`);
+//       setAccounts(accounts.filter((a) => a.account_id !== id)); // update UI
+//     } catch (err) {
+//       console.error("Error deleting account:", err);
+//       alert("Failed to delete account");
+//     }
+//   }
+// };
 
-    const matchesDate = (!start || recordDate >= start) && (!end || recordDate <= end);
-
-    return matchesSearch && matchesDate;
-  });
   return (
     <div>
       <div className="p-4">
@@ -89,12 +112,12 @@ const adminjournal = () => {
                 {isLedgerOpen && (
                     <div className="ml-8 text-sm">
                     <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
                         Chart of Accounts
                         </p>
                     </Link>
                     <Link to="/adminjournal">
-                        <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
+                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
                         Journal Entries
                         </p>
                     </Link>
@@ -165,14 +188,12 @@ const adminjournal = () => {
                     <div className="row">
                         <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
                             <div className="row">
-                                <div className="col-sm-6">
-                                    <h1 className="text-2xl font-bold">Journal Entries</h1>
-                                </div>
-                                <div className="col-sm-4">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/")}>Generate Report</button>
+                                <div className="col-sm-10">
+                                    <h1 className="text-2xl font-bold">Charts of Account</h1>
+                                    <h1 className="text-1xl font-bold">Sub Accounts</h1>
                                 </div>
                                 <div className="col-sm-2">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminjournaladd")}>Add</button>
+                                        <button className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate(`/admincoaviewadd/${account?.account_id}`)}>Add</button>
                                 </div>
                             </div>
                         </div>
@@ -182,81 +203,58 @@ const adminjournal = () => {
                                 <div className="col-sm-12">
                                 {/* Search bar */}
                                 <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                        {/* Start Date */}
-                                        <div>
-                                        <label className="block text-sm font-semibold text-[#00458B] mb-1">
-                                            Start Date
-                                        </label>
-                                        <input
-                                            input type="date" 
-                                            value={startDate} 
-                                            onChange={(e) => setStartDate(e.target.value)}
-                                            className="w-full border border-[#00458B] rounded-lg px-3 py-2 outline-none"
-                                        />
-                                        </div>
+                                    {/* Header */}
+                                    <div className="flex justify-between items-center mb-1">
+                                          <h1 className="text-1xl font-bold">{account?.account_name}</h1>
 
-                                        {/* End Date */}
-                                        <div>
-                                        <label className="block text-sm font-semibold text-[#00458B] mb-1">
-                                            End Date
-                                        </label>
+                                        <h1 className=" font-bold text-[#00458B]"></h1>
+                                        {/* Search bar */}
+                                        <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
                                         <input
-                                            type="date"
-                                            value={endDate}
-                                            onChange={(e) => setEndDate(e.target.value)}
-                                            className="w-full border border-[#00458B] rounded-lg px-3 py-2 outline-none"
-                                        />
-                                        </div>
-
-                                        {/* Search */}
-                                        <div>
-                                        <label className="block text-sm font-semibold text-[#00458B] mb-1">
-                                            Search
-                                        </label>
-                                        <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1">
-                                            <input
-                                            input type="text" 
+                                            type="text"
                                             placeholder="Search"
-                                             value={searchTerm} 
-                                             onChange={(e) => setSearchTerm(e.target.value)}
-                                             className="flex-1 outline-none text-sm text-gray-700"
-                                            />
-                                            <i className="fa fa-search text-[#00458B]"></i>
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            className="flex-1 outline-none text-sm text-gray-700"
+                                        />
+                                        <i className="fa fa-search text-[#00458B]"></i>
                                         </div>
-                                        <div>
-                                            
-                                        </div>
-                                        </div>
+
                                     </div>
-                                    </div>
+                                </div>
 
                                     {/* Table */}
                                     <div className="overflow-x-auto">
-                                        <br />
                                         <table className="w-full border-collapse border border-gray-200">
                                         <thead>
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                            <th className="px-4 py-2 text-left">Date</th>
-                                            <th className="px-4 py-2 text-left">Description</th>
-                                            <th className="px-4 py-2 text-left">Account</th>
-                                            <th className="px-4 py-2 text-left">Debit</th>
-                                            <th className="px-4 py-2 text-left">Credit</th>
-                                            <th className="px-4 py-2 text-left">Comment</th>
+                                            <th className="px-4 py-2 text-center">Account Name</th>
+                                            <th className="px-4 py-2 text-center">Action</th>
+                                            <th className="px-4 py-2 text-center">Action</th>
+                                            
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredRecords.length > 0 ? (
-                                            filteredRecords.map((record, index) => (
-                                                <tr key={index} className="border-b border-gray-200">
-                                                <td className="px-4 py-2 text-blue-700">{record.date}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.description}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.Account}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.debit}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.credit}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.comment}</td>
-
-
+                                           {filteredSubAccounts.length > 0 ? (
+    filteredSubAccounts.map((sub, index) => (
+                                                <tr key={index} className="border-b border-gray-200 text-center item-center">
+                                                
+                                                <td className="px-4 py-2 text-blue-700">{sub.account_name}</td>
+                                                <td className="px-4 py-2">
+                                                    
+                                                    <button className="bg-[#04AA6D] text-white px-5 py-1 rounded-full hover:bg-teal-500" onClick={() => navigate(`/admincoaviewedit/${sub?.id}`)}>
+                                                    Edit 
+                                                    </button>
+                                                    
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <Link to="/admincoa">
+                                                    <button   className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
+                                                    Delete
+                                                    </button>
+                                                    </Link>
+                                                </td>
+                                              
                                                 </tr>
                                             ))
                                             ) : (
@@ -272,19 +270,34 @@ const adminjournal = () => {
                                         </tbody>
                                         </table>
                                     </div>
+                                    <Link to="/admincoa">
                                     <br/>
-                                        <div className="row">
-                                        <div className="col-sm-3">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-3 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminjournalupload")}>Upload Entry</button>
-                                        </div>
-                            </div>
-   
+                                            <button  className="bg-[#EBEBEB] text-black px-4 py-1 rounded-full hover:bg-teal-500">
+                                            back
+                                            </button>
+                                    </Link>
+                                    
                                 </div>
-                                
                             </div>
                         </div>
                     </div>
-                   
+                    <div className="col-sm-12">
+                        <div className="row">
+                            <div className="col-sm-6">
+                                </div>
+                                    <div className="col-sm-6">
+                                        <div className="row">
+                                            <div className="col-sm-8">
+
+                                            </div>
+                                        <div className="col-sm-4">
+                                            <br />
+                                            <br />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             <div className="col-sm-2">
                 
@@ -296,4 +309,4 @@ const adminjournal = () => {
   );
 };
 
-export default adminjournal;
+export default adminCoaView;

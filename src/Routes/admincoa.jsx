@@ -4,12 +4,15 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
+
+
 const admincoa = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
+  
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -26,8 +29,8 @@ const admincoa = () => {
      useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/coa"); // Make sure your endpoint matches
-        setAccounts(res.data); // res.data should be an array of accounts
+        const res = await axios.get("http://localhost:3000/auth/coa"); 
+        setAccounts(res.data); 
       } catch (err) {
         console.error("Error fetching accounts:", err);
       }
@@ -35,7 +38,7 @@ const admincoa = () => {
     fetchAccounts();
   }, []);
 
- // Filter accounts by search term
+  // Filter accounts by search term
   const filteredAccounts = accounts.filter((account) => {
     if (!searchTerm) return true; // if search bar empty, show all
     return (
@@ -43,7 +46,7 @@ const admincoa = () => {
       account.account_type.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
-
+//delete acc
   const handleDelete = async (id) => {
   if (window.confirm("Are you sure you want to delete this account?")) {
     try {
@@ -207,16 +210,25 @@ const admincoa = () => {
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
                                             <th className="px-4 py-2 text-center">Account Name</th>
                                             <th className="px-4 py-2 text-center">Account Type</th>
+                                            <th className="px-4 py-2 text-center">Sub Accounts</th>
                                             <th className="px-4 py-2 text-center">Action</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
+                                            {/* <th className="px-4 py-2 text-center">Action</th> */}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {filteredAccounts.length > 0 ? (
                                             filteredAccounts.map((account, index) => (
+                                              
                                                 <tr key={index} className="border-b border-gray-200 text-center item-center">
                                                 <td className="px-4 py-2 text-blue-700">{account.account_name}</td>
                                                 <td className="px-4 py-2 text-blue-700">{account.account_type}</td>
+                                                <td className="px-4 py-2">
+                                                     <Link to={`/admincoaview/${account.account_id}`}>
+                                                    <button className="bg-[#EF7722] text-white px-4 py-1 rounded-full hover:bg-teal-500">
+                                                      View
+                                                    </button>
+                                                    </Link>
+                                                </td>
                                                 <td className="px-4 py-2">
                                                     <Link to={`/admincoaedit/${account.account_id}`}>
                                                     <button className="bg-[#04AA6D] text-white font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
@@ -224,13 +236,13 @@ const admincoa = () => {
                                                     </button>
                                                     </Link>
                                                 </td>
-                                                <td className="px-4 py-2">
+                                                {/* <td className="px-4 py-2">
                                                     <Link to="/admincoa">
                                                     <button  onClick={() => handleDelete(account.account_id)} className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
                                                     Delete
                                                     </button>
                                                     </Link>
-                                                </td>
+                                                </td> */}
                                                 </tr>
                                             ))
                                             ) : (

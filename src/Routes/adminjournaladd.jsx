@@ -8,11 +8,14 @@ const adminjournaladd = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const  [account,setAccount] = useState([]);
+  const [sub,setSub] = useState([]);
 
     const [formData, setFormData] = useState({
     date: "",
     description: "",
-    account: "asset",
+    account: "",
+    subaccount: "",
     type: "debit",
     amount: "",
     comment: ""
@@ -28,7 +31,33 @@ const adminjournaladd = () => {
         }, 100); // delay ensures DOM is rendered
       }
     }
+
+    const fetchAccount = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/coa1`);
+        setAccount(res.data);
+      } catch (err) {
+        console.error("Error fetching account:", err);
+      }
+    };
+    fetchAccount();
   }, [location]);
+  
+useEffect(() => {
+  if (formData.account) {
+    const fetchSubAccounts = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/subaccs/${formData.account}`);
+        setSub(res.data); 
+      } catch (err) {
+        console.error("Error fetching subaccounts:", err);
+      }
+    };
+    fetchSubAccounts();
+  } else {
+    setSub([]); // reset if no account selected
+  }
+}, [formData.account]);
 
    const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,7 +80,8 @@ const adminjournaladd = () => {
       await axios.post("http://localhost:3000/auth/journal", {
         date: formData.date,
         description: formData.description,
-        accounts: formData.account,
+        account_id: formData.account,
+        subaccount_id: formData.subaccount,
         debit,
         credit,
         comment: formData.comment
@@ -158,8 +188,7 @@ const adminjournaladd = () => {
                 <Link to="/adminschedule">
                     <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
+                    style={{ color: "#00458B" }}>
                     <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
                     </button>
                 </Link>
@@ -181,12 +210,7 @@ const adminjournaladd = () => {
                                 <div className="col-sm-6">
                                     <h1 className="text-2xl font-bold">Journal Entries</h1>
                                 </div>
-                                <div className="col-sm-4">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/")}>Generate Report</button>
-                                </div>
-                                <div className="col-sm-2">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminjournaladd")}>Add</button>
-                                </div>
+                               
                             </div>
                         </div>
                         <p style={{color:"transparent"}}>...</p>
@@ -198,27 +222,46 @@ const adminjournaladd = () => {
                                     <div className="col-sm-2">
                                     </div>
                                 
-                                    <div className="col-sm-8">
+                                    <div className="col-sm-9">
                                         <br />
                                         <br />
                                         
                                         <div className="row">
-                                            <div className="col-sm-6">
+                                            <div className="col-sm-4">
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Date</label>
-                                                    <input type="date" name="date" value={formData.date} onChange={handleChange}  class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                    <input type="date" name="date" value={formData.date} onChange={handleChange}  class="w-full border border-[#00458b] rounded-full px-3 py-2 outline-none" />
                                                 </div>
                                             </div>
-                                            <div className="col-sm-6">
+                                            <div className="col-sm-4">
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Account</label>
                                                     <select name="account" value={formData.account} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
-                                                         <option value="asset">Asset</option>
-                                                         <option value="liability">Liability</option>
-                                                         <option value="equity">Equity</option>
-                                                         <option value="income">Income</option>
-                                                         <option value="expense">Expense</option>
+                                                          <option value="">-- Select Account --</option>
+                                                            {account.map((acc) => (
+                                                            <option key={acc.account_id} value={acc.account_id}>
+                                                                {acc.account_name}
+                                                            </option>
+                                                            ))}
                                                     </select>
+                                                </div>
+                                            </div>
+                                            <div className="col-sm-4">
+                                                <div class="mb-4 text-left">
+                                                    <label class="block text-[#00458b] font-semibold mb-1">Sub Account</label>
+                                                   <select 
+                                                        name="subaccount" 
+                                                        value={formData.subaccount}   // <-- fix here
+                                                        onChange={handleChange} 
+                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                                        >
+                                                        <option value="">-- Select Subaccount --</option>
+                                                        {sub.map((sub) => (
+                                                            <option key={sub.id} value={sub.id}>
+                                                            {sub.account_name}
+                                                            </option>
+                                                        ))}
+                                                        </select>
                                                 </div>
                                             </div>
                                         </div>
@@ -289,4 +332,6 @@ const adminjournaladd = () => {
   );
 };
 
-export default adminjournaladd;
+export default adminjournaladd; 
+
+

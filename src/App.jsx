@@ -48,6 +48,10 @@ import { RegisterProvider } from "./context/RegisterContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminScheduleCancel from "./Routes/adminschedulecancel";
 import Adminconsultationcomplete from "./Routes/adminconsultationcomplete";
+import AdminCoaView from "./Routes/admincoaview";
+import AdminCoaViewAdd from "./Routes/admincoaviewadd";
+import AdminCoaViewEdit from "./Routes/admincoaviewedit";
+import AdminJournalUpload from "./Routes/adminjournalupload";
 
 function App() {
   return (
@@ -170,6 +174,10 @@ function App() {
              <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
              <Route path="/adminschedulecancel" element={<AdminScheduleCancel />} />
              <Route path="/adminconsultationcomplete/:appointId" element={<Adminconsultationcomplete />} />
+              <Route path="/admincoaview/:id" element={<AdminCoaView/>} />
+             <Route path="/admincoaviewadd/:id" element={<AdminCoaViewAdd/>} />
+             <Route path="/admincoaviewedit/:id" element={<AdminCoaViewEdit/>} />
+             <Route path="/adminjournalupload" element={<AdminJournalUpload/>} />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

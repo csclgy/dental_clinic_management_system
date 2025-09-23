@@ -15,6 +15,7 @@ const admincoaedit = () => {
     const [account, setAccount] = useState({
     account_name: "",
     account_type: "",
+    status: ""
   });
 
 
@@ -176,9 +177,7 @@ const admincoaedit = () => {
                                 <div className="col-sm-10">
                                     <h1 className="text-2xl font-bold">Charts of Account</h1>
                                 </div>
-                                <div className="col-sm-2">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admincoaadd")}>Add</button>
-                                </div>
+                                
                             </div>
                         </div>
                         <p style={{color:"transparent"}}>...</p>
@@ -212,6 +211,17 @@ const admincoaedit = () => {
                                                  <option value="Equity">Equity</option>
                                                  <option value="Income">Income</option>
                                                  <option value="Expense">Expense</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-4 text-left">
+                                            <label class="block text-[#00458b] font-semibold mb-1">Account Status</label>
+                                            <select  
+                                            name="status"
+                                            value={account.status}
+                                            onChange={handleChange}
+                                            class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
+                                                 <option value="Active"> Active </option>
+                                                 <option value="Inactive">Inactive</option>
                                             </select>
                                         </div>
                                     </div>
