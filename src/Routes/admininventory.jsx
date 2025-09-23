@@ -173,6 +173,20 @@ const handleDelete = async (id) => {
           <div class="footer">
             <p>This report was automatically generated for Arciaga-Juntilla TMJ Ortho Dental Clinic. </p>
           </div>
+        <script>
+            window.addEventListener('afterprint', function() {
+              window.close();
+            });
+
+            window.addEventListener('beforeunload', function() {
+            });
+
+            setTimeout(function() {
+              if (!window.closed) {
+                window.close();
+              }
+            }, 10000);
+          </script>
         </body>
         </html>
       `);
@@ -182,6 +196,18 @@ const handleDelete = async (id) => {
 
       setTimeout(() => {
         printWindow.print();
+
+        setTimeout(() => {
+          if (!printWindow.closed) {
+            printWindow.addEventListener('focus', () => {
+              setTimeout(() => {
+                if (!printWindow.closed) {
+                  printWindow.close();
+                }
+              }, 1000);
+            });
+          }
+        }, 500);
       }, 250);
   };
 
