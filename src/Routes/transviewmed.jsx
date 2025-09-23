@@ -12,6 +12,8 @@ const transviewmed = () => {
   const [chargedItems, setChargedItems] = useState([]);
   const [error, setError] = useState("");
 
+  const [selectedTeeth, setSelectedTeeth] = useState([]);
+
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -40,6 +42,7 @@ const transviewmed = () => {
           const data = await res.json();
           setConsultation(data.consultation);
           setChargedItems(data.chargedItems || []);
+          setSelectedTeeth(data.selectedTeeth || []);
         } catch (err) {
           console.error("Error fetching consultation:", err);
           setError("Could not load consultation");
@@ -59,7 +62,7 @@ const transviewmed = () => {
           </h2>
           <nav className="flex flex-col gap-2">
             <Link to="/transmed">
-              <button className="w-full text-left px-4 py-2 rounded-md font-medium bg-[#E6FCF9] text-[#00c3b8] hover:bg-[#d0f8f5]">
+              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
                 <i className="fa fa-user-circle-o mr-2"></i>
                 Medical Records
               </button>
@@ -133,6 +136,11 @@ const transviewmed = () => {
                                             <br />
                                             <p className="font-bold">Consultation Completed:</p><p>{consultation.p_date_completed}</p>
                                             <br />
+                                            <br></br>
+                                            <div className="col-sm-12">
+                                              <p className="text-1xl font-bold" style={{color:"#00458B"}}>Teeth Anatomy:</p>
+                                              <img src="../teethmodel.png" style={{width:"100%"}}></img>
+                                            </div>
                                         </div>
 
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
@@ -173,6 +181,38 @@ const transviewmed = () => {
                                                 </p>
                                             </div>
                                             </ul>
+                                                                                    <br></br>
+                                        <br></br>
+                                        <br></br>
+                                        <br></br>
+                                        <br></br>
+                                        <br></br>
+                                        <div className="mt-6">
+                                        <p className="font-bold text-1xl" style={{ color: "#00458B" }}>
+                                          Selected Teeth:
+                                        </p>
+                                        <hr />
+                                        <div className="grid grid-cols-2 gap-4 mt-4">
+                                          {selectedTeeth.length > 0 ? (
+                                            selectedTeeth.map((tooth, idx) => (
+                                              <div
+                                                key={idx}
+                                                className="flex items-center p-3 border rounded-lg shadow-sm"
+                                                style={{ borderColor: "#01D5C4" }}
+                                              >
+                                                <div>
+                                                  <p className="font-semibold text-[#00458B]">
+                                                    Tooth {tooth.st_number}
+                                                  </p>
+                                                  <p className="text-sm text-gray-600">{tooth.st_name}</p>
+                                                </div>
+                                              </div>
+                                            ))
+                                          ) : (
+                                            <p className="text-gray-500">No teeth selected</p>
+                                          )}
+                                        </div>
+                                      </div>
                                         </div>
                                         </div>
                                     </div>
@@ -183,6 +223,7 @@ const transviewmed = () => {
                             </div>
                     </div>
                     <div className="col-sm-12">
+                      <br></br>
                         <div className="row">
                             <div className="col-sm-6">
                             </div>

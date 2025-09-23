@@ -12,10 +12,62 @@ const Adminconsultationcomplete = () => {
   const [chargedItems, setChargedItems] = useState([]);
   const [error, setError] = useState("");
 
+  const [selectedTeeth, setSelectedTeeth] = useState([]);
+  // Add this new state
+  const [showTeethSelection, setShowTeethSelection] = useState(false);
+
     //For editable fields
   const [assignedDentist, setAssignedDentist] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
 
+
+const teethList = [
+  { number: 1, name: "Upper RIGHT Central Incisor" },
+  { number: 1.1, name: "Upper LEFT Central Incisor" },
+  { number: 2, name: "Upper RIGHT Lateral Incisor" },
+  { number: 2.1, name: "Upper LEFT Lateral Incisor" },
+  { number: 3, name: "Upper RIGHT Canine" },
+  { number: 3.1, name: "Upper LEFT Canine" },
+  { number: 4, name: "Upper RIGHT First Premolar" },
+  { number: 4.1, name: "Upper LEFT First Premolar" },
+  { number: 5, name: "Upper RIGHT Second Premolar" },
+  { number: 5.1, name: "Upper LEFT Second Premolar" },
+  { number: 6, name: "Upper RIGHT First molar" },
+  { number: 6.1, name: "Upper LEFT First molar" },
+  { number: 7, name: "Upper RIGHT Second molar" },
+  { number: 7.1, name: "Upper LEFT Second molar" },
+  { number: 8, name: "Upper RIGHT Third molar(Wisdom Teeth)" },
+  { number: 8.1, name: "Upper LEFT Third molar(Wisdom Teeth)" },
+
+  { number: 9, name: "Lower RIGHT Third molar(Wisdom Teeth)" },
+  { number: 9.1, name: "Lower LEFT Third molar(Wisdom Teeth)" },
+  { number: 10, name: "Lower RIGHT Second Molar" },
+  { number: 10.1, name: "Lower LEFT Second Molar" },
+  { number: 11, name: "Lower RIGHT First Molar" },
+  { number: 11.1, name: "Lower LEFT First Molar" },
+  { number: 12, name: "Lower RIGHT Second Premolar" },
+  { number: 12.1, name: "Lower LEFT Second Premolar" },
+  { number: 13, name: "Lower RIGHT First Premolar" },
+  { number: 13.1, name: "Lower LEFT First Premolar" },
+  { number: 14, name: "Lower RIGHT Canine" },
+  { number: 14.1, name: "Lower LEFT Canine" },
+  { number: 15, name: "Lower RIGHT Lateral Incisor" },
+  { number: 15.1, name: "Lower LEFT Lateral Incisor" },
+  { number: 16, name: "Lower RIGHT Central Incisor" },
+  { number: 16.1, name: "Lower LEFT Central Incisor" },
+];
+
+const handleSelect = (toothNumber, toothName, isChecked) => {
+  setSelectedTeeth((prev) => {
+    if (isChecked) {
+      return [
+        ...prev.filter((t) => t.st_number !== toothNumber),
+        { st_number: toothNumber, st_name: toothName }, // ✅ use backend field names
+      ];
+    }
+    return prev.filter((t) => t.st_number !== toothNumber);
+  });
+};
 
 useEffect(() => {
     const fetchConsultation = async () => {
@@ -83,6 +135,7 @@ const handleComplete = async () => {
         attending_dentist: assignedDentist,
         p_diagnosis: diagnosis,
         appointment_status: "done",
+        selected_teeth: selectedTeeth,
       }),
     });
 
@@ -307,6 +360,13 @@ const handleComplete = async () => {
                                             <br />
                                             <p className="font-bold">Follow-Up:</p><p>{consultation.pref_date}</p>
                                             <br />
+                                            <br />
+
+                                          <div className="col-sm-12">
+                                              <p className="text-1xl font-bold" style={{color:"#00458B"}}>Teeth Anatomy:</p>
+                                              <img src="../teethmodel.png" style={{width:"100%"}}></img>
+                                          </div>
+                                          
                                         </div>
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
                                         <p className="font-bold">Billing Information</p>
@@ -353,9 +413,58 @@ const handleComplete = async () => {
                                           </p>
                                         </div>
                                       )}
+                                      <br />
+                                      <br />
+                                      <br />
+                                      <br />
+                                      <br />
+                                      <p className="text-1xl font-bold" style={{color:"#00458B"}}>Select Teeth:</p>
+                                      <hr></hr>
+                                      <br></br>
+                                      <button
+                                        type="button"
+                                        onClick={() => setShowTeethSelection(!showTeethSelection)}
+                                        className="bg-[#00c3b8] text-white px-4 py-2 rounded-full font-semibold mb-4"
+                                      >
+                                        {showTeethSelection ? "Hide Teeth Selection" : "Show Teeth Selection"}
+                                      </button>
+
+                                      {showTeethSelection && (
+                                        <form className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                          {teethList.map((tooth) => {
+                                            const isSelected = selectedTeeth.some((t) => t.st_number === tooth.number);
+                                            return (
+                                              <div
+                                                key={tooth.number}
+                                                className="flex items-center justify-between p-3 border rounded-lg shadow-sm hover:shadow-md transition"
+                                                style={{ borderColor: isSelected ? "#01D5C4" : "#ddd" }}
+                                              >
+                                                <div className="flex items-center gap-3">
+                                                  <input
+                                                    type="checkbox"
+                                                    id={`tooth-${tooth.number}`}
+                                                    checked={isSelected}
+                                                    onChange={(e) =>
+                                                      handleSelect(tooth.number, tooth.name, e.target.checked)
+                                                    }
+                                                    className="w-5 h-5 text-[#01D5C4] border-gray-300 rounded focus:ring-[#01D5C4]"
+                                                  />
+                                                  <label
+                                                    htmlFor={`tooth-${tooth.number}`}
+                                                    className="text-sm font-medium text-[#00458B]"
+                                                  >
+                                                    {tooth.number}. {tooth.name}
+                                                  </label>
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </form>
+                                      )}
                                       </div>
                                     </div>
                             </div>
+                            <br></br>
                             <br></br>
                             <div className="col-sm-12">
                                 <div className="row">

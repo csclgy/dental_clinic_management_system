@@ -349,7 +349,12 @@ router.get("/viewmyconsultation/:appointId", async (req, res) => {
       [appointId]
     );
 
-    res.json({ consultation, chargedItems });
+    const [selectedTeeth] = await db.query(
+      "SELECT st_id, appoint_id, st_number, st_name FROM selectedteeth WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems, selectedTeeth });
   } catch (err) {
     console.error("Display consultation error:", err);
     res.status(500).json({ message: "Server error" });
@@ -704,7 +709,12 @@ router.get("/displayconsultation/:appointId", async (req, res) => {
       [appointId]
     );
 
-    res.json({ consultation, chargedItems });
+    const [selectedTeeth] = await db.query(
+      "SELECT st_id, appoint_id, st_number, st_name FROM selectedteeth WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems, selectedTeeth });
   } catch (err) {
     console.error("Display consultation error:", err);
     res.status(500).json({ message: "Server error" });
@@ -1067,12 +1077,12 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
   }
 });
 
-// Mark consultation as DONE or INCOMPLETE
+// Mark consultation as DONE or INCOMPLETE + save selected teeth
 router.put("/completeconsultation/:appointId", async (req, res) => {
   const { appointId } = req.params;
-  const { attending_dentist, p_diagnosis, appointment_status } = req.body;
-  // status should be either "done" or "incomplete"
+  const { attending_dentist, p_diagnosis, appointment_status, selected_teeth } = req.body;
 
+  // Validate status
   if (!["done", "incomplete"].includes(appointment_status)) {
     return res.status(400).json({ message: "Invalid status value." });
   }
@@ -1080,6 +1090,7 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
   try {
     const db = await connectToDatabase();
 
+    // Update appointment
     const query = `
       UPDATE appointment 
       SET attending_dentist = ?, 
@@ -1100,7 +1111,19 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
       return res.status(404).json({ message: "Appointment not found." });
     }
 
-    res.json({ message: `Consultation marked as ${appointment_status}.` });
+    // Insert selected teeth if provided
+    if (Array.isArray(selected_teeth) && selected_teeth.length > 0) {
+      const insertQuery = `
+        INSERT INTO selectedteeth (appoint_id, st_number, st_name)
+        VALUES (?, ?, ?)
+      `;
+
+      for (const tooth of selected_teeth) {
+        await db.query(insertQuery, [appointId, tooth.st_number, tooth.st_name]);
+      }
+    }
+
+    res.json({ message: `Consultation marked as ${appointment_status} and teeth recorded.` });
   } catch (error) {
     console.error("Error updating appointment:", error);
     res.status(500).json({ message: "Server error while updating appointment." });

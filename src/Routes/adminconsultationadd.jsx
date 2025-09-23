@@ -29,7 +29,7 @@ const AdminConsultationAdd = () => {
         appointment_status: "pending",
 
         // patient info
-        user_name: patient?.user_name,        // ✅ add this
+        user_name: patient?.user_name,     
         p_blood_type: patient?.blood_type, 
         p_fname: patient?.fname,
         p_mname: patient?.mname,

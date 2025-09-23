@@ -12,6 +12,9 @@ const Adminconsultationview = () => {
   const [chargedItems, setChargedItems] = useState([]);
   const [error, setError] = useState("");
 
+  const [selectedTeeth, setSelectedTeeth] = useState([]);
+
+
 useEffect(() => {
     const fetchConsultation = async () => {
       try {
@@ -23,11 +26,15 @@ useEffect(() => {
           },
         });
 
+        
+
         if (!res.ok) throw new Error("Failed to fetch consultation");
 
         const data = await res.json();
+        console.log("API response:", data);  
         setConsultation(data.consultation);
         setChargedItems(data.chargedItems || []);
+        setSelectedTeeth(data.selectedTeeth || []);
       } catch (err) {
         console.error("Error fetching consultation:", err);
         setError("Could not load consultation");
@@ -242,6 +249,11 @@ useEffect(() => {
                                             <br />
                                             <p className="font-bold">Consultation Completed:</p><p>{consultation.p_date_completed}</p>
                                             <br />
+                                            <br></br>
+                                            <div className="col-sm-12">
+                                              <p className="text-1xl font-bold" style={{color:"#00458B"}}>Teeth Anatomy:</p>
+                                              <img src="../teethmodel.png" style={{width:"100%"}}></img>
+                                            </div>
                                         </div>
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
                                         <p className="font-bold">Billing Information</p>
@@ -288,6 +300,38 @@ useEffect(() => {
                                           </p>
                                         </div>
                                       )}
+                                        <br></br>
+                                        <br></br>
+                                        <br></br>
+                                        <br></br>
+                                        <br></br>
+                                        <br></br>
+                                        <div className="mt-6">
+                                        <p className="font-bold text-1xl" style={{ color: "#00458B" }}>
+                                          Selected Teeth:
+                                        </p>
+                                        <hr />
+                                        <div className="grid grid-cols-2 gap-4 mt-4">
+                                          {selectedTeeth.length > 0 ? (
+                                            selectedTeeth.map((tooth, idx) => (
+                                              <div
+                                                key={idx}
+                                                className="flex items-center p-3 border rounded-lg shadow-sm"
+                                                style={{ borderColor: "#01D5C4" }}
+                                              >
+                                                <div>
+                                                  <p className="font-semibold text-[#00458B]">
+                                                    Tooth {tooth.st_number}
+                                                  </p>
+                                                  <p className="text-sm text-gray-600">{tooth.st_name}</p>
+                                                </div>
+                                              </div>
+                                            ))
+                                          ) : (
+                                            <p className="text-gray-500">No teeth selected</p>
+                                          )}
+                                        </div>
+                                      </div>
                                       </div>
                                     </div>
                             </div>
