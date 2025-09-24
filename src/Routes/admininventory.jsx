@@ -88,7 +88,7 @@ const handleDelete = async (id) => {
                 style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
                 >
                 {/* Dashboard */}
-                <Link to="/">
+                <Link to="/admindashboard">
                     <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-100"
                     style={{ color: "#00458B" }}

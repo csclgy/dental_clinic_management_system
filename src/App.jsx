@@ -48,6 +48,11 @@ import { RegisterProvider } from "./context/RegisterContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminScheduleCancel from "./Routes/adminschedulecancel";
 import Adminconsultationcomplete from "./Routes/adminconsultationcomplete";
+import Admindashboard from "./Routes/admindashboard";
+import InventoryDashboard from "./Routes/inventorydashboard";
+import Inventory from "./Routes/inventory";
+import InventoryEdit from "./Routes/inventoryedit";
+import InventoryAdd from "./Routes/inventoryadd"; 
 
 function App() {
   return (
@@ -167,9 +172,16 @@ function App() {
             <Route path="/adminbillingedititem/:ci_id" element={<AdminBillingEditItem />} />  
             <Route path="/notification" element={<Notification />} />
             <Route path="/adminschedule" element={<Adminschedule />} />
-             <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
-             <Route path="/adminschedulecancel/:appointId" element={<AdminScheduleCancel />} />
-             <Route path="/adminconsultationcomplete/:appointId" element={<Adminconsultationcomplete />} />
+            <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
+            <Route path="/adminschedulecancel/:appointId" element={<AdminScheduleCancel />} />
+            <Route path="/adminconsultationcomplete/:appointId" element={<Adminconsultationcomplete />} />
+            <Route path="/admindashboard" element={<Admindashboard />} />
+
+            {/*Inventory Staff*/}
+            <Route path="/inventorydashboard" element={<InventoryDashboard />} />
+            <Route path="/inventory" element={<Inventory />} />
+            <Route path="/inventoryedit/:id" element={<InventoryEdit />} />
+            <Route path="/inventoryadd" element={<InventoryAdd />} />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>
