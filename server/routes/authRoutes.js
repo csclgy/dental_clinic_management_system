@@ -356,7 +356,12 @@ router.get("/viewmyconsultation/:appointId", async (req, res) => {
       [appointId]
     );
 
-    res.json({ consultation, chargedItems, selectedTeeth });
+    const [photos] = await db.query(
+      "SELECT * FROM uploadedphotos WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems, selectedTeeth, photos});
   } catch (err) {
     console.error("Display consultation error:", err);
     res.status(500).json({ message: "Server error" });
@@ -715,8 +720,11 @@ router.get("/displayconsultation/:appointId", async (req, res) => {
       "SELECT st_id, appoint_id, st_number, st_name FROM selectedteeth WHERE appoint_id = ?",
       [appointId]
     );
-
-    res.json({ consultation, chargedItems, selectedTeeth });
+ const [photos] = await db.query(
+      "SELECT * FROM uploadedphotos WHERE appoint_id = ?",
+      [appointId]
+    );
+    res.json({ consultation, chargedItems, selectedTeeth, photos });
   } catch (err) {
     console.error("Display consultation error:", err);
     res.status(500).json({ message: "Server error" });
@@ -1195,6 +1203,33 @@ router.post("/processRefund/:appointId", upload.single("refund_photo"), async (r
   } catch (error) {
     console.error("Refund process error:", error);
     res.status(500).json({ message: "Failed to process refund" });
+  }
+});
+
+// Example in Express route
+router.get("/viewmyconsultation/:appointId", async (req, res) => {
+  try {
+    const appointId = req.params.appointId;
+
+    const [consultation] = await db.query(
+      "SELECT * FROM appointment WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    const [photos] = await db.query(
+      "SELECT * FROM uploadedphotos WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({
+      consultation: consultation[0],
+      chargedItems: [], // keep your old logic
+      selectedTeeth: [], // keep your old logic
+      photos: photos,    // ✅ send photos to frontend
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load consultation" });
   }
 });
 

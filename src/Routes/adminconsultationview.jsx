@@ -5,7 +5,9 @@ const Adminconsultationview = () => {
   const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-
+const [loading, setLoading] = useState(false); // ✅ add this
+  const [appointments, setAppointments] = useState([]);
+  const [photos, setPhotos] = useState([]);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [patient, setPatient] = useState(null);
   const [consultation, setConsultation] = useState(null);
@@ -35,6 +37,7 @@ useEffect(() => {
         setConsultation(data.consultation);
         setChargedItems(data.chargedItems || []);
         setSelectedTeeth(data.selectedTeeth || []);
+        setPhotos(data.photos || []); // ✅ new
       } catch (err) {
         console.error("Error fetching consultation:", err);
         setError("Could not load consultation");
@@ -249,7 +252,23 @@ useEffect(() => {
                                             <br />
                                             <p className="font-bold">Consultation Completed:</p><p>{consultation.p_date_completed}</p>
                                             <br />
-                                            <br></br>
+                                            <br></br><div className="mt-2">
+  <p className="font-bold">Image Uploaded:</p>
+  {photos.length > 0 ? (
+    photos.map((photo, idx) => (
+      <button
+        key={idx}
+        className="px-4 py-2 mt-1 mr-2 rounded-md bg-[#01D5C4] text-white font-semibold hover:bg-[#00b0a6]"
+        onClick={() => window.open(`http://localhost:3000/uploads/appointments/${photo.up_url}`, "_blank")
+}
+      >
+        View Image {idx + 1}
+      </button>
+    ))
+  ) : (
+    <p className="text-gray-500">No image uploaded</p>
+  )}
+</div>
                                             <div className="col-sm-12">
                                               <p className="text-1xl font-bold" style={{color:"#00458B"}}>Teeth Anatomy:</p>
                                               <img src="../teethmodel.png" style={{width:"100%"}}></img>
