@@ -333,5 +333,3 @@ useEffect(() => {
 };
 
 export default adminjournaladd; 
-
-

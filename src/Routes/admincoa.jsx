@@ -210,9 +210,9 @@ const admincoa = () => {
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
                                             <th className="px-4 py-2 text-center">Account Name</th>
                                             <th className="px-4 py-2 text-center">Account Type</th>
-                                            <th className="px-4 py-2 text-center">Sub Accounts</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            {/* <th className="px-4 py-2 text-center">Action</th> */}
+                                            <th className="px-4 py-2 text-center">Account Status</th>
+                                            <th className="px-4 py-2 text-center"> Subaccounts</th>
+                                             <th className="px-4 py-2 text-center">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -222,6 +222,7 @@ const admincoa = () => {
                                                 <tr key={index} className="border-b border-gray-200 text-center item-center">
                                                 <td className="px-4 py-2 text-blue-700">{account.account_name}</td>
                                                 <td className="px-4 py-2 text-blue-700">{account.account_type}</td>
+                                                <td className="px-4 py-2 text-blue-700">{account.status}</td>
                                                 <td className="px-4 py-2">
                                                      <Link to={`/admincoaview/${account.account_id}`}>
                                                     <button className="bg-[#EF7722] text-white px-4 py-1 rounded-full hover:bg-teal-500">
@@ -236,13 +237,6 @@ const admincoa = () => {
                                                     </button>
                                                     </Link>
                                                 </td>
-                                                {/* <td className="px-4 py-2">
-                                                    <Link to="/admincoa">
-                                                    <button  onClick={() => handleDelete(account.account_id)} className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
-                                                    Delete
-                                                    </button>
-                                                    </Link>
-                                                </td> */}
                                                 </tr>
                                             ))
                                             ) : (

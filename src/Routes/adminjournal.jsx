@@ -238,10 +238,10 @@ const adminjournal = () => {
                                         <thead>
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
                                             <th className="px-4 py-2 text-left">Date</th>
-                                            <th className="px-4 py-2 text-left">Description</th>
-                                            <th className="px-4 py-2 text-left">Account</th>
-                                            <th className="px-4 py-2 text-left">Debit</th>
-                                            <th className="px-4 py-2 text-left">Credit</th>
+                                            <th className="px-4 py-4 text-left">Account</th>
+                                             <th className="px-4 py-4 text-left">Description</th>
+                                            <th className="px-4 py-4 text-left">Debit</th>
+                                            <th className="px-4 py-4 text-left">Credit</th>
                                             <th className="px-4 py-2 text-left">Comment</th>
                                             </tr>
                                         </thead>
@@ -250,10 +250,10 @@ const adminjournal = () => {
                                             filteredRecords.map((record, index) => (
                                                 <tr key={index} className="border-b border-gray-200">
                                                 <td className="px-4 py-2 text-blue-700">{record.date}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.description}</td>
                                                 <td className="px-4 py-2 text-blue-700">{record.Account}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.debit}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.credit}</td>
+                                                <td className="px-4 py-2 text-blue-700">{record.description}</td>
+                                                <td className="px- py-2 text-blue-700">₱ {record.debit}</td>
+                                                <td className="px-4 py-2 text-blue-700">₱ {record.credit}</td>
                                                 <td className="px-4 py-2 text-blue-700">{record.comment}</td>
 
 

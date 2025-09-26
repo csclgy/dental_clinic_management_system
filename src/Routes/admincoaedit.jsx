@@ -207,6 +207,7 @@ const admincoaedit = () => {
                                             onChange={handleChange}
                                             class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
                                                  <option value="Asset">Asset</option>
+                                                 <option value="Revenue">Revenue</option>
                                                  <option value="Liability">Liability</option>
                                                  <option value="Equity">Equity</option>
                                                  <option value="Income">Income</option>

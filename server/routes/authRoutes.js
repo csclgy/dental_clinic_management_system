@@ -1189,6 +1189,7 @@ router.get('/inventory', async (req, res) => {
 //################################ LEDGER MANAGEMENT ################################
 
 //********************* CHARTS OF ACCOUNT ********************* 
+//********************* CHARTS OF ACCOUNT ********************* 
 
 //get Chart of Accounts ->admincoa
 router.get("/coa", async (req, res) => {
@@ -1248,8 +1249,8 @@ router.post("/coa", async (req, res) => {
   try {
     const db = await connectToDatabase();
     await db.query(
-      "INSERT INTO chartofaccounts (account_name, account_type,status) VALUES (?, ?,?)",
-      [account_name, account_type,]
+      "INSERT INTO chartofaccounts (account_name, account_type, status) VALUES (?, ?, ?)",
+      [account_name, account_type, 'Active']
     );
 
     return res.status(201).json({ message: "Account saved successfully!" });
@@ -1440,81 +1441,132 @@ router.get("/subaccs/:id", async (req, res) => {
 }); 
       
 //========== JOURNAL ENTRY ==========
-// get journal entry(foradminjournal)
+// get journal entry (for adminjournal)
 router.get("/journal1", async (req, res) => {
   try {
     const db = await connectToDatabase();
     const [rows] = await db.query(`
-     SELECT 
+      SELECT 
   j.date, 
   j.description, 
-  CONCAT_WS(' - ', ca.account_name, sa.account_name) AS Account, 
+  CASE 
+    WHEN sa.id IS NULL OR sa.id = 0 
+      THEN ca.account_name
+    ELSE CONCAT(ca.account_name, ' : ', sa.account_name)
+  END AS Account,
   j.debit,
   j.credit,
   j.comment
-  FROM journalentry j
-  LEFT JOIN subaccount sa ON j.id = sa.id 
-  LEFT JOIN chartofaccounts ca ON sa.account_id = ca.account_id;
+FROM journalentry j
+LEFT JOIN subaccount sa ON j.id = sa.id
+LEFT JOIN chartofaccounts ca 
+       ON (sa.account_id = ca.account_id OR j.account_id = ca.account_id);
     `);
 
-    
-    return res.json(rows); 
+    return res.json(rows);
   } catch (err) {
     console.error("Fetch journal entries error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
-// // Add a new journal enrty
-// router.post("/journal", async (req, res) => {
-//   const { date, description, accounts, debit, credit, comment } = req.body;
 
-//   // Validation
-//   if (!date || !description || !accounts || (!debit && !credit)) {
-//     return res.status(400).json({ message: "All required fields must be filled" });
-//   }
-
-//   try {
-//     const db = await connectToDatabase();
-//     await db.query(
-//       "INSERT INTO journalentry (`date`, description, accounts, debit, credit, comment) VALUES (?,?,?,?,?,?)",
-//       [date, description, accounts, debit || 0, credit || 0, comment || ""]
-//     );
-
-//     return res.status(201).json({ message: "Journal entry saved successfully!" });
-//   } catch (err) {
-//     console.error("Journal insert error:", err);
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// });
-
-// Add a new journal entry
+// Add a new journal entry + insert general ledfer
 router.post("/journal", async (req, res) => {
   const { date, description, account_id, subaccount_id, debit, credit, comment } = req.body;
 
-  let debitAmount = parseFloat(debit) || 0;
-  let creditAmount = parseFloat(credit) || 0;
+  const debitAmount = parseFloat(debit) || 0;
+  const creditAmount = parseFloat(credit) || 0;
 
-  // Ensure two decimal places
-  debitAmount = Number(debitAmount.toFixed(2));
-  creditAmount = Number(creditAmount.toFixed(2));
-  // Validation
   if (!date || !description || !account_id || (!debit && !credit)) {
     return res.status(400).json({ message: "All required fields must be filled" });
   }
 
   try {
     const db = await connectToDatabase();
-    await db.query(
+
+    // 1️⃣ Insert into journalentry
+    const [journalResult] = await db.query(
       "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id) VALUES (?,?,?,?,?,?,?)",
-      [date, description, account_id, debit || 0, credit || 0, comment || "", subaccount_id]
+      [date, description, account_id, debitAmount, creditAmount, comment || "", subaccount_id]
     );
 
-    return res.status(201).json({ message: "Journal entry saved successfully!" });
+    const entryId = journalResult.insertId;
+
+    // 2️⃣ Get account type
+    const [accountRows] = await db.query(
+      "SELECT account_type FROM chartofaccounts WHERE account_id = ?",
+      [account_id]
+    );
+
+    if (accountRows.length === 0) {
+      return res.status(400).json({ message: "Account not found" });
+    }
+
+    const accountType = accountRows[0].account_type;
+
+    // 3️⃣ Get last balance for this account
+    const [lastBalanceRows] = await db.query(
+      "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
+      [account_id]
+    );
+
+    let lastBalance = lastBalanceRows.length ? parseFloat(lastBalanceRows[0].balance) : 0;
+
+    // 4️⃣ Compute new balance
+    let newBalance;
+    if (accountType === "Asset" || accountType === "Expense") {
+      newBalance = lastBalance + debitAmount - creditAmount;
+    } else { // Liability, Equity, Revenue
+      newBalance = lastBalance + creditAmount - debitAmount;
+    }
+
+    // 5️⃣ Insert into general_ledger
+    await db.query(
+      "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date) VALUES (?,?,?,?,?,?,?)",
+      [entryId, account_id, description, debitAmount, creditAmount, newBalance, date]
+    );
+
+    return res.status(201).json({ message: "Journal entry and general ledger updated successfully!" });
+
   } catch (err) {
     console.error("Journal insert error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+router.get("/auth/general_ledger", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT g.date, c.account_name AS account, g.description, g.debit, g.credit, g.balance
+      FROM general_ledger g
+      JOIN chartofaccounts c ON g.account_id = c.account_id
+      ORDER BY g.date, g.ledger_id
+    `);
+    return res.json(rows);
+  } catch (err) {
+    console.error("Fetch General Ledger error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//get Chart of Accounts ->admincoa
+router.get("/general", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] =  await db.query(`
+        SELECT g.date, c.account_name AS account, c.account_type, g.description, g.debit, g.credit, g.balance
+  FROM general_ledger g
+  JOIN chartofaccounts c ON g.account_id = c.account_id
+  ORDER BY g.date, g.ledger_id
+    `);
+    return res.json(rows); // Send back as JSON array
+  } catch (err) {
+    console.error("Fetch COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 // upload excel to journal entry
 router.post("/journal/upload", upload.single("file"), async (req, res) => {
