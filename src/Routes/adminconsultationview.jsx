@@ -13,6 +13,7 @@ const Adminconsultationview = () => {
   const [error, setError] = useState("");
 
   const [selectedTeeth, setSelectedTeeth] = useState([]);
+  const [cancelInfo, setCancelInfo] = useState(null);
 
 
 useEffect(() => {
@@ -26,8 +27,6 @@ useEffect(() => {
           },
         });
 
-        
-
         if (!res.ok) throw new Error("Failed to fetch consultation");
 
         const data = await res.json();
@@ -35,6 +34,7 @@ useEffect(() => {
         setConsultation(data.consultation);
         setChargedItems(data.chargedItems || []);
         setSelectedTeeth(data.selectedTeeth || []);
+        setCancelInfo(data.cancelInfo?.[0] || null);
       } catch (err) {
         console.error("Error fetching consultation:", err);
         setError("Could not load consultation");
@@ -247,19 +247,57 @@ useEffect(() => {
                                             <br />
                                             <p className="font-bold">Follow-Up:</p><p>{consultation.pref_date}</p>
                                             <br />
-                                            <p className="font-bold">Consultation Completed:</p><p>{consultation.p_date_completed}</p>
+                                            <p className="font-bold">Consultation Completed:</p><p>{consultation.p_date_completed  || "N/A"}</p>
                                             <br />
                                             <br></br>
                                             <div className="col-sm-12">
-                                              <p className="text-1xl font-bold" style={{color:"#00458B"}}>Teeth Anatomy:</p>
-                                              <img src="../teethmodel.png" style={{width:"100%"}}></img>
+                                            {/* Hide Teeth Anatomy & Selected Teeth if appointment is cancelled */}
+                                            {consultation.appointment_status !== "cancelled" && (
+                                              <>
+                                                <div className="col-sm-12">
+                                                  <div className="col-sm-12">
+                                                    <p className="text-1xl font-bold" style={{ color: "#00458B" }}>
+                                                      Teeth Anatomy:
+                                                    </p>
+                                                    <img src="../teethmodel.png" style={{ width: "100%" }} alt="Teeth Model" />
+                                                  </div>
+                                                </div>
+
+                                                <div className="mt-6">
+                                                  <p className="font-bold text-1xl" style={{ color: "#00458B" }}>
+                                                    Selected Teeth:
+                                                  </p>
+                                                  <hr />
+                                                  <div className="grid grid-cols-2 gap-4 mt-4">
+                                                    {selectedTeeth.length > 0 ? (
+                                                      selectedTeeth.map((tooth, idx) => (
+                                                        <div
+                                                          key={idx}
+                                                          className="flex items-center p-3 border rounded-lg shadow-sm"
+                                                          style={{ borderColor: "#01D5C4" }}
+                                                        >
+                                                          <div>
+                                                            <p className="font-semibold text-[#00458B]">
+                                                              Tooth {tooth.st_number}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">{tooth.st_name}</p>
+                                                          </div>
+                                                        </div>
+                                                      ))
+                                                    ) : (
+                                                      <p className="text-gray-500">No teeth selected</p>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </>
+                                            )}
                                             </div>
                                         </div>
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
-                                        <p className="font-bold">Billing Information</p>
+                                        <p className="font-bold text-xl">Billing Information</p>
                                         <br />
 
-                                        {consultation.appointment_status !== "incomplete" && consultation.appointment_status !== "done" ? (
+                                        {consultation.appointment_status !== "incomplete" && consultation.appointment_status !== "done"  && consultation.appointment_status !== "cancelled" ? (
                                           <button
                                             className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full"
                                             onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
@@ -301,40 +339,51 @@ useEffect(() => {
                                         </div>
                                       )}
                                         <br></br>
-                                        <br></br>
-                                        <br></br>
-                                        <br></br>
-                                        <br></br>
-                                        <br></br>
-                                        <div className="mt-6">
-                                        <p className="font-bold text-1xl" style={{ color: "#00458B" }}>
-                                          Selected Teeth:
-                                        </p>
-                                        <hr />
-                                        <div className="grid grid-cols-2 gap-4 mt-4">
-                                          {selectedTeeth.length > 0 ? (
-                                            selectedTeeth.map((tooth, idx) => (
-                                              <div
-                                                key={idx}
-                                                className="flex items-center p-3 border rounded-lg shadow-sm"
-                                                style={{ borderColor: "#01D5C4" }}
+                                        {/* Cancelled Appointment Details (only show if cancelled) */}
+                                        {consultation.appointment_status === "cancelled" && cancelInfo && (
+                                          <>
+                                            <br />
+                                            <p className="font-bold text-xl" style={{ color: "#00458B" }}>
+                                              Cancelled Appointment Details:
+                                            </p>
+                                            <hr />
+                                            <br />
+                                            <p className="font-bold">Reason of Cancellation:</p>
+                                            <p>{cancelInfo.cc_reason || "N/A"}</p>
+
+                                            <p className="font-bold">Notes:</p>
+                                            <p>{cancelInfo.cc_notes || "N/A"}</p>
+
+                                            <p className="font-bold">Date Cancelled:</p>
+                                            <p>{cancelInfo.cc_date ? new Date(cancelInfo.cc_date).toLocaleDateString() : "N/A"}</p>
+
+                                            <p className="font-bold">Refund Method:</p>
+                                            <p>{cancelInfo.refund_method || "N/A"}</p>
+
+                                            <p className="font-bold">Refund Photo:</p>
+                                            {cancelInfo.refund_photo ? (
+                                              <button
+                                                onClick={() =>
+                                                  window.open(
+                                                    `http://localhost:3000/uploads/appointments/${cancelInfo.refund_photo}`,
+                                                    "_blank"
+                                                  )
+                                                }
+                                                className="bg-[#00458B] text-white px-4 py-2 rounded-full font-semibold hover:bg-[#009a90]"
                                               >
-                                                <div>
-                                                  <p className="font-semibold text-[#00458B]">
-                                                    Tooth {tooth.st_number}
-                                                  </p>
-                                                  <p className="text-sm text-gray-600">{tooth.st_name}</p>
-                                                </div>
-                                              </div>
-                                            ))
-                                          ) : (
-                                            <p className="text-gray-500">No teeth selected</p>
-                                          )}
-                                        </div>
-                                      </div>
+                                                Preview Refund Photo
+                                              </button>
+                                            ) : (
+                                              <p>No refund proof uploaded</p>
+                                            )}
+                                            <br />
+                                          </>
+                                        )}
+                                        <br></br>
                                       </div>
                                     </div>
                             </div>
+                            <br></br>
                             <br></br>
                             <div className="col-sm-12">
                                 <div className="row">

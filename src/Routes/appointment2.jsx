@@ -30,7 +30,7 @@ const Appointment2 = () => {
         </p>
 
         <p className="text-[#00458B] text-sm sm:text-base font-semibold mb-6">
-          Do you want to make a downpayment to reserve your appointment?
+          Choose your payment method for dentures:
         </p>
 
         {/* Radio buttons */}
@@ -38,58 +38,55 @@ const Appointment2 = () => {
           <label className="flex items-center justify-center border border-[#00c3b8] rounded-full py-2 cursor-pointer hover:bg-[#e6f9f8]">
             <input
               type="radio"
-              id="yes"
-              name="downpayment"
-              checked={appointmentData.payment_method === "Yes"}
-              onChange={() => updateAppointment("payment_method", "Yes")}
+              id="downpayment"
+              name="payment"
+              checked={appointmentData.payment_method === "downpayment"}
+              onChange={() => updateAppointment("payment_method", "downpayment")}
               className="mr-2"
             />
-            Yes
+            Downpayment
           </label>
 
           <label className="flex items-center justify-center border border-[#00c3b8] rounded-full py-2 cursor-pointer hover:bg-[#e6f9f8]">
             <input
               type="radio"
-              id="no"
-              name="downpayment"
-              checked={appointmentData.payment_method === "No"}
-              onChange={() => updateAppointment("payment_method", "No")}
+              id="fully_paid"
+              name="payment"
+              checked={appointmentData.payment_method === "fully_paid"}
+              onChange={() => updateAppointment("payment_method", "fully_paid")}
               className="mr-2"
             />
-            No
+            Fully Paid
           </label>
         </div>
 
-        {/* If Yes → show GCash QR and file upload */}
-        {appointmentData.payment_method === "Yes" && (
-          <>
-            <h2 className="text-[#00458B] text-sm sm:text-base my-6">
-              Scan this QR Code with your GCash App
-            </h2>
-            <img
-              src="gcashcode.png"
-              alt="Gcash QR Code"
-              className="w-full max-w-xs mx-auto mb-6"
-            />
+        {/* QR Code + Upload ALWAYS visible */}
+        <h2 className="text-[#00458B] text-sm sm:text-base my-6">
+          Scan this QR Code with your GCash App
+        </h2>
+        <img
+          src="gcashcode.png"
+          alt="Gcash QR Code"
+          className="w-full max-w-xs mx-auto mb-6"
+        />
 
-            <div className="mb-4 text-left">
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Upload your receipt here
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) =>
-                  updateAppointment("downpayment_proof", e.target.files[0])
-                }
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none 
-                  file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 
-                  file:text-sm file:font-semibold file:bg-[#00458b] file:text-white 
-                  hover:file:bg-[#003567]"
-              />
-            </div>
-          </>
-        )}
+        <div className="mb-4 text-left">
+          <label className="block text-[#00458b] font-semibold mb-1">
+            Upload your receipt here
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) =>
+              updateAppointment("downpayment_proof", e.target.files[0])
+            }
+            className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none 
+              file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 
+              file:text-sm file:font-semibold file:bg-[#00458b] file:text-white 
+              hover:file:bg-[#003567]"
+          />
+        </div>
+
 
         {/* Next Button */}
         <button

@@ -207,7 +207,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
   try {
     const db = await connectToDatabase();
 
-    const {
+    let {
       procedure_type,
       pref_date,
       pref_time,
@@ -230,6 +230,19 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
       p_blood_type,
     } = req.body;
 
+    // --- Enforce business rule ---
+    let downpaymentProofFile = null;
+    if (procedure_type !== "Dentures") {
+      // Force cash, ignore downpayment proof
+      payment_method = "cash";
+      downpaymentProofFile = null;
+    } else {
+      // Allow proof only for Dentures
+      downpaymentProofFile = req.files.downpayment_proof
+        ? req.files.downpayment_proof[0].filename
+        : null;
+    }
+
     // Required fields
     if (!procedure_type || !pref_date || !pref_time || !payment_method) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -249,7 +262,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
         pref_date,
         pref_time,
         payment_method,
-        req.files.downpayment_proof ? req.files.downpayment_proof[0].filename : null,
+        downpaymentProofFile,
         attending_dentist || "Unassigned",
         or_num || null,
         payment_status || "pending",
@@ -716,7 +729,12 @@ router.get("/displayconsultation/:appointId", async (req, res) => {
       [appointId]
     );
 
-    res.json({ consultation, chargedItems, selectedTeeth });
+    const [cancelInfo] = await db.query(
+      "SELECT * FROM cancelled WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems, selectedTeeth, cancelInfo });
   } catch (err) {
     console.error("Display consultation error:", err);
     res.status(500).json({ message: "Server error" });
@@ -924,116 +942,141 @@ router.get("/billing/item/:ci_id", authenticateToken, async (req, res) => {
   }
 });
 
-// Add charged item AND/OR update appointment billing totals + payment info
-router.post("/billing/:appointId", authenticateToken, async (req, res) => {
-  let db;
-  try {
-    db = await connectToDatabase();
-    const { appointId } = req.params;
-
-    const {
-      inv_id,
-      ci_item_name,
-      ci_quantity,
-      ci_amount,
-      payment_method,   // optional
-      payment_status,   // optional
-      total_service_charged // optional
-    } = req.body;
-
-    // Start transaction
-    await db.query("START TRANSACTION");
-
-    let insertRes = null;
-
-    // 🔹 CASE 1: Insert charged item if item fields are present
-    if (inv_id != null && ci_item_name && ci_quantity != null && ci_amount != null) {
-      const qty = Number(ci_quantity);
-      const amt = Number(ci_amount);
-
-      if (Number.isNaN(qty) || Number.isNaN(amt)) {
-        return res.status(400).json({ message: "Quantity and amount must be numbers" });
-      }
-
-      [insertRes] = await db.query(
-        `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id)
-         VALUES (?, ?, ?, ?, ?)`,
-        [inv_id, ci_item_name, qty, amt, appointId]
-      );
-    }
-
-    // 🔹 Always compute totals
-    const [sumRows] = await db.query(
-      `SELECT COALESCE(SUM(ci_quantity * ci_amount), 0) AS items_total
-       FROM chargeditem
-       WHERE appoint_id = ?`,
-      [appointId]
-    );
-    const itemsTotal = sumRows[0]?.items_total || 0;
-
-    // Get current service charge (unless new one is provided)
-    const [appRows] = await db.query(
-      `SELECT COALESCE(total_service_charged, 0) AS svc
-       FROM appointment
-       WHERE appoint_id = ?`,
-      [appointId]
-    );
-    const svc = total_service_charged != null ? Number(total_service_charged) : appRows[0]?.svc || 0;
-
-    // Compute total_charged
-    const total_charged = Number(itemsTotal) + Number(svc);
-
-    // 🔹 Update appointment table (include appoint_status = 'done')
-    let updateQuery = `UPDATE appointment SET total_charged = ?, total_service_charged = ?, appointment_status = 'incomplete'`;
-    const updateParams = [total_charged, svc];
-
-    if (payment_method != null) {
-      updateQuery += `, payment_method = ?`;
-      updateParams.push(payment_method);
-    }
-    if (payment_status != null) {
-      updateQuery += `, payment_status = ?`;
-      updateParams.push(payment_status);
-    }
-
-    updateQuery += ` WHERE appoint_id = ?`;
-    updateParams.push(appointId);
-
-    await db.query(updateQuery, updateParams);
-
-    // Commit transaction
-    await db.query("COMMIT");
-
-    // Fetch updated appointment
-    const [updatedAppRows] = await db.query(
-      `SELECT payment_method, payment_status, total_service_charged, total_charged, appointment_status
-       FROM appointment
-       WHERE appoint_id = ?`,
-      [appointId]
-    );
-
-    res.status(insertRes ? 201 : 200).json({
-      message: insertRes ? "Charged item added + billing updated" : "Billing updated",
-      ci_id: insertRes?.insertId ?? null,
-      appoint_id: appointId,
-      items_total: itemsTotal,
-      total_service_charged: updatedAppRows[0]?.total_service_charged ?? svc,
-      total_charged: updatedAppRows[0]?.total_charged ?? total_charged,
-      payment_method: updatedAppRows[0]?.payment_method ?? null,
-      payment_status: updatedAppRows[0]?.payment_status ?? null,
-      appointment_status: updatedAppRows[0]?.appointment_status ?? "done"
-    });
-
-  } catch (err) {
-    try {
-      if (db) await db.query("ROLLBACK");
-    } catch (rbErr) {
-      console.error("Rollback error:", rbErr);
-    }
-    console.error("Billing POST error:", err);
-    res.status(500).json({ message: "Internal server error" });
+// Storage config
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/gcash/"); // folder where proofs will be stored
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
+    cb(null, uniqueName);
   }
 });
+
+// Add charged item AND/OR update appointment billing totals + payment info
+router.post(
+  "/billing/:appointId",
+  authenticateToken,
+  upload.single("gcash_proof"),
+  async (req, res) => {
+    let db;
+    try {
+      db = await connectToDatabase();
+      const { appointId } = req.params;
+
+      const {
+        inv_id,
+        ci_item_name,
+        ci_quantity,
+        ci_amount,
+        payment_method,   // optional
+        payment_status,   // optional
+        total_service_charged // optional
+      } = req.body;
+
+      const gcashProof = req.file ? req.file.filename : null;
+
+      // Start transaction
+      await db.query("START TRANSACTION");
+
+      let insertRes = null;
+
+      // 🔹 CASE 1: Insert charged item if item fields are present
+      if (inv_id != null && ci_item_name && ci_quantity != null && ci_amount != null) {
+        const qty = Number(ci_quantity);
+        const amt = Number(ci_amount);
+
+        if (Number.isNaN(qty) || Number.isNaN(amt)) {
+          return res.status(400).json({ message: "Quantity and amount must be numbers" });
+        }
+
+        [insertRes] = await db.query(
+          `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id)
+           VALUES (?, ?, ?, ?, ?)`,
+          [inv_id, ci_item_name, qty, amt, appointId]
+        );
+      }
+
+      // 🔹 Always compute totals
+      const [sumRows] = await db.query(
+        `SELECT COALESCE(SUM(ci_quantity * ci_amount), 0) AS items_total
+         FROM chargeditem
+         WHERE appoint_id = ?`,
+        [appointId]
+      );
+      const itemsTotal = sumRows[0]?.items_total || 0;
+
+      // Get current service charge (unless new one is provided)
+      const [appRows] = await db.query(
+        `SELECT COALESCE(total_service_charged, 0) AS svc
+         FROM appointment
+         WHERE appoint_id = ?`,
+        [appointId]
+      );
+      const svc = total_service_charged != null ? Number(total_service_charged) : appRows[0]?.svc || 0;
+
+      // Compute total_charged
+      const total_charged = Number(itemsTotal) + Number(svc);
+
+      // 🔹 Update appointment table (now also saving gcash_proof if uploaded)
+      let updateQuery = `
+        UPDATE appointment 
+        SET total_charged = ?, total_service_charged = ?, appointment_status = 'incomplete'`;
+      const updateParams = [total_charged, svc];
+
+      if (payment_method != null) {
+        updateQuery += `, payment_method = ?`;
+        updateParams.push(payment_method);
+      }
+      if (payment_status != null) {
+        updateQuery += `, payment_status = ?`;
+        updateParams.push(payment_status);
+      }
+      if (gcashProof) {
+        updateQuery += `, downpayment_proof = ?`;
+        updateParams.push(gcashProof);
+      }
+
+      updateQuery += ` WHERE appoint_id = ?`;
+      updateParams.push(appointId);
+
+      await db.query(updateQuery, updateParams);
+
+      // Commit transaction
+      await db.query("COMMIT");
+
+      // Fetch updated appointment
+      const [updatedAppRows] = await db.query(
+        `SELECT payment_method, payment_status, total_service_charged, total_charged, appointment_status, downpayment_proof
+         FROM appointment
+         WHERE appoint_id = ?`,
+        [appointId]
+      );
+
+      res.status(insertRes ? 201 : 200).json({
+        message: insertRes ? "Charged item added + billing updated" : "Billing updated",
+        ci_id: insertRes?.insertId ?? null,
+        appoint_id: appointId,
+        items_total: itemsTotal,
+        total_service_charged: updatedAppRows[0]?.total_service_charged ?? svc,
+        total_charged: updatedAppRows[0]?.total_charged ?? total_charged,
+        payment_method: updatedAppRows[0]?.payment_method ?? null,
+        payment_status: updatedAppRows[0]?.payment_status ?? null,
+        downpayment_proof: updatedAppRows[0]?.downpayment_proof ?? null,
+        appointment_status: updatedAppRows[0]?.appointment_status ?? "done"
+      });
+
+    } catch (err) {
+      try {
+        if (db) await db.query("ROLLBACK");
+      } catch (rbErr) {
+        console.error("Rollback error:", rbErr);
+      }
+      console.error("Billing POST error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
 
 // (UPDATE PATIENT INFO)
 router.put("/updatepatientinfo/:id", async (req, res) => {
@@ -1145,28 +1188,46 @@ const refundStorage = multer.diskStorage({
 const uploadRefund = multer({ storage: refundStorage });
 
 //patient's side Cancel Appointment
-router.post("/cancelappointment/:appointId", async (req, res) => {
-  const db = await connectToDatabase();
-  try {
-    const { appointId } = req.params;
-    const { cc_reason} = req.body;
+// Patient's side Cancel Appointment
+router.post(
+  "/cancelappointment/:appointId",
+  uploadRefund.single("refund_photo"), // allow refund photo upload
+  async (req, res) => {
+    const db = await connectToDatabase();
+    try {
+      const { appointId } = req.params;
+      const { cc_reason, cc_notes } = req.body;
+      const refundPhoto = req.file ? req.file.filename : null;
 
-    if (cc_reason === "Refund request") {
+      let newStatus = "cancelled";
+      if (cc_reason === "Refund request") {
+        newStatus = "cancel with refund request";
+      }
+
       await db.query(
         `UPDATE appointment 
-         SET appointment_status = 'cancel with refund request' 
+         SET appointment_status = ?, 
+             cc_reason = ?, 
+             cc_notes = ?, 
+             cc_date = NOW(),
+             refund_photo = ?
          WHERE appoint_id = ?`,
-        [appointId]
+        [newStatus, cc_reason, cc_notes || null, refundPhoto, appointId]
       );
-      return res.json({ message: "Refund request sent successfully!" });
-    }
 
-    res.json({ message: "Appointment cancelled successfully!" });
-  } catch (error) {
-    console.error("Cancel error:", error);
-    res.status(500).json({ message: "Failed to cancel appointment" });
+      res.json({
+        message:
+          newStatus === "cancel with refund request"
+            ? "Refund request sent successfully!"
+            : "Appointment cancelled successfully!",
+        refund_photo: refundPhoto,
+      });
+    } catch (error) {
+      console.error("Cancel error:", error);
+      res.status(500).json({ message: "Failed to cancel appointment" });
+    }
   }
-});
+);
 
 // Admin/receptionist completes refund cancellation
 router.post("/processRefund/:appointId", upload.single("refund_photo"), async (req, res) => {

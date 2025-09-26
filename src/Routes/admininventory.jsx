@@ -191,11 +191,14 @@ const handleDelete = async (id) => {
                     <div className="row">
                         <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
                             <div className="row">
-                                <div className="col-sm-9">
+                                <div className="col-sm-6">
                                     <h1 className="text-2xl font-bold">Inventory Management</h1>
                                 </div>
                                 <div className="col-sm-3">
                                         <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventoryadd")}>+ Add New Item</button>
+                                </div>
+                                <div className="col-sm-3">
+                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventoryadd")}>Pending Items</button>
                                 </div>
                             </div>
                         </div>

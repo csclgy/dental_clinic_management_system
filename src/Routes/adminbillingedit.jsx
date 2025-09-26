@@ -26,6 +26,8 @@ const Adminbillingedit = () => {
   const [newAmount, setNewAmount] = useState(0);
   const [newItemName, setNewItemName] = useState("");
 
+  const [gcashProof, setGcashProof] = useState(null);
+
 const fetchBillingData = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -120,18 +122,29 @@ const fetchBillingData = async () => {
   const handleSaveBilling = async () => {
     try {
       const token = localStorage.getItem("token");
+
+      const formData = new FormData();
+      formData.append("payment_method", paymentMode);
+      formData.append("payment_status", paymentStatus);
+      formData.append("total_service_charged", Number(serviceCharge || 0));
+
+      // only attach file if GCash and proof is selected
+      if (paymentMode === "GCash" && gcashProof) {
+        formData.append("gcash_proof", gcashProof);
+      }
+
       await axios.post(
         `http://localhost:3000/auth/billing/${appointId}`,
+        formData,
         {
-          payment_method: paymentMode,
-          payment_status: paymentStatus,
-          total_service_charged: Number(serviceCharge || 0),
-          // backend will compute total_charged by summing chargeditem totals + total_service_charged
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
       );
+
       alert("Billing saved successfully");
-      // refresh data (so UI shows backend-computed totals)
       await fetchBillingData();
     } catch (err) {
       console.error("Error saving billing:", err);
@@ -285,174 +298,185 @@ const fetchBillingData = async () => {
                                 <hr></hr>
                                     <br></br>
                                      {/* Payment Info */}
-      <div className="mb-4 grid grid-cols-2 gap-4">
-        <div>
-          <label className="block font-medium">Mode of Payment</label>
-          <select
-            className="border p-2 w-full rounded"
-            value={paymentMode}
-            onChange={(e) => setPaymentMode(e.target.value)}
-          >
-            <option value="">--Select--</option>
-            <option value="Cash">Cash</option>
-            <option value="GCash">GCash</option>
-          </select>
-        </div>
-        <div>
-          <label className="block font-medium">Payment Status</label>
-          <select
-            className="border p-2 w-full rounded"
-            value={paymentStatus}
-            onChange={(e) => setPaymentStatus(e.target.value)}
-          >
-            <option value="">--Select--</option>
-            <option value="Unpaid">Unpaid</option>
-            <option value="Paid">Paid</option>
-            <option value="Partial">Partial</option>
-          </select>
-        </div>
-        <div>
-            <label className="block font-semibold">Service Charge</label>
-            <input
-              type="number"
-              className="w-full border rounded px-3 py-2"
-              value={serviceCharge}
-              onChange={(e) => setServiceCharge(e.target.value)}
-              min="0"
-            />
-          </div>
-      </div>
+                                    <div className="mb-4 grid grid-cols-2 gap-4">
+                                      <div>
+                                        <label className="block font-medium">Mode of Payment</label>
+                                        <select
+                                          className="border p-2 w-full rounded"
+                                          value={paymentMode}
+                                          onChange={(e) => setPaymentMode(e.target.value)}
+                                        >
+                                          <option value="">--Select--</option>
+                                          <option value="Cash">Cash</option>
+                                          <option value="GCash">GCash</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block font-medium">Payment Status</label>
+                                        <select
+                                          className="border p-2 w-full rounded"
+                                          value={paymentStatus}
+                                          onChange={(e) => setPaymentStatus(e.target.value)}
+                                        >
+                                          <option value="">--Select--</option>
+                                          <option value="Unpaid">Unpaid</option>
+                                          <option value="Paid">Paid</option>
+                                          <option value="Partial">Partial</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                          <label className="block font-semibold">Service Charge</label>
+                                          <input
+                                            type="number"
+                                            className="w-full border rounded px-3 py-2"
+                                            value={serviceCharge}
+                                            onChange={(e) => setServiceCharge(e.target.value)}
+                                            min="0"
+                                          />
+                                        </div>
+                                        {/* Show upload input ONLY if paymentMode === "GCash" */}
+                                        {paymentMode === "GCash" && (
+                                          <div className="mb-4">
+                                            <label className="block font-medium">Upload GCash Proof</label>
+                                            <input
+                                              type="file"
+                                              accept="image/*"
+                                              className="border p-2 w-full rounded"
+                                              onChange={(e) => setGcashProof(e.target.files[0])}
+                                            />
+                                          </div>
+                                        )}
+                                    </div>
 
-      {/* Charged Items Table */}
-      <table className="w-full border mb-4">
-        <thead className="bg-gray-100">
-          <tr>
-                <th className="px-4 py-2 text-center">Charged Item</th>
-                <th className="px-4 py-2 text-center">Quantity</th>
-                <th className="px-4 py-2 text-center">Unit Price</th>
-                <th className="px-4 py-2 text-center">Total Price</th>
-                <th className="px-4 py-2 text-center"></th>
-          </tr>
-        </thead>
-<tbody>
-              {chargedItems.length > 0 ? (
-                chargedItems.map((item) => {
-                  const name = item.ci_item_name ?? item.item ?? "(no name)";
-                  const qty = Number(item.ci_quantity ?? 0);
-                  const price = Number(item.ci_amount ?? 0);
-                  return (
-                    <tr key={item.ci_id} className="border-b border-gray-200 text-center">
-                      <td className="px-4 py-2 text-blue-700">{name}</td>
-                      <td className="px-4 py-2 text-blue-700">{qty}</td>
-                      <td className="px-4 py-2 text-blue-700">₱{price.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-blue-700">₱{(qty * price).toFixed(2)}</td>
-                      <td className="px-4 py-2">
-                        <button
-                          onClick={() => navigate(`/adminbillingedititem/${item.ci_id}`)}
-                          className="bg-green-500 text-white px-3 py-1 rounded-full mr-2"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item.ci_id)}
-                          className="bg-red-500 text-white px-3 py-1 rounded-full"
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="5" className="text-center py-4 text-gray-500">
-                    No items found
-                  </td>
-                </tr>
-              )}
+                                    {/* Charged Items Table */}
+                                    <table className="w-full border mb-4">
+                                      <thead className="bg-gray-100">
+                                        <tr>
+                                              <th className="px-4 py-2 text-center">Charged Item</th>
+                                              <th className="px-4 py-2 text-center">Quantity</th>
+                                              <th className="px-4 py-2 text-center">Unit Price</th>
+                                              <th className="px-4 py-2 text-center">Total Price</th>
+                                              <th className="px-4 py-2 text-center"></th>
+                                        </tr>
+                                      </thead>
+                              <tbody>
+                              {chargedItems.length > 0 ? (
+                                chargedItems.map((item) => {
+                                  const name = item.ci_item_name ?? item.item ?? "(no name)";
+                                  const qty = Number(item.ci_quantity ?? 0);
+                                  const price = Number(item.ci_amount ?? 0);
+                                  return (
+                                    <tr key={item.ci_id} className="border-b border-gray-200 text-center">
+                                      <td className="px-4 py-2 text-blue-700">{name}</td>
+                                      <td className="px-4 py-2 text-blue-700">{qty}</td>
+                                      <td className="px-4 py-2 text-blue-700">₱{price.toFixed(2)}</td>
+                                      <td className="px-4 py-2 text-blue-700">₱{(qty * price).toFixed(2)}</td>
+                                      <td className="px-4 py-2">
+                                        <button
+                                          onClick={() => navigate(`/adminbillingedititem/${item.ci_id}`)}
+                                          className="bg-green-500 text-white px-3 py-1 rounded-full mr-2"
+                                        >
+                                          Edit
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteItem(item.ci_id)}
+                                          className="bg-red-500 text-white px-3 py-1 rounded-full"
+                                        >
+                                          Delete
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  );
+                                })
+                              ) : (
+                                <tr>
+                                  <td colSpan="5" className="text-center py-4 text-gray-500">
+                                    No items found
+                                  </td>
+                                </tr>
+                              )}
 
-              {/* Grand totals row */}
-              <tr className="font-bold bg-gray-100">
-                <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">Items Total:</td>
-                <td className="px-4 py-2 text-blue-700">₱{itemsTotal.toFixed(2)}</td>
-                <td></td>
-              </tr>
+                              {/* Grand totals row */}
+                              <tr className="font-bold bg-gray-100">
+                                <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">Items Total:</td>
+                                <td className="px-4 py-2 text-blue-700">₱{itemsTotal.toFixed(2)}</td>
+                                <td></td>
+                              </tr>
 
-              <tr className="font-bold bg-gray-100">
-                <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">Service Charge:</td>
-                <td className="px-4 py-2 text-blue-700">₱{Number(serviceCharge || 0).toFixed(2)}</td>
-                <td></td>
-              </tr>
+                              <tr className="font-bold bg-gray-100">
+                                <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">Service Charge:</td>
+                                <td className="px-4 py-2 text-blue-700">₱{Number(serviceCharge || 0).toFixed(2)}</td>
+                                <td></td>
+                              </tr>
 
-              <tr className="font-bold bg-gray-200">
-                <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">Total Charged:</td>
-                <td className="px-4 py-2 text-blue-700">₱{Number(totalCharged).toFixed(2)}</td>
-                <td></td>
-              </tr>
-            </tbody>
-      </table>
+                              <tr className="font-bold bg-gray-200">
+                                <td colSpan="3" className="px-4 py-2 text-right text-[#00458B]">Total Charged:</td>
+                                <td className="px-4 py-2 text-blue-700">₱{Number(totalCharged).toFixed(2)}</td>
+                                <td></td>
+                              </tr>
+                            </tbody>
+                         </table>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                            <select
+                              className="border rounded px-3 py-2"
+                              value={newInvId}
+                              onChange={(e) => {
+                                const id = e.target.value;
+                                setNewInvId(id);
+                                const sel = inventory.find((i) => String(i.inv_id) === String(id));
+                                if (sel) {
+                                  setNewAmount(sel.inv_price_per_item);
+                                  setNewItemName(sel.inv_item_name);
+                                } else {
+                                  setNewAmount(0);
+                                  setNewItemName("");
+                                }
+                              }}
+                            >
+                              <option value="">Select Item</option>
+                              {inventory.map((inv) => (
+                                <option key={inv.inv_id} value={inv.inv_id}>
+                                  {inv.inv_item_name} (₱{inv.inv_price_per_item}, Stock: {inv.inv_quantity})
+                                </option>
+                              ))}
+                            </select>
 
-       <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-          <select
-            className="border rounded px-3 py-2"
-            value={newInvId}
-            onChange={(e) => {
-              const id = e.target.value;
-              setNewInvId(id);
-              const sel = inventory.find((i) => String(i.inv_id) === String(id));
-              if (sel) {
-                setNewAmount(sel.inv_price_per_item);
-                setNewItemName(sel.inv_item_name);
-              } else {
-                setNewAmount(0);
-                setNewItemName("");
-              }
-            }}
-          >
-            <option value="">Select Item</option>
-            {inventory.map((inv) => (
-              <option key={inv.inv_id} value={inv.inv_id}>
-                {inv.inv_item_name} (₱{inv.inv_price_per_item}, Stock: {inv.inv_quantity})
-              </option>
-            ))}
-          </select>
+                            <input
+                              type="number"
+                              min="1"
+                              className="px-3 py-2 border rounded"
+                              value={newQuantity}
+                              onChange={(e) => setNewQuantity(parseInt(e.target.value || "1"))}
+                              placeholder="Quantity"
+                            />
 
-          <input
-            type="number"
-            min="1"
-            className="px-3 py-2 border rounded"
-            value={newQuantity}
-            onChange={(e) => setNewQuantity(parseInt(e.target.value || "1"))}
-            placeholder="Quantity"
-          />
+                            <input
+                              type="number"
+                              className="px-3 py-2 border rounded"
+                              value={newAmount}
+                              onChange={(e) => setNewAmount(e.target.value)}
+                              placeholder="Unit Price"
+                            />
 
-          <input
-            type="number"
-            className="px-3 py-2 border rounded"
-            value={newAmount}
-            onChange={(e) => setNewAmount(e.target.value)}
-            placeholder="Unit Price"
-          />
+                            <button onClick={handleAddItem} className="bg-[#00c3b8] text-white px-4 py-2 rounded">
+                              Add
+                            </button>
+                          </div>
 
-          <button onClick={handleAddItem} className="bg-[#00c3b8] text-white px-4 py-2 rounded">
-            Add
-          </button>
-        </div>
+                        {/* Action Buttons */}
+                        <div className="flex justify-end gap-2">
+                          <button onClick={() => navigate(`/adminconsultationview/${appointId}`)} className="bg-gray-500 text-white px-6 py-2 rounded-full">
+                              Done
+                            </button>
 
-      {/* Action Buttons */}
-      <div className="flex justify-end gap-2">
-         <button onClick={() => navigate(`/adminconsultationview/${appointId}`)} className="bg-gray-500 text-white px-6 py-2 rounded-full">
-            Done
-          </button>
-
-          <button onClick={handleSaveBilling} className="bg-[#00458B] text-white px-6 py-2 rounded-full">
-            Save Billing
-          </button>
-      </div>
-            </div>
-            </div>                  
-            </div>
-            </div>
+                            <button onClick={handleSaveBilling} className="bg-[#00458B] text-white px-6 py-2 rounded-full">
+                              Save Billing
+                            </button>
+                        </div>
+                    </div>
+                  </div>                  
+                </div>
+              </div>
             <div className="col-sm-2">
             </div>
           </div>
