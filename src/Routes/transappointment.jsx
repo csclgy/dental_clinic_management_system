@@ -7,6 +7,7 @@ const TransAppointment = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [records, setRecords] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   // Fetch appointments from API
   // Fetch records from API
@@ -42,12 +43,19 @@ const TransAppointment = () => {
     }
   }, [location]);
 
-  // Filter records by search
-  const filteredRecords = records.filter(record =>
-    Object.values(record).some(value =>
+  // Filter records by search and status
+  const filteredRecords = records.filter(record => {
+    // Search filter
+    const matchesSearch = Object.values(record).some(value =>
       String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+    );
+
+    // Status filter
+    const matchesStatus =
+      statusFilter === "all" || record.appointment_status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
@@ -88,7 +96,19 @@ const TransAppointment = () => {
           >
             {/* Search Bar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-              <h3 className="font-bold text-[#00458B]">Appointments</h3>
+              <div className="my-4">
+              <label className="mr-2 font-semibold">Filter by Status:</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 border rounded-md bg-white text-gray-700"
+              >
+                <option value="all">All</option>
+                <option value="done">Done</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
               <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-full sm:w-64">
                 <input
                   type="text"
@@ -127,7 +147,7 @@ const TransAppointment = () => {
                         <td className="px-4 py-2 text-blue-700">
                           {record.procedure_type}
                         </td>
-                        <td className="px-4 py-2">{record.attending_dentist}</td>
+                        <td className="px-4 py-2">Dr. {record.attending_dentist}</td>
                         <td className="px-4 py-2">{record.appointment_status}</td>
                         <td className="px-4 py-2 text-center">
                             <button 

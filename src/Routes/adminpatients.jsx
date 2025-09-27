@@ -204,14 +204,14 @@ const AdminPatients = () => {
                   <table className="w-full border-collapse border border-gray-200">
                     <thead>
                       <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                        <th className="px-4 py-2">Last Name</th>
-                        <th className="px-4 py-2">First Name</th>
-                        <th className="px-4 py-2">Middle Name</th>
-                        <th className="px-4 py-2">Age</th>
-                        <th className="px-4 py-2">Gender</th>
-                        <th className="px-4 py-2">Contact No.</th>
-                        <th className="px-4 py-2">Email</th>
-                        <th className="px-4 py-2"></th>
+                        <th className="px-4 py-2 text-center">Last Name</th>
+                        <th className="px-4 py-2 text-center">First Name</th>
+                        <th className="px-4 py-2 text-center">Middle Name</th>
+                        <th className="px-4 py-2 text-center">Age</th>
+                        <th className="px-4 py-2 text-center">Gender</th>
+                        <th className="px-4 py-2 text-center">Contact No.</th>
+                        <th className="px-4 py-2 text-center">Email</th>
+                        <th className="px-4 py-2 text-center"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -228,15 +228,15 @@ const AdminPatients = () => {
                             className="border-b border-gray-200 text-center"
                           >
                             <td className="px-4 py-2 text-blue-700">{record.lname}</td>
-                            <td className="px-4 py-2 text-blue-700">{record.fname}</td>
-                            <td className="px-4 py-2 text-blue-700">{record.mname}</td>
-                            <td className="px-4 py-2 text-blue-700">{record.age}</td>
-                            <td className="px-4 py-2 text-blue-700">{record.gender}</td>
-                            <td className="px-4 py-2 text-blue-700">{record.contact_no}</td>
-                            <td className="px-4 py-2 text-blue-700">{record.email}</td>
-                            <td className="px-4 py-2 flex gap-2 justify-center">
+                            <td className="px-4 py-2">{record.fname}</td>
+                            <td className="px-4 py-2">{record.mname}</td>
+                            <td className="px-4 py-2">{record.age}</td>
+                            <td className="px-4 py-2">{record.gender}</td>
+                            <td className="px-4 py-2">{record.contact_no}</td>
+                            <td className="px-4 py-2">{record.email}</td>
+                            <td className="px-2 py-3 whitespace-nowrap">
                               <Link to={`/adminpatientsview/${record.user_id}`}>
-                                <button className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-4 py-1 rounded-full">
+                                <button className="bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-full">
                                   View
                                 </button>
                               </Link>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import { Calendar, momentLocalizer } from "react-big-calendar";  
 import moment from "moment";
@@ -18,6 +18,7 @@ const AdminSchedule = () => {
   const [error, setError] = useState("");
   const [records, setRecords] = useState([]);
   const [viewMode, setViewMode] = useState("table"); // toggle between table & calendar
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const [view, setView] = useState("week");   // default = week view
   const [date, setDate] = useState(new Date()); // default = today
@@ -122,12 +123,17 @@ const AdminSchedule = () => {
 
   const filteredRecords = records.filter((record) => {
     const status = record.appointment_status?.toLowerCase().trim();
-    return (
-      (status === "incomplete" || status === "pending" || status === "cancel with refund request") &&
-      Object.values(record).some((value) =>
-        String(value).toLowerCase().includes(searchTerm.toLowerCase())
-      )
+
+    // 🔹 Match filter (all = no filter)
+    const matchesFilter =
+      statusFilter === "all" ? true : status === statusFilter.toLowerCase();
+
+    // 🔹 Match search
+    const matchesSearch = Object.values(record).some((value) =>
+      String(value).toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    return matchesFilter && matchesSearch;
   });
 
   return (
@@ -282,20 +288,32 @@ const AdminSchedule = () => {
                     <div>
                     {/* Search Bar */}
                     <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                      <div className="flex justify-between items-center">
-                        <div></div>
-                        <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                          <input
-                            type="text"
-                            placeholder="Search"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="flex-1 outline-none text-sm text-gray-700"
-                          />
-                          <i className="fa fa-search text-[#00458B]"></i>
+                        <div className="flex justify-between items-center">
+                          {/* 🔹 Status Filter Dropdown */}
+                          <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                            className="border border-[#00458B] rounded-full px-3 py-1 text-sm text-gray-700"
+                          >
+                            <option value="all">All</option>
+                            <option value="pending">Pending</option>
+                            <option value="incomplete">Incomplete</option>
+                            <option value="cancel with refund request">Cancel with refund request</option>
+                          </select>
+
+                          {/* 🔹 Search Bar */}
+                          <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
+                            <input
+                              type="text"
+                              placeholder="Search"
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              className="flex-1 outline-none text-sm text-gray-700"
+                            />
+                            <i className="fa fa-search text-[#00458B]"></i>
+                          </div>
                         </div>
                       </div>
-                    </div>
                       {/* Table */}
                       <div className="overflow-x-auto">
                         <table className="w-full border-collapse border border-gray-200">
@@ -318,11 +336,11 @@ const AdminSchedule = () => {
                               filteredRecords.map((record, index) => (
                                 <tr key={index} className="border-b border-gray-200 text-center">
                                   <td className="px-4 py-2 text-blue-700">{record.pref_date}</td>
-                                  <td className="px-4 py-2 text-blue-700">{record.p_lname}</td>
-                                  <td className="px-4 py-2 text-blue-700">{record.p_fname}</td>
-                                  <td className="px-4 py-2 text-blue-700">{record.procedure_type}</td>
-                                  <td className="px-4 py-2 text-blue-700">{record.attending_dentist}</td>
-                                  <td className="px-4 py-2 text-blue-700">{record.appointment_status}</td>
+                                  <td className="px-4 py-2">{record.p_lname}</td>
+                                  <td className="px-4 py-2">{record.p_fname}</td>
+                                  <td className="px-4 py-2">{record.procedure_type}</td>
+                                  <td className="px-4 py-2">{record.attending_dentist}</td>
+                                  <td className="px-4 py-2">{record.appointment_status}</td>
 
                                   {/* View button always enabled */}
                                   <td className="px-2 py-3 whitespace-nowrap">

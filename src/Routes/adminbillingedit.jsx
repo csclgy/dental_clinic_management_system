@@ -373,12 +373,6 @@ const fetchBillingData = async () => {
                                       <td className="px-4 py-2 text-blue-700">₱{(qty * price).toFixed(2)}</td>
                                       <td className="px-4 py-2">
                                         <button
-                                          onClick={() => navigate(`/adminbillingedititem/${item.ci_id}`)}
-                                          className="bg-green-500 text-white px-3 py-1 rounded-full mr-2"
-                                        >
-                                          Edit
-                                        </button>
-                                        <button
                                           onClick={() => handleDeleteItem(item.ci_id)}
                                           className="bg-red-500 text-white px-3 py-1 rounded-full"
                                         >

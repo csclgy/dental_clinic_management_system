@@ -8,7 +8,6 @@ const admininventory = () => {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [items, setItems] = useState([]); // inventory state
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("all");
 
   // Scroll behavior
   useEffect(() => {
@@ -27,7 +26,7 @@ const admininventory = () => {
     const fetchItems = async () => {
       try {
         const token = localStorage.getItem("token"); // include token if needed
-        const res = await fetch("http://localhost:3000/auth/inventory", {
+        const res = await fetch("http://localhost:3000/auth/pendingitems", {
           headers: {
             "Authorization": `Bearer ${token}`
           }
@@ -45,9 +44,36 @@ const admininventory = () => {
   }, []);
 
 const handleDelete = async (id) => {
+  if (!window.confirm("Are you sure you want to delete this Item?")) return;
+
   const token = localStorage.getItem("token");
   try {
-    const res = await fetch(`http://localhost:3000/auth/inactiveitem/${id}`, {
+    const res = await fetch(`http://localhost:3000/auth/deleteitem/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.message || "Failed to delete Item");
+    }
+
+    // Update state to remove deleted item
+    setItems((prevItems) => prevItems.filter((item) => item.inv_id !== id));
+
+    alert("Item deleted successfully");
+  } catch (err) {
+    console.error("Error deleting item:", err);
+    alert(err.message || "Could not delete Item");
+  }
+};
+
+const handleApprove = async (id) => {
+  const token = localStorage.getItem("token");
+  try {
+    const res = await fetch(`http://localhost:3000/auth/approveitem/${id}`, {
       method: "PUT",
       headers: {
         "Authorization": `Bearer ${token}`,
@@ -63,28 +89,26 @@ const handleDelete = async (id) => {
     // Update state to remove approved item from pending list
     setItems((prevItems) =>
       prevItems.map((item) =>
-        item.inv_id === id ? { ...item, inv_item_status: "inactive" } : item
+        item.inv_id === id ? { ...item, inv_item_status: "approved" } : item
       )
     );
 
-    alert("Item Inactive successfully");
+    alert("Item approved successfully");
   } catch (err) {
-    console.error("Error Inactive item:", err);
+    console.error("Error approving item:", err);
     alert(err.message || "Could not approve item");
   }
 };
 
-// 🔹 Apply both search + status filter
-  const filteredItems = items.filter((item) => {
-    const matchesSearch = Object.values(item).some((val) =>
-      val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-    );
 
-    const matchesStatus =
-      statusFilter === "all" || item.inv_item_status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
+// Show only "pending" items, and also apply search filter
+const filteredItems = items.filter((item) => {
+  const matchesStatus = item.inv_item_status === "pending";
+  const matchesSearch = Object.values(item).some((val) =>
+    val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  return matchesStatus && matchesSearch;
+});
 
   return (
     <div>
@@ -201,12 +225,13 @@ const handleDelete = async (id) => {
                             <div className="row">
                                 <div className="col-sm-6">
                                     <h1 className="text-2xl font-bold">Inventory Management</h1>
+                                    <h1 className="text-1xl font-bold">(Pending Items)</h1>
                                 </div>
                                 <div className="col-sm-3">
                                         <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventoryadd")}>+ Add New Item</button>
                                 </div>
                                 <div className="col-sm-3">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventorypending")}>Pending Items</button>
+                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventory")}>Approved Items</button>
                                 </div>
                             </div>
                         </div>
@@ -217,31 +242,19 @@ const handleDelete = async (id) => {
                                 {/* Table */}
                                 <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
                                     {/* Search bar */}
-                                    {/* 🔹 Search + Filter */}
-                                <div className="flex justify-between items-center mb-4">
-                                  {/* Status filter dropdown */}
-                                  <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="border border-[#00458B] rounded-full px-4 py-2 text-sm text-gray-700"
-                                  >
-                                    <option value="all">All</option>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                  </select>
-
-                                  {/* Search bar */}
-                                  <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                                    <input
-                                      type="text"
-                                      placeholder="Search"
-                                      value={searchTerm}
-                                      onChange={(e) => setSearchTerm(e.target.value)}
-                                      className="flex-1 outline-none text-sm text-gray-700"
-                                    />
-                                    <i className="fa fa-search text-[#00458B]"></i>
-                                  </div>
-                                </div>
+                                    <div className="flex justify-between items-center">
+                                    <div></div>
+                                    <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
+                                        <input
+                                        type="text"
+                                        placeholder="Search"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        className="flex-1 outline-none text-sm text-gray-700"
+                                        />
+                                        <i className="fa fa-search text-[#00458B]"></i>
+                                    </div>
+                                    </div>
                                 </div>
 
                                 <div className="overflow-x-auto">
@@ -249,67 +262,48 @@ const handleDelete = async (id) => {
                                     <thead>
                                         <tr className="bg-white text-[#00458B] border-b border-gray-200">
                                         <th className="px-4 py-2 text-center">Item Name</th>
-                                        <th className="px-4 py-2 text-center">Stock Status</th>
+                                        <th className="px-4 py-2 text-center">Status</th>
                                         <th className="px-4 py-2 text-center">Quantity</th>
-                                        <th className="px-4 py-2 text-center">Item Status</th>
                                         <th className="px-4 py-2 text-center"></th>
                                         <th className="px-4 py-2 text-center"></th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                      {loading ? (
+                                        {loading ? (
                                         <tr>
-                                          <td colSpan="6" className="text-center py-4 text-gray-500">
+                                            <td colSpan="5" className="text-center py-4 text-gray-500">
                                             Loading...
-                                          </td>
+                                            </td>
                                         </tr>
-                                      ) : filteredItems.length > 0 ? (
+                                        ) : filteredItems.length > 0 ? (
                                         filteredItems.map((item) => (
-                                          <tr key={item.inv_id} className="border-b border-gray-200 text-center">
+                                            <tr key={item.inv_id} className="border-b border-gray-200 text-center">
                                             <td className="px-4 py-2 text-blue-700">{item.inv_item_name}</td>
                                             <td className="px-4 py-2">{item.inv_status}</td>
                                             <td className="px-4 py-2">{item.inv_quantity}</td>
-                                            <td className="px-4 py-2">{item.inv_item_status}</td>
-
-                                            {/* Edit Button */}
-                                            <td className="px-2 py-3 whitespace-nowrap">
-                                              <Link to={`/admininventoryedit/${item.inv_id}`}>
-                                                <button
-                                                  disabled={item.inv_item_status === "inactive"}
-                                                  className={`px-4 py-2 rounded-full transition ${
-                                                    item.inv_item_status === "inactive"
-                                                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                                                      : "bg-[#04AA6D] text-white border-[#00458b]"
-                                                  }`}
-                                                >
-                                                  View & Edit
-                                                </button>
-                                              </Link>
-                                            </td>
-
-                                            {/* Inactive Button */}
                                             <td className="px-4 py-2">
-                                              <button
-                                                onClick={() => handleDelete(item.inv_id)}
-                                                disabled={item.inv_item_status === "inactive"}
-                                                className={`w-full px-4 py-1 rounded-full ${
-                                                  item.inv_item_status === "inactive"
-                                                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                                                    : "bg-[#f44336] text-white"
-                                                }`}
-                                              >
-                                                Inactive
-                                              </button>
+                                                <button 
+                                                    onClick={() => handleApprove(item.inv_id)}
+                                                    className="bg-[#04AA6D] text-white w-full border border-[#00458b] px-4 py-1 rounded-full">
+                                                    Approve
+                                                </button>
                                             </td>
-                                          </tr>
+                                            <td className="px-4 py-2">
+                                                <button 
+                                                    onClick={() => handleDelete(item.inv_id)}
+                                                    className="bg-[#f44336] text-white px-4 py-1 rounded-full">
+                                                    Reject
+                                                </button>
+                                            </td>
+                                            </tr>
                                         ))
-                                      ) : (
+                                        ) : (
                                         <tr>
-                                          <td colSpan="6" className="text-center text-gray-500 py-4">
+                                            <td colSpan="5" className="text-center text-gray-500 py-4">
                                             No items found
-                                          </td>
+                                            </td>
                                         </tr>
-                                      )}
+                                        )}
                                     </tbody>
                                     </table>
                                     </div>

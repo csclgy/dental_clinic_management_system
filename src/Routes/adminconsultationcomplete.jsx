@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
+import axios from "axios";
 
 const Adminconsultationcomplete = () => {
   const { appointId } = useParams();
@@ -7,10 +8,11 @@ const Adminconsultationcomplete = () => {
   const navigate = useNavigate();
 
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [patient, setPatient] = useState(null);
   const [consultation, setConsultation] = useState(null);
   const [chargedItems, setChargedItems] = useState([]);
   const [error, setError] = useState("");
+  
+  const [dentists, setDentists] = useState([]);
 
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   // Add this new state
@@ -110,9 +112,6 @@ useEffect(() => {
     }
   }, [location]);
 
-  if (error) return <p className="text-red-500">{error}</p>;
-  if (!consultation) return <p>Loading consultation...</p>;
-
 const handleComplete = async () => {
   if (assignedDentist === "Unassigned") {
     alert("Please assign a dentist before completion.");
@@ -148,6 +147,24 @@ const handleComplete = async () => {
     alert("Error completing consultation. Try again.");
   }
 };
+
+useEffect(() => {
+  const fetchDentists = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:3000/auth/dentists", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setDentists(res.data);
+    } catch (err) {
+      console.error("Error fetching dentists:", err);
+    }
+  };
+  fetchDentists();
+}, []);
+
+  if (error) return <p className="text-red-500">{error}</p>;
+  if (!consultation) return <p>Loading consultation...</p>;
 
   return (
     <div>
@@ -244,7 +261,7 @@ const handleComplete = async () => {
                     className="w-full text-left px-4 py-2 hover:bg-blue-100"
                     style={{ color: "#00458B" }}
                     >
-                    <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
+                    <i className="fa fa-calendar" aria-hidden="true"></i> Schedules
                     </button>
                 </Link>
 
@@ -325,34 +342,41 @@ const handleComplete = async () => {
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
                                             <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date}</p>
                                             <br />
+                                            {/* Dentist Selection */}
                                             <p className="font-bold">Attending Dentist:</p>
-                                            {consultation.attending_dentist === "Unassigned" ? (
                                             <select
-                                                value={assignedDentist}
-                                                onChange={(e) => setAssignedDentist(e.target.value)}
-                                                className="border p-2 rounded w-full"
+                                              value={assignedDentist}
+                                              onChange={(e) => setAssignedDentist(e.target.value)}
+                                              className="border p-2 rounded w-full"
+                                              disabled={consultation.attending_dentist && consultation.attending_dentist !== "Unassigned"}
                                             >
-                                                <option value="Unassigned">-- Select Dentist --</option>
-                                                <option value="Dr. Smith">Dr. Smith</option>
-                                                <option value="Dr. Garcia">Dr. Garcia</option>
-                                                <option value="Dr. Cruz">Dr. Cruz</option>
+                                              <option value="Unassigned">-- Select Dentist --</option>
+                                              {dentists.map((d) => (
+                                                <option key={d.user_id} value={`${d.fname} ${d.lname}`}>
+                                                  Dr. {d.fname} {d.lname}
+                                                </option>
+                                              ))}
+                                              <p className="mt-2 text-gray-700">Assigned: {consultation.attending_dentist}</p>
                                             </select>
-                                            ) : (
-                                            <p>{consultation.attending_dentist}</p>
-                                            )}
-                                            <br></br>
+                                            {/* {consultation.attending_dentist && consultation.attending_dentist !== "Unassigned" && (
+                                              <p className="mt-2 text-gray-700">Assigned: {consultation.attending_dentist}</p>
+                                            )} */}
+
                                             <br />
+                                            <br />
+
+                                            {/* Diagnosis */}
                                             <p className="font-bold">Diagnosis:</p>
-                                            {consultation.p_diagnosis ? (
-                                            <p>{consultation.p_diagnosis}</p>
-                                            ) : (
                                             <input
-                                                type="text"
-                                                value={diagnosis}
-                                                onChange={(e) => setDiagnosis(e.target.value)}
-                                                placeholder="Enter diagnosis"
-                                                className="border p-2 rounded w-full"
+                                              type="text"
+                                              value={diagnosis}
+                                              onChange={(e) => setDiagnosis(e.target.value)}
+                                              placeholder="Enter diagnosis"
+                                              className="border p-2 rounded w-full"
+                                              disabled={!!consultation.p_diagnosis}
                                             />
+                                            {consultation.p_diagnosis && (
+                                              <p className="mt-2 text-gray-700">Diagnosis: {consultation.p_diagnosis}</p>
                                             )}
                                             <br />
                                             <br />
@@ -430,36 +454,44 @@ const handleComplete = async () => {
                                       </button>
 
                                       {showTeethSelection && (
-                                        <form className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                          {teethList.map((tooth) => {
-                                            const isSelected = selectedTeeth.some((t) => t.st_number === tooth.number);
-                                            return (
-                                              <div
-                                                key={tooth.number}
-                                                className="flex items-center justify-between p-3 border rounded-lg shadow-sm hover:shadow-md transition"
-                                                style={{ borderColor: isSelected ? "#01D5C4" : "#ddd" }}
-                                              >
-                                                <div className="flex items-center gap-3">
-                                                  <input
-                                                    type="checkbox"
-                                                    id={`tooth-${tooth.number}`}
-                                                    checked={isSelected}
-                                                    onChange={(e) =>
-                                                      handleSelect(tooth.number, tooth.name, e.target.checked)
-                                                    }
-                                                    className="w-5 h-5 text-[#01D5C4] border-gray-300 rounded focus:ring-[#01D5C4]"
-                                                  />
-                                                  <label
-                                                    htmlFor={`tooth-${tooth.number}`}
-                                                    className="text-sm font-medium text-[#00458B]"
-                                                  >
-                                                    {tooth.number}. {tooth.name}
-                                                  </label>
+                                        <div
+                                          className="border rounded-lg shadow-inner p-3"
+                                          style={{
+                                            maxHeight: "300px",   // 🔹 fixed height for scroll area
+                                            overflowY: "auto",    // 🔹 vertical scroll enabled
+                                          }}
+                                        >
+                                          <form className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {teethList.map((tooth) => {
+                                              const isSelected = selectedTeeth.some((t) => t.st_number === tooth.number);
+                                              return (
+                                                <div
+                                                  key={tooth.number}
+                                                  className="flex items-center justify-between p-3 border rounded-lg shadow-sm hover:shadow-md transition"
+                                                  style={{ borderColor: isSelected ? "#01D5C4" : "#ddd" }}
+                                                >
+                                                  <div className="flex items-center gap-3">
+                                                    <input
+                                                      type="checkbox"
+                                                      id={`tooth-${tooth.number}`}
+                                                      checked={isSelected}
+                                                      onChange={(e) =>
+                                                        handleSelect(tooth.number, tooth.name, e.target.checked)
+                                                      }
+                                                      className="w-5 h-5 text-[#01D5C4] border-gray-300 rounded focus:ring-[#01D5C4]"
+                                                    />
+                                                    <label
+                                                      htmlFor={`tooth-${tooth.number}`}
+                                                      className="text-sm font-medium text-[#00458B]"
+                                                    >
+                                                      {tooth.number}. {tooth.name}
+                                                    </label>
+                                                  </div>
                                                 </div>
-                                              </div>
-                                            );
-                                          })}
-                                        </form>
+                                              );
+                                            })}
+                                          </form>
+                                        </div>
                                       )}
                                       </div>
                                     </div>

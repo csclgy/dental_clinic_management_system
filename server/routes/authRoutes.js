@@ -369,7 +369,17 @@ router.get("/viewmyconsultation/:appointId", async (req, res) => {
       [appointId]
     );
 
-    res.json({ consultation, chargedItems, selectedTeeth });
+    const [cancelInfo] = await db.query(
+      "SELECT * FROM cancelled WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    const [photos] = await db.query(
+      "SELECT * FROM uploadedphotos WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems, selectedTeeth, cancelInfo, photos });
   } catch (err) {
     console.error("Display consultation error:", err);
     res.status(500).json({ message: "Server error" });
@@ -734,7 +744,12 @@ router.get("/displayconsultation/:appointId", async (req, res) => {
       [appointId]
     );
 
-    res.json({ consultation, chargedItems, selectedTeeth, cancelInfo });
+   const [photos] = await db.query(
+      "SELECT * FROM uploadedphotos WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems, selectedTeeth, cancelInfo, photos });
   } catch (err) {
     console.error("Display consultation error:", err);
     res.status(500).json({ message: "Server error" });
@@ -830,7 +845,8 @@ router.get("/billing/:appointId", authenticateToken, async (req, res) => {
         ci_id,
         ci_item_name,
         ci_quantity, 
-        ci_amount 
+        ci_amount,
+        ci_status 
       FROM chargeditem
       WHERE appoint_id = ?`,
       [appointId]
@@ -991,8 +1007,8 @@ router.post(
         }
 
         [insertRes] = await db.query(
-          `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id)
-           VALUES (?, ?, ?, ?, ?)`,
+          `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id, ci_status)
+          VALUES (?, ?, ?, ?, ?, 'pending')`,
           [inv_id, ci_item_name, qty, amt, appointId]
         );
       }
@@ -1135,40 +1151,59 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
   try {
     const db = await connectToDatabase();
 
-    // Update appointment
-    const query = `
+    // 1) Update appointment info
+    const [result] = await db.query(
+      `
       UPDATE appointment 
       SET attending_dentist = ?, 
           p_diagnosis = ?, 
           appointment_status = ?, 
           p_date_completed = NOW()
       WHERE appoint_id = ?
-    `;
-
-    const [result] = await db.query(query, [
-      attending_dentist,
-      p_diagnosis,
-      appointment_status,
-      appointId,
-    ]);
+      `,
+      [attending_dentist, p_diagnosis, appointment_status, appointId]
+    );
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Appointment not found." });
     }
 
-    // Insert selected teeth if provided
+    // 2) If appointment is marked DONE
+    if (appointment_status === "done") {
+      // ✅ Flip charged items from pending → charged
+      await db.query(
+        `UPDATE chargeditem 
+         SET ci_status = 'charged' 
+         WHERE appoint_id = ? AND ci_status = 'pending'`,
+        [appointId]
+      );
+
+      // ✅ Deduct inventory stock based on charged items
+      await db.query(
+        `UPDATE inventory i
+         JOIN chargeditem c ON i.inv_id = c.inv_id
+         SET i.inv_quantity = i.inv_quantity - c.ci_quantity
+         WHERE c.appoint_id = ? AND c.ci_status = 'charged'`,
+        [appointId]
+      );
+    }
+
+    // 3) Insert selected teeth (if any)
     if (Array.isArray(selected_teeth) && selected_teeth.length > 0) {
       const insertQuery = `
         INSERT INTO selectedteeth (appoint_id, st_number, st_name)
         VALUES (?, ?, ?)
       `;
-
       for (const tooth of selected_teeth) {
         await db.query(insertQuery, [appointId, tooth.st_number, tooth.st_name]);
       }
     }
 
-    res.json({ message: `Consultation marked as ${appointment_status} and teeth recorded.` });
+    res.json({
+      message: `Consultation marked as ${appointment_status}, items ${
+        appointment_status === "done" ? "charged & inventory updated" : "left pending"
+      }, teeth recorded if provided.`
+    });
   } catch (error) {
     console.error("Error updating appointment:", error);
     res.status(500).json({ message: "Server error while updating appointment." });
@@ -1187,11 +1222,10 @@ const refundStorage = multer.diskStorage({
 });
 const uploadRefund = multer({ storage: refundStorage });
 
-//patient's side Cancel Appointment
 // Patient's side Cancel Appointment
 router.post(
   "/cancelappointment/:appointId",
-  uploadRefund.single("refund_photo"), // allow refund photo upload
+  uploadRefund.single("refund_photo"),
   async (req, res) => {
     const db = await connectToDatabase();
     try {
@@ -1199,25 +1233,33 @@ router.post(
       const { cc_reason, cc_notes } = req.body;
       const refundPhoto = req.file ? req.file.filename : null;
 
+      // Set appointment status
       let newStatus = "cancelled";
       if (cc_reason === "Refund request") {
         newStatus = "cancel with refund request";
       }
 
+      // ✅ Update appointment table
       await db.query(
         `UPDATE appointment 
-         SET appointment_status = ?, 
-             cc_reason = ?, 
-             cc_notes = ?, 
-             cc_date = NOW(),
-             refund_photo = ?
+         SET appointment_status = ? 
          WHERE appoint_id = ?`,
-        [newStatus, cc_reason, cc_notes || null, refundPhoto, appointId]
+        [newStatus, appointId]
       );
+
+      // ✅ Only insert into "cancelled" table if NOT refund request
+      if (cc_reason !== "Refund request") {
+        await db.query(
+          `INSERT INTO cancelled 
+            (appoint_id, cc_reason, cc_notes, cc_date, cc_label, refund_photo)
+           VALUES (?, ?, ?, NOW(), ?, ?)`,
+          [appointId, cc_reason, cc_notes || null, newStatus, refundPhoto]
+        );
+      }
 
       res.json({
         message:
-          newStatus === "cancel with refund request"
+          cc_reason === "Refund request"
             ? "Refund request sent successfully!"
             : "Appointment cancelled successfully!",
         refund_photo: refundPhoto,
@@ -1259,6 +1301,18 @@ router.post("/processRefund/:appointId", upload.single("refund_photo"), async (r
   }
 });
 
+router.get("/dentists", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query(
+      "SELECT user_id, fname, lname FROM users WHERE role = 'dentist'"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching dentists:", err);
+    res.status(500).json({ error: "Failed to fetch dentists" });
+  }
+});
 
 //################################ INVENTORY MANAGEMENT ################################
 // for admininventoryadd.jsx (ADD NEW ITEM)
@@ -1290,8 +1344,8 @@ router.post('/additem', async (req, res) => {
 
     await db.query(
       `INSERT INTO inventory 
-      (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status, inv_item_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [inv_item_type, inv_item_name, inv_price_per_item, inv_quantity || null, inv_ml || null, inv_exp_date || null, status]
     );
 
@@ -1412,10 +1466,70 @@ router.get("/displayitem/:id", async (req, res) => {
 router.get('/inventory', async (req, res) => {
   try {
     const db = await connectToDatabase();
-    const [rows] = await db.query('SELECT * FROM inventory');
+    const [rows] = await db.query(`SELECT * FROM inventory WHERE inv_item_status = 'active' OR inv_item_status = 'inactive'`);
     res.json(rows);
   } catch (err) {
     console.error("Fetch inventory error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// for admininventorypending
+router.get('/pendingitems', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`SELECT * FROM inventory WHERE inv_item_status = 'pending' `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Fetch inventory error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Approve item
+router.put("/approveitem/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [result] = await db.query(
+      `UPDATE inventory 
+       SET inv_item_status = 'active' 
+       WHERE inv_id = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    res.json({ message: "Item approved successfully" });
+  } catch (err) {
+    console.error("Approve item error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Approve item
+router.put("/inactiveitem/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [result] = await db.query(
+      `UPDATE inventory 
+       SET inv_item_status = 'inactive' 
+       WHERE inv_id = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    res.json({ message: "Item Inactive successfully" });
+  } catch (err) {
+    console.error("Inactive item error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 });
