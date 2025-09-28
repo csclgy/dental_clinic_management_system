@@ -4,10 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-
-
-const admincoa = () => {
-  const location = useLocation();
+const adminSubsidiary = () => {
+   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
@@ -178,10 +176,10 @@ const admincoa = () => {
                         <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
                             <div className="row">
                                 <div className="col-sm-10">
-                                    <h1 className="text-2xl font-bold">Charts of Account</h1>
+                                    <h1 className="text-2xl font-bold">Subsidiary</h1>
                                 </div>
                                 <div className="col-sm-2">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admincoaadd")}>Add</button>
+                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminsubsidiaryadd")}>Add</button>
                                 </div>
                             </div>
                         </div>
@@ -193,7 +191,7 @@ const admincoa = () => {
                                 <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
                                     {/* Header */}
                                     <div className="flex justify-between items-center mb-1">
-                                        <h1 className=" font-bold text-[#00458B]"></h1>
+                                        <h1 className=" font-bold text-[#00458B]"> </h1>
                                         {/* Search bar */}
                                         <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
                                         <input
@@ -206,6 +204,25 @@ const admincoa = () => {
                                         <i className="fa fa-search text-[#00458B]"></i>
                                         </div>
                                     </div>
+                                    <div className="row justify-content-center mt-4">
+                                    <div className="col-sm-4">
+                                        <button
+                                        className="bg-[#00c3b8] text-white font-semibold px-3 py-2 rounded-full w-full mb-2"
+                                        onClick={() => navigate("/admincoaadd")}
+                                        >
+                                        Accounts Receivable
+                                        </button>
+                                    </div>
+                                    <div className="col-sm-4">
+                                        <button
+                                        className="bg-[#00c3b8] text-white font-semibold px-3 py-2 rounded-full w-full mb-2"
+                                        onClick={() => navigate("/admincoaadd")}
+                                        >
+                                        Accounts Payable
+                                        </button>
+                                    </div>
+                                    </div>
+
                                 </div>
 
                                     {/* Table */}
@@ -213,11 +230,12 @@ const admincoa = () => {
                                         <table className="w-full border-collapse border border-gray-200">
                                         <thead>
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                            <th className="px-4 py-2 text-center">Account Name</th>
-                                            <th className="px-4 py-2 text-center">Account Type</th>
-                                            <th className="px-4 py-2 text-center">Account Status</th>
-                                            <th className="px-4 py-2 text-center"> Subaccounts</th>
-                                             <th className="px-4 py-2 text-center">Action</th>
+                                            <th className="px-4 py-2 text-center">Date</th>
+                                            <th className="px-4 py-2 text-center">Name</th>
+                                            <th className="px-4 py-2 text-center">Invoice  No. </th>
+                                            <th className="px-4 py-2 text-center"> Debit</th>
+                                             <th className="px-4 py-2 text-center">Credit</th>
+                                             <th className="px-4 py-2 text-center">Balance</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -286,7 +304,8 @@ const admincoa = () => {
         </div>
       </div>
     </div>
+  
   );
 };
 
-export default admincoa;
+export default adminSubsidiary;

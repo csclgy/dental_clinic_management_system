@@ -98,6 +98,11 @@ const adminjournal = () => {
                         Journal Entries
                         </p>
                     </Link>
+                      <Link to='/adminsubsidiary'>
+                                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                                          Subsidiary 
+                                        </p>
+                                       </Link>  
                     <Link to="/admingeneral">
                         <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
                         General Ledger
@@ -224,6 +229,9 @@ const adminjournal = () => {
                                             />
                                             <i className="fa fa-search text-[#00458B]"></i>
                                         </div>
+                                        <div>
+                                            
+                                        </div>
                                         </div>
                                     </div>
                                     </div>
@@ -235,10 +243,10 @@ const adminjournal = () => {
                                         <thead>
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
                                             <th className="px-4 py-2 text-left">Date</th>
-                                            <th className="px-4 py-2 text-left">Description</th>
-                                            <th className="px-4 py-2 text-left">Accounts</th>
-                                            <th className="px-4 py-2 text-left">Debit</th>
-                                            <th className="px-4 py-2 text-left">Credit</th>
+                                            <th className="px-4 py-4 text-left">Account</th>
+                                             <th className="px-4 py-4 text-left">Description</th>
+                                            <th className="px-4 py-4 text-left">Debit</th>
+                                            <th className="px-4 py-4 text-left">Credit</th>
                                             <th className="px-4 py-2 text-left">Comment</th>
                                             </tr>
                                         </thead>
@@ -247,11 +255,12 @@ const adminjournal = () => {
                                             filteredRecords.map((record, index) => (
                                                 <tr key={index} className="border-b border-gray-200">
                                                 <td className="px-4 py-2 text-blue-700">{record.date}</td>
+                                                <td className="px-4 py-2 text-blue-700">{record.Account}</td>
                                                 <td className="px-4 py-2 text-blue-700">{record.description}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.accounts}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.debit}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.credit}</td>
+                                                <td className="px- py-2 text-blue-700">₱ {record.debit}</td>
+                                                <td className="px-4 py-2 text-blue-700">₱ {record.credit}</td>
                                                 <td className="px-4 py-2 text-blue-700">{record.comment}</td>
+
 
                                                 </tr>
                                             ))
@@ -268,27 +277,19 @@ const adminjournal = () => {
                                         </tbody>
                                         </table>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-sm-12">
-                        <div className="row">
-                            <div className="col-sm-6">
-                                </div>
-                                    <div className="col-sm-6">
+                                    <br/>
                                         <div className="row">
-                                            <div className="col-sm-8">
-
-                                            </div>
-                                        <div className="col-sm-4">
-                                            <br />
-                                            <br />
-                                    </div>
+                                        {/* <div className="col-sm-3">
+                                                <button class="bg-[#00c3b8] text-white font-semibold px-3 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminjournalupload")}>Upload Entry</button>
+                                        </div> */}
+                            </div>
+   
                                 </div>
+                                
                             </div>
                         </div>
                     </div>
+                   
                 </div>
             <div className="col-sm-2">
                 

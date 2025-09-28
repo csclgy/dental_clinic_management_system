@@ -50,7 +50,11 @@ import AdminScheduleCancel from "./Routes/adminschedulecancel";
 import Adminconsultationcomplete from "./Routes/adminconsultationcomplete";
 import Cancelappointment from "./Routes/cancelappointment";
 import Admininventorypending from "./Routes/admininventorypending";
-
+import AdminCoaView from "./Routes/admincoaview";
+import AdminCoaViewAdd from "./Routes/admincoaviewadd";
+import AdminCoaViewEdit from "./Routes/admincoaviewedit";
+import AdminSubsidiary from "./Routes/adminsubsidiary";
+import AdminSubsidiaryadd from "./Routes/adminsubsidiaryadd";
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-white-50">
@@ -181,6 +185,11 @@ function App() {
              <Route path="/adminschedulecancel/:appointId" element={<AdminScheduleCancel />} />
              <Route path="/adminconsultationcomplete/:appointId" element={<Adminconsultationcomplete />} />
              <Route path="/admininventorypending" element={<Admininventorypending />} />
+              <Route path="/admincoaview/:id" element={<AdminCoaView/>} />
+             <Route path="/admincoaviewadd/:id" element={<AdminCoaViewAdd/>} />
+             <Route path="/admincoaviewedit/:id" element={<AdminCoaViewEdit/>} />
+             <Route path="/adminsubsidiary" element={<AdminSubsidiary />}/>
+             <Route path="/adminsubsidiaryadd" element={<AdminSubsidiaryadd />}/>
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

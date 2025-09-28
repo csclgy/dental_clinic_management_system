@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-const adminjournaladd = () => {
+const adminsubsidiaryadd = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
@@ -34,7 +34,7 @@ const adminjournaladd = () => {
 
     const fetchAccount = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/coa1`);
+        const res = await axios.get(`http://localhost:3000/auth/accounts`);
         setAccount(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
@@ -65,35 +65,47 @@ useEffect(() => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!formData.date || !formData.description || !formData.account || !formData.amount) {
-      alert("Please fill in all required fields.");
-      return;
-    }
+  if (!formData.date || !formData.description || !formData.account || !formData.amount) {
+    alert("Please fill in all required fields.");
+    return;
+  }
 
-    try {
-      // Determine debit and credit amounts
-      const debit = formData.type === "debit" ? Number(formData.amount) : 0;
-      const credit = formData.type === "credit" ? Number(formData.amount) : 0;
+  try {
+    // Determine debit and credit amounts
+    const debit = formData.type === "debit" ? Number(formData.amount) : 0;
+    const credit = formData.type === "credit" ? Number(formData.amount) : 0;
 
-      await axios.post("http://localhost:3000/auth/journal", {
-        date: formData.date,
-        description: formData.description,
-        account_id: formData.account,
-        subaccount_id: formData.subaccount,
-        debit,
-        credit,
-        comment: formData.comment
-      });
+    // 1️⃣ Save to journal (journal_entries + general_ledger)
+    await axios.post("http://localhost:3000/auth/journal", {
+      date: formData.date,
+      description: formData.description,
+      account_id: formData.account,
+      subaccount_id: formData.subaccount,
+      debit,
+      credit,
+      comment: formData.comment,
+    });
 
-      alert("Journal entry saved successfully!");
-      navigate("/adminjournal"); // go back to journal list
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.message || "Something went wrong");
-    }
-  };
+    // 2️⃣ Save to subsidiary_ledger
+    await axios.post("http://localhost:3000/auth/subsidiary", {
+      date: formData.date,
+      description: formData.description,
+      account_id: formData.account,
+      subaccount_id: formData.subaccount,
+      debit,
+      credit,
+      comment: formData.comment,
+    });
+
+    alert("Journal + Subsidiary entry saved successfully!");
+    navigate("/adminsubsidiary");
+  } catch (err) {
+    console.error("Error saving entry:", err);
+    alert(err.response?.data?.message || "Something went wrong");
+  }
+};
 
   return (
     <div>
@@ -213,7 +225,7 @@ useEffect(() => {
                         <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
                             <div className="row">
                                 <div className="col-sm-6">
-                                    <h1 className="text-2xl font-bold">Journal Entries</h1>
+                                    <h1 className="text-2xl font-bold">Subsidiary Ledger</h1>
                                 </div>
                                
                             </div>
@@ -223,7 +235,7 @@ useEffect(() => {
                             <form onSubmit={handleSubmit}>
                             <div className="row">
                                  
-                                    <h1 className="text-xl font-bold" style={{ color: "#00458B" }}>Journal Entry</h1>
+                                    <h1 className="text-xl font-bold" style={{ color: "#00458B" }}> Add New Entry</h1>
                                     <div className="col-sm-2">
                                     </div>
                                 
@@ -238,46 +250,20 @@ useEffect(() => {
                                                     <input type="date" name="date" value={formData.date} onChange={handleChange}  class="w-full border border-[#00458b] rounded-full px-3 py-2 outline-none" />
                                                 </div>
                                             </div>
-                                            <div className="col-sm-4">
+                                            <div className="col-sm-8">
                                                 <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Account</label>
-                                                    <select name="account" value={formData.account} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
-                                                          <option value="">-- Select Account --</option>
-                                                            {account.map((acc) => (
-                                                            <option key={acc.account_id} value={acc.account_id}>
-                                                                {acc.account_name}
-                                                            </option>
-                                                            ))}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div className="col-sm-4">
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Sub Account</label>
-                                                   <select 
-                                                        name="subaccount" 
-                                                        value={formData.subaccount}   // <-- fix here
-                                                        onChange={handleChange} 
-                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                                                        >
-                                                        <option value="">-- Select Subaccount --</option>
-                                                        {sub.map((sub) => (
-                                                            <option key={sub.id} value={sub.id}>
-                                                            {sub.account_name}
-                                                            </option>
-                                                        ))}
-                                                        </select>
+                                                    <label class="block text-[#00458b] font-semibold mb-1">Invoice Number</label>
+                                                   <input type="text" name="description" value={formData.description} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Description</label>
-                                            <input type="text" name="description" value={formData.description} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                            <label class="block text-[#00458b] font-semibold mb-1">Name</label>
+                                            <input type="text" name="description"/* value={formData.description} onChange={handleChange}*/ class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                         </div>
-
                                         <div className="row">
-                                            <div className="col-sm-6">
+                                              <div className="col-sm-6">
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Debit/Credit</label>
                                                     <select  name="type" value={formData.type} onChange={handleChange}   class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none">
@@ -293,12 +279,28 @@ useEffect(() => {
                                                 </div>
                                             </div>
                                         </div>
-
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Comment</label>
-                                            <input type="text" name="comment" value={formData.comment} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                      <  div className="row">
+                                            <div className="col-sm-6">
+                                                <div className="mb-4 text-left">
+                                                    <label className="block text-[#00458b] font-semibold mb-1">Account</label>
+                                                    <select
+                                                        name="account"
+                                                        value={formData.account}
+                                                        onChange={handleChange}
+                                                        className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                                    >
+                                                        <option value="">-- Select Account --</option>
+                                                        {account.map(acc => (
+                                                        <option key={acc.account_id} value={acc.account_id}>
+                                                            {acc.account_name}
+                                                        </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                
+                                            </div>
                                         </div>
-
+                                        
                                     </div>
                                     <div className="col-sm-2">
 
@@ -311,8 +313,8 @@ useEffect(() => {
                                             </div>
                                         <div className="col-sm-6">
                                             <div className="row">
-                                                <div className="col-sm-8">
-                                                    <button type="button" className="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full mb-4" onClick={() => navigate("/adminjournal")}>Back</button>
+                                                <div className="col-sm-4">
+                                                    <button type="button" className="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full mb-4" onClick={() => navigate("/adminsubsidiary")}>Back</button>
                           </div>
                           <div className="col-sm-4">
                             <button type="submit" className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full mb-4">Save</button>
@@ -337,4 +339,4 @@ useEffect(() => {
   );
 };
 
-export default adminjournaladd; 
+export default adminsubsidiaryadd; 
