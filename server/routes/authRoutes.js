@@ -7,6 +7,7 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import { authenticateToken } from "../middleware/authMiddleware.js";
+import bodyParser from "body-parser";
 
 dotenv.config();
 
@@ -20,7 +21,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 
 // for register.jsx (REGISTRATION)
 router.post('/register', async (req, res) => {
-  const { user_name, user_password, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num } = req.body;
+  const { user_name, user_password, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type } = req.body;
 
   if (!user_name || !email || !user_password) {
     return res.status(400).json({ message: "Username, email, and password are required" });
@@ -34,9 +35,9 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(user_password, 10);
     await db.query(
       `INSERT INTO users 
-      (user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num) 
-      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user_name, hashedPassword, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num]
+      (user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type) 
+      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [user_name, hashedPassword, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type]
     );
 
     return res.status(201).json({ message: "User created successfully" });
@@ -206,7 +207,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
   try {
     const db = await connectToDatabase();
 
-    const {
+    let {
       procedure_type,
       pref_date,
       pref_time,
@@ -229,6 +230,19 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
       p_blood_type,
     } = req.body;
 
+    // --- Enforce business rule ---
+    let downpaymentProofFile = null;
+    if (procedure_type !== "Dentures") {
+      // Force cash, ignore downpayment proof
+      payment_method = "cash";
+      downpaymentProofFile = null;
+    } else {
+      // Allow proof only for Dentures
+      downpaymentProofFile = req.files.downpayment_proof
+        ? req.files.downpayment_proof[0].filename
+        : null;
+    }
+
     // Required fields
     if (!procedure_type || !pref_date || !pref_time || !payment_method) {
       return res.status(400).json({ message: "Missing required fields" });
@@ -248,7 +262,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
         pref_date,
         pref_time,
         payment_method,
-        req.files.downpayment_proof ? req.files.downpayment_proof[0].filename : null,
+        downpaymentProofFile,
         attending_dentist || "Unassigned",
         or_num || null,
         payment_status || "pending",
@@ -296,7 +310,8 @@ router.get("/my-upcoming", authenticateToken, async (req, res) => {
     const query = `
       SELECT *
       FROM appointment
-      WHERE user_name = ? AND appointment_status = 'pending'
+      WHERE user_name = ?
+        AND (appointment_status = 'pending' OR appointment_status = 'cancel with refund request')
       ORDER BY pref_date ASC
     `;
     const [rows] = await db.query(query, [patientUsername]);
@@ -308,7 +323,6 @@ router.get("/my-upcoming", authenticateToken, async (req, res) => {
   }
 });
 
-// for transappointment.js
 router.get("/myappointmenthistory", authenticateToken, async (req, res) => {
   const db = await connectToDatabase();
 
@@ -317,14 +331,15 @@ router.get("/myappointmenthistory", authenticateToken, async (req, res) => {
     const query = `
       SELECT *
       FROM appointment
-      WHERE user_name = ? AND appointment_status = 'done'
+      WHERE user_name = ?
+        AND (appointment_status = 'done' OR appointment_status = 'cancelled')
       ORDER BY pref_date ASC
     `;
     const [rows] = await db.query(query, [patientUsername]);
 
     res.json(rows);
   } catch (err) {
-    console.error("Error fetching upcoming appointments:", err);
+    console.error("Error fetching appointment history:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -349,7 +364,22 @@ router.get("/viewmyconsultation/:appointId", async (req, res) => {
       [appointId]
     );
 
-    res.json({ consultation, chargedItems });
+    const [selectedTeeth] = await db.query(
+      "SELECT st_id, appoint_id, st_number, st_name FROM selectedteeth WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    const [cancelInfo] = await db.query(
+      "SELECT * FROM cancelled WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    const [photos] = await db.query(
+      "SELECT * FROM uploadedphotos WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems, selectedTeeth, cancelInfo, photos });
   } catch (err) {
     console.error("Display consultation error:", err);
     res.status(500).json({ message: "Server error" });
@@ -624,7 +654,7 @@ router.get('/displayconsultations', async (req, res) => {
              p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
              p_home_address, p_email, p_contact_no, p_blood_type
       FROM appointment
-      WHERE appointment_status = 'pending' OR appointment_status = 'incomplete'
+      WHERE appointment_status = 'pending' OR appointment_status = 'incomplete' OR appointment_status = 'cancel with refund request'
       ORDER BY pref_date ASC
     `);
 
@@ -704,7 +734,22 @@ router.get("/displayconsultation/:appointId", async (req, res) => {
       [appointId]
     );
 
-    res.json({ consultation, chargedItems });
+    const [selectedTeeth] = await db.query(
+      "SELECT st_id, appoint_id, st_number, st_name FROM selectedteeth WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    const [cancelInfo] = await db.query(
+      "SELECT * FROM cancelled WHERE appoint_id = ?",
+      [appointId]
+    );
+
+   const [photos] = await db.query(
+      "SELECT * FROM uploadedphotos WHERE appoint_id = ?",
+      [appointId]
+    );
+
+    res.json({ consultation, chargedItems, selectedTeeth, cancelInfo, photos });
   } catch (err) {
     console.error("Display consultation error:", err);
     res.status(500).json({ message: "Server error" });
@@ -800,7 +845,8 @@ router.get("/billing/:appointId", authenticateToken, async (req, res) => {
         ci_id,
         ci_item_name,
         ci_quantity, 
-        ci_amount 
+        ci_amount,
+        ci_status 
       FROM chargeditem
       WHERE appoint_id = ?`,
       [appointId]
@@ -912,116 +958,141 @@ router.get("/billing/item/:ci_id", authenticateToken, async (req, res) => {
   }
 });
 
-// Add charged item AND/OR update appointment billing totals + payment info
-router.post("/billing/:appointId", authenticateToken, async (req, res) => {
-  let db;
-  try {
-    db = await connectToDatabase();
-    const { appointId } = req.params;
-
-    const {
-      inv_id,
-      ci_item_name,
-      ci_quantity,
-      ci_amount,
-      payment_method,   // optional
-      payment_status,   // optional
-      total_service_charged // optional
-    } = req.body;
-
-    // Start transaction
-    await db.query("START TRANSACTION");
-
-    let insertRes = null;
-
-    // 🔹 CASE 1: Insert charged item if item fields are present
-    if (inv_id != null && ci_item_name && ci_quantity != null && ci_amount != null) {
-      const qty = Number(ci_quantity);
-      const amt = Number(ci_amount);
-
-      if (Number.isNaN(qty) || Number.isNaN(amt)) {
-        return res.status(400).json({ message: "Quantity and amount must be numbers" });
-      }
-
-      [insertRes] = await db.query(
-        `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id)
-         VALUES (?, ?, ?, ?, ?)`,
-        [inv_id, ci_item_name, qty, amt, appointId]
-      );
-    }
-
-    // 🔹 Always compute totals
-    const [sumRows] = await db.query(
-      `SELECT COALESCE(SUM(ci_quantity * ci_amount), 0) AS items_total
-       FROM chargeditem
-       WHERE appoint_id = ?`,
-      [appointId]
-    );
-    const itemsTotal = sumRows[0]?.items_total || 0;
-
-    // Get current service charge (unless new one is provided)
-    const [appRows] = await db.query(
-      `SELECT COALESCE(total_service_charged, 0) AS svc
-       FROM appointment
-       WHERE appoint_id = ?`,
-      [appointId]
-    );
-    const svc = total_service_charged != null ? Number(total_service_charged) : appRows[0]?.svc || 0;
-
-    // Compute total_charged
-    const total_charged = Number(itemsTotal) + Number(svc);
-
-    // 🔹 Update appointment table (include appoint_status = 'done')
-    let updateQuery = `UPDATE appointment SET total_charged = ?, total_service_charged = ?, appointment_status = 'incomplete'`;
-    const updateParams = [total_charged, svc];
-
-    if (payment_method != null) {
-      updateQuery += `, payment_method = ?`;
-      updateParams.push(payment_method);
-    }
-    if (payment_status != null) {
-      updateQuery += `, payment_status = ?`;
-      updateParams.push(payment_status);
-    }
-
-    updateQuery += ` WHERE appoint_id = ?`;
-    updateParams.push(appointId);
-
-    await db.query(updateQuery, updateParams);
-
-    // Commit transaction
-    await db.query("COMMIT");
-
-    // Fetch updated appointment
-    const [updatedAppRows] = await db.query(
-      `SELECT payment_method, payment_status, total_service_charged, total_charged, appointment_status
-       FROM appointment
-       WHERE appoint_id = ?`,
-      [appointId]
-    );
-
-    res.status(insertRes ? 201 : 200).json({
-      message: insertRes ? "Charged item added + billing updated" : "Billing updated",
-      ci_id: insertRes?.insertId ?? null,
-      appoint_id: appointId,
-      items_total: itemsTotal,
-      total_service_charged: updatedAppRows[0]?.total_service_charged ?? svc,
-      total_charged: updatedAppRows[0]?.total_charged ?? total_charged,
-      payment_method: updatedAppRows[0]?.payment_method ?? null,
-      payment_status: updatedAppRows[0]?.payment_status ?? null,
-      appointment_status: updatedAppRows[0]?.appointment_status ?? "done"
-    });
-
-  } catch (err) {
-    try {
-      if (db) await db.query("ROLLBACK");
-    } catch (rbErr) {
-      console.error("Rollback error:", rbErr);
-    }
-    console.error("Billing POST error:", err);
-    res.status(500).json({ message: "Internal server error" });
+// Storage config
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/gcash/"); // folder where proofs will be stored
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = Date.now() + "-" + Math.round(Math.random() * 1E9) + path.extname(file.originalname);
+    cb(null, uniqueName);
   }
 });
+
+// Add charged item AND/OR update appointment billing totals + payment info
+router.post(
+  "/billing/:appointId",
+  authenticateToken,
+  upload.single("gcash_proof"),
+  async (req, res) => {
+    let db;
+    try {
+      db = await connectToDatabase();
+      const { appointId } = req.params;
+
+      const {
+        inv_id,
+        ci_item_name,
+        ci_quantity,
+        ci_amount,
+        payment_method,   // optional
+        payment_status,   // optional
+        total_service_charged // optional
+      } = req.body;
+
+      const gcashProof = req.file ? req.file.filename : null;
+
+      // Start transaction
+      await db.query("START TRANSACTION");
+
+      let insertRes = null;
+
+      // 🔹 CASE 1: Insert charged item if item fields are present
+      if (inv_id != null && ci_item_name && ci_quantity != null && ci_amount != null) {
+        const qty = Number(ci_quantity);
+        const amt = Number(ci_amount);
+
+        if (Number.isNaN(qty) || Number.isNaN(amt)) {
+          return res.status(400).json({ message: "Quantity and amount must be numbers" });
+        }
+
+        [insertRes] = await db.query(
+          `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id, ci_status)
+          VALUES (?, ?, ?, ?, ?, 'pending')`,
+          [inv_id, ci_item_name, qty, amt, appointId]
+        );
+      }
+
+      // 🔹 Always compute totals
+      const [sumRows] = await db.query(
+        `SELECT COALESCE(SUM(ci_quantity * ci_amount), 0) AS items_total
+         FROM chargeditem
+         WHERE appoint_id = ?`,
+        [appointId]
+      );
+      const itemsTotal = sumRows[0]?.items_total || 0;
+
+      // Get current service charge (unless new one is provided)
+      const [appRows] = await db.query(
+        `SELECT COALESCE(total_service_charged, 0) AS svc
+         FROM appointment
+         WHERE appoint_id = ?`,
+        [appointId]
+      );
+      const svc = total_service_charged != null ? Number(total_service_charged) : appRows[0]?.svc || 0;
+
+      // Compute total_charged
+      const total_charged = Number(itemsTotal) + Number(svc);
+
+      // 🔹 Update appointment table (now also saving gcash_proof if uploaded)
+      let updateQuery = `
+        UPDATE appointment 
+        SET total_charged = ?, total_service_charged = ?, appointment_status = 'incomplete'`;
+      const updateParams = [total_charged, svc];
+
+      if (payment_method != null) {
+        updateQuery += `, payment_method = ?`;
+        updateParams.push(payment_method);
+      }
+      if (payment_status != null) {
+        updateQuery += `, payment_status = ?`;
+        updateParams.push(payment_status);
+      }
+      if (gcashProof) {
+        updateQuery += `, downpayment_proof = ?`;
+        updateParams.push(gcashProof);
+      }
+
+      updateQuery += ` WHERE appoint_id = ?`;
+      updateParams.push(appointId);
+
+      await db.query(updateQuery, updateParams);
+
+      // Commit transaction
+      await db.query("COMMIT");
+
+      // Fetch updated appointment
+      const [updatedAppRows] = await db.query(
+        `SELECT payment_method, payment_status, total_service_charged, total_charged, appointment_status, downpayment_proof
+         FROM appointment
+         WHERE appoint_id = ?`,
+        [appointId]
+      );
+
+      res.status(insertRes ? 201 : 200).json({
+        message: insertRes ? "Charged item added + billing updated" : "Billing updated",
+        ci_id: insertRes?.insertId ?? null,
+        appoint_id: appointId,
+        items_total: itemsTotal,
+        total_service_charged: updatedAppRows[0]?.total_service_charged ?? svc,
+        total_charged: updatedAppRows[0]?.total_charged ?? total_charged,
+        payment_method: updatedAppRows[0]?.payment_method ?? null,
+        payment_status: updatedAppRows[0]?.payment_status ?? null,
+        downpayment_proof: updatedAppRows[0]?.downpayment_proof ?? null,
+        appointment_status: updatedAppRows[0]?.appointment_status ?? "done"
+      });
+
+    } catch (err) {
+      try {
+        if (db) await db.query("ROLLBACK");
+      } catch (rbErr) {
+        console.error("Rollback error:", rbErr);
+      }
+      console.error("Billing POST error:", err);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  }
+);
 
 // (UPDATE PATIENT INFO)
 router.put("/updatepatientinfo/:id", async (req, res) => {
@@ -1067,12 +1138,12 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
   }
 });
 
-// Mark consultation as DONE or INCOMPLETE
+// Mark consultation as DONE or INCOMPLETE + save selected teeth
 router.put("/completeconsultation/:appointId", async (req, res) => {
   const { appointId } = req.params;
-  const { attending_dentist, p_diagnosis, appointment_status } = req.body;
-  // status should be either "done" or "incomplete"
+  const { attending_dentist, p_diagnosis, appointment_status, selected_teeth } = req.body;
 
+  // Validate status
   if (!["done", "incomplete"].includes(appointment_status)) {
     return res.status(400).json({ message: "Invalid status value." });
   }
@@ -1080,27 +1151,59 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
   try {
     const db = await connectToDatabase();
 
-    const query = `
+    // 1) Update appointment info
+    const [result] = await db.query(
+      `
       UPDATE appointment 
       SET attending_dentist = ?, 
           p_diagnosis = ?, 
           appointment_status = ?, 
           p_date_completed = NOW()
       WHERE appoint_id = ?
-    `;
-
-    const [result] = await db.query(query, [
-      attending_dentist,
-      p_diagnosis,
-      appointment_status,
-      appointId,
-    ]);
+      `,
+      [attending_dentist, p_diagnosis, appointment_status, appointId]
+    );
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Appointment not found." });
     }
 
-    res.json({ message: `Consultation marked as ${appointment_status}.` });
+    // 2) If appointment is marked DONE
+    if (appointment_status === "done") {
+      // ✅ Flip charged items from pending → charged
+      await db.query(
+        `UPDATE chargeditem 
+         SET ci_status = 'charged' 
+         WHERE appoint_id = ? AND ci_status = 'pending'`,
+        [appointId]
+      );
+
+      // ✅ Deduct inventory stock based on charged items
+      await db.query(
+        `UPDATE inventory i
+         JOIN chargeditem c ON i.inv_id = c.inv_id
+         SET i.inv_quantity = i.inv_quantity - c.ci_quantity
+         WHERE c.appoint_id = ? AND c.ci_status = 'charged'`,
+        [appointId]
+      );
+    }
+
+    // 3) Insert selected teeth (if any)
+    if (Array.isArray(selected_teeth) && selected_teeth.length > 0) {
+      const insertQuery = `
+        INSERT INTO selectedteeth (appoint_id, st_number, st_name)
+        VALUES (?, ?, ?)
+      `;
+      for (const tooth of selected_teeth) {
+        await db.query(insertQuery, [appointId, tooth.st_number, tooth.st_name]);
+      }
+    }
+
+    res.json({
+      message: `Consultation marked as ${appointment_status}, items ${
+        appointment_status === "done" ? "charged & inventory updated" : "left pending"
+      }, teeth recorded if provided.`
+    });
   } catch (error) {
     console.error("Error updating appointment:", error);
     res.status(500).json({ message: "Server error while updating appointment." });
@@ -1119,48 +1222,48 @@ const refundStorage = multer.diskStorage({
 });
 const uploadRefund = multer({ storage: refundStorage });
 
-// Cancel appointment
-router.post("/cancelappointment/:appointId", upload.single("refund_photo"), async (req, res) => {
-
+// Patient's side Cancel Appointment
+router.post(
+  "/cancelappointment/:appointId",
+  uploadRefund.single("refund_photo"),
+  async (req, res) => {
     const db = await connectToDatabase();
     try {
       const { appointId } = req.params;
-      const {
-        cc_reason,
-        cc_notes,
-        cc_label,
-        refund_method,
-      } = req.body;
+      const { cc_reason, cc_notes } = req.body;
+      const refundPhoto = req.file ? req.file.filename : null;
 
-      const refund_photo = req.file ? req.file.filename : null;
-      const refund_date = refund_method ? new Date() : null;
+      // Set appointment status
+      let newStatus = "cancelled";
+      if (cc_reason === "Refund request") {
+        newStatus = "cancel with refund request";
+      }
 
-      // 1. Insert into Cancelled table
-      const insertCancelQuery = `
-        INSERT INTO cancelled 
-          (appoint_id, cc_reason, cc_notes, cc_date, cc_label, refund_photo, refund_date, refund_method) 
-        VALUES (?, ?, ?, NOW(), ?, ?, ?, ?)
-      `;
+      // ✅ Update appointment table
+      await db.query(
+        `UPDATE appointment 
+         SET appointment_status = ? 
+         WHERE appoint_id = ?`,
+        [newStatus, appointId]
+      );
 
-      await db.query(insertCancelQuery, [
-        appointId,
-        cc_reason,
-        cc_notes,
-        cc_label,
-        refund_photo,
-        refund_date,
-        refund_method,
-      ]);
+      // ✅ Only insert into "cancelled" table if NOT refund request
+      if (cc_reason !== "Refund request") {
+        await db.query(
+          `INSERT INTO cancelled 
+            (appoint_id, cc_reason, cc_notes, cc_date, cc_label, refund_photo)
+           VALUES (?, ?, ?, NOW(), ?, ?)`,
+          [appointId, cc_reason, cc_notes || null, newStatus, refundPhoto]
+        );
+      }
 
-      // 2. Update appointment status
-      const updateAppointmentQuery = `
-        UPDATE appointment
-        SET appointment_status = 'cancelled' 
-        WHERE appoint_id = ?
-      `;
-      await db.query(updateAppointmentQuery, [appointId]);
-
-      res.json({ message: "Appointment cancelled successfully!" });
+      res.json({
+        message:
+          cc_reason === "Refund request"
+            ? "Refund request sent successfully!"
+            : "Appointment cancelled successfully!",
+        refund_photo: refundPhoto,
+      });
     } catch (error) {
       console.error("Cancel error:", error);
       res.status(500).json({ message: "Failed to cancel appointment" });
@@ -1168,6 +1271,48 @@ router.post("/cancelappointment/:appointId", upload.single("refund_photo"), asyn
   }
 );
 
+// Admin/receptionist completes refund cancellation
+router.post("/processRefund/:appointId", upload.single("refund_photo"), async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const { appointId } = req.params;
+    const { refund_method, cc_notes } = req.body;
+
+    const refund_photo = req.file ? req.file.filename : null;
+
+    await db.query(
+      `INSERT INTO cancelled 
+        (appoint_id, cc_reason, cc_notes, cc_date, cc_label, refund_photo, refund_date, refund_method)
+       VALUES (?, 'Refund', ?, NOW(), 'cancelled', ?, NOW(), ?)`,
+      [appointId, cc_notes, refund_photo, refund_method]
+    );
+
+    await db.query(
+      `UPDATE appointment 
+       SET payment_status = 'cancelled', appointment_status = 'cancelled'  
+       WHERE appoint_id = ?`,
+      [appointId]
+    );
+
+    res.json({ message: "Refund processed and appointment cancelled." });
+  } catch (error) {
+    console.error("Refund process error:", error);
+    res.status(500).json({ message: "Failed to process refund" });
+  }
+});
+
+router.get("/dentists", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query(
+      "SELECT user_id, fname, lname FROM users WHERE role = 'dentist'"
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching dentists:", err);
+    res.status(500).json({ error: "Failed to fetch dentists" });
+  }
+});
 
 //################################ INVENTORY MANAGEMENT ################################
 // for admininventoryadd.jsx (ADD NEW ITEM)
@@ -1199,8 +1344,8 @@ router.post('/additem', async (req, res) => {
 
     await db.query(
       `INSERT INTO inventory 
-      (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status, inv_item_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [inv_item_type, inv_item_name, inv_price_per_item, inv_quantity || null, inv_ml || null, inv_exp_date || null, status]
     );
 
@@ -1321,10 +1466,70 @@ router.get("/displayitem/:id", async (req, res) => {
 router.get('/inventory', async (req, res) => {
   try {
     const db = await connectToDatabase();
-    const [rows] = await db.query('SELECT * FROM inventory');
+    const [rows] = await db.query(`SELECT * FROM inventory WHERE inv_item_status = 'active' OR inv_item_status = 'inactive'`);
     res.json(rows);
   } catch (err) {
     console.error("Fetch inventory error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// for admininventorypending
+router.get('/pendingitems', async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`SELECT * FROM inventory WHERE inv_item_status = 'pending' `);
+    res.json(rows);
+  } catch (err) {
+    console.error("Fetch inventory error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Approve item
+router.put("/approveitem/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [result] = await db.query(
+      `UPDATE inventory 
+       SET inv_item_status = 'active' 
+       WHERE inv_id = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    res.json({ message: "Item approved successfully" });
+  } catch (err) {
+    console.error("Approve item error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Approve item
+router.put("/inactiveitem/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [result] = await db.query(
+      `UPDATE inventory 
+       SET inv_item_status = 'inactive' 
+       WHERE inv_id = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    res.json({ message: "Item Inactive successfully" });
+  } catch (err) {
+    console.error("Inactive item error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 });

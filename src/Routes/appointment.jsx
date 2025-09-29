@@ -224,7 +224,7 @@ const Appointment = () => {
             {/* Upload */}
             <div className="mb-4 text-left">
               <label className="block text-[#00458b] font-semibold mb-1">
-                Upload Photos / X-Ray / Dental Records
+                Upload Photos / X-Ray / Dental Records: (Optional)
               </label>
               <input
                 type="file"
@@ -243,8 +243,19 @@ const Appointment = () => {
         {/* Next Button */}
         <div className="mt-6">
           <button
-            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full"
-            onClick={() => navigate("/appointment2")}
+            className={`font-semibold px-6 py-2 rounded-full w-full ${
+              appointmentData.procedure_type
+                ? "bg-[#00c3b8] text-white hover:bg-teal-600"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
+            }`}
+            disabled={!appointmentData.procedure_type}
+            onClick={() => {
+              if (appointmentData.procedure_type === "DENTURES") {
+                navigate("/appointment2");
+              } else {
+                navigate("/appointmentsubmit");
+              }
+            }}
           >
             Next
           </button>

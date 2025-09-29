@@ -64,7 +64,8 @@ const Presubmit = () => {
           <p><b>City:</b> {registerData.city}</p>
           <p><b>Province:</b> {registerData.province}</p>
           <p><b>Occupation:</b> {registerData.occupation}</p>
-          <p><b>Gcash:</b> {registerData.gcash_num}</p>
+          <p><b>Blood Type:</b> {registerData.blood_type}</p>
+          <p style={{color:"transparent"}}><b>Gcash:</b> {registerData.gcash_num}</p>
         </div>
 
         {errorMessage && (

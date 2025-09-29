@@ -18,7 +18,7 @@ const AdminScheduleCancel = () => {
     setReason(e.target.value);
     setShowRefund(e.target.value === "Refund");
   };
-
+  
   const handleSave = async () => {
     try {
       const formData = new FormData();
@@ -32,7 +32,7 @@ const AdminScheduleCancel = () => {
       }
 
       const response = await axios.post(
-        `http://localhost:3000/auth/cancelappointment/${appointId}`, // ✅ using param
+        `http://localhost:3000/auth/processRefund/${appointId}`, // ✅ using param
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

@@ -48,6 +48,8 @@ import { RegisterProvider } from "./context/RegisterContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminScheduleCancel from "./Routes/adminschedulecancel";
 import Adminconsultationcomplete from "./Routes/adminconsultationcomplete";
+import Cancelappointment from "./Routes/cancelappointment";
+import Admininventorypending from "./Routes/admininventorypending";
 
 function App() {
   return (
@@ -142,6 +144,14 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/cancelappointment/:appointId"
+              element={
+                <ProtectedRoute>
+                  <Cancelappointment />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Admin routes */}
             <Route path="/admincoa" element={<Admincoa />} />
@@ -170,6 +180,7 @@ function App() {
              <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
              <Route path="/adminschedulecancel/:appointId" element={<AdminScheduleCancel />} />
              <Route path="/adminconsultationcomplete/:appointId" element={<Adminconsultationcomplete />} />
+             <Route path="/admininventorypending" element={<Admininventorypending />} />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

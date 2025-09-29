@@ -319,6 +319,7 @@ const filteredConsultations = consultations
                                                 <th className="border px-2 py-1">Dentist</th>
                                                 <th className="border px-2 py-1">Payment Status</th>
                                                 <th className="border px-5 py-1">Total Charged</th>
+                                                <th className="border px-5 py-1">Appointment Status</th>
                                                 <th className=" px-2 py-1"></th>
                                                 <th className=" px-2 py-1"></th>
                                                 <th className=" px-2 py-1"></th>
@@ -329,10 +330,11 @@ const filteredConsultations = consultations
                                             {filteredConsultations.map((c) => (
                                                 <tr key={c.appoint_id} className="border-b border-gray-200 text-center">
                                                 <td className="px-4 py-2 text-blue-700">{c.pref_date}</td>
-                                                <td className="px-4 py-2 text-blue-700">{c.procedure_type}</td>
-                                                <td className="px-4 py-2 text-blue-700">{c.attending_dentist}</td>
-                                                <td className="px-4 py-2 text-blue-700">{c.payment_status}</td>
-                                                <td className="px-4 py-2 text-blue-700">₱{c.total_charged}</td>
+                                                <td className="px-4 py-2">{c.procedure_type}</td>
+                                                <td className="px-4 py-2">{c.attending_dentist}</td>
+                                                <td className="px-4 py-2">{c.payment_status}</td>
+                                                <td className="px-4 py-2">₱{c.total_charged}</td>
+                                                <td className="px-4 py-2">{c.appointment_status}</td>
 
                                                 {/* View button always enabled */}
                                                 <td className="px-2 py-3 whitespace-nowrap">

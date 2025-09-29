@@ -13,6 +13,7 @@ const AdminConsultationAdd = () => {
   const [dentist, setDentist] = useState("");
   const [procedureType, setProcedureType] = useState("");
   const [preferredTime, setPreferredTime] = useState("");
+  const [dentists, setDentists] = useState([]);
 
   // Patient data
   const [fname, setFname] = useState(patient?.fname || "");
@@ -29,7 +30,7 @@ const AdminConsultationAdd = () => {
         appointment_status: "pending",
 
         // patient info
-        user_name: patient?.user_name,        // ✅ add this
+        user_name: patient?.user_name,     
         p_blood_type: patient?.blood_type, 
         p_fname: patient?.fname,
         p_mname: patient?.mname,
@@ -75,6 +76,21 @@ const AdminConsultationAdd = () => {
     "TOOTH EXTRACTION",
     "DENTAL X-RAY",
   ];
+
+  useEffect(() => {
+  const fetchDentists = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:3000/auth/dentists", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setDentists(res.data);
+    } catch (err) {
+      console.error("Error fetching dentists:", err);
+    }
+  };
+  fetchDentists();
+}, []);
 
   return (
     <div>
@@ -230,7 +246,7 @@ const AdminConsultationAdd = () => {
                         </div>
 
                         <div className="mb-4 text-left">
-                          <label className="block text-[#00458b] mb-1">
+                          <label className="block font-semibold text-[#00458b] mb-1">
                             Attending Dentist
                           </label>
                           <select
@@ -239,8 +255,11 @@ const AdminConsultationAdd = () => {
                             className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                           >
                             <option value="">Select Dentist</option>
-                            <option value="Dr. A. Reyes">Dr. A. Reyes</option>
-                            <option value="Dr. M. Santos">Dr. M. Santos</option>
+                            {dentists.map((d) => (
+                              <option key={d.user_id} value={`${d.fname} ${d.lname}`}>
+                                Dr. {d.fname} {d.lname}
+                              </option>
+                            ))}
                           </select>
                         </div>
                       </div>

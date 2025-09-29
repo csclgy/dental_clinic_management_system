@@ -19,20 +19,29 @@ const AppointmentSubmit = () => {
       const token = localStorage.getItem("token");
       const formData = new FormData();
 
-      // Append text fields
+      // 1. Force payment_method = cash if service is NOT dentures
+      if (appointmentData.procedure_type !== "Dentures") {
+        appointmentData.payment_method = "cash";
+        appointmentData.downpayment_proof = null; // ignore proof
+      }
+
+      // 2. Append text fields
       Object.keys(appointmentData).forEach((key) => {
         if (key !== "photos" && key !== "downpayment_proof") {
           formData.append(key, appointmentData[key]);
         }
       });
 
-      // Append multiple photos to separate table
+      // 3. Append multiple photos
       appointmentData.photos.forEach((file) => {
         formData.append("photos", file);
       });
 
-      // Append downpayment receipt
-      if (appointmentData.downpayment_proof) {
+      // 4. Append downpayment receipt only if Dentures + proof
+      if (
+        appointmentData.procedure_type === "Dentures" &&
+        appointmentData.downpayment_proof
+      ) {
         formData.append("downpayment_proof", appointmentData.downpayment_proof);
       }
 
@@ -64,6 +73,7 @@ const AppointmentSubmit = () => {
     }
   };
 
+
   return (
     <div 
       className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
@@ -73,6 +83,7 @@ const AppointmentSubmit = () => {
       backgroundSize: "cover",
       backgroundPosition: "center"}}
     >
+      <br></br>
       <div className="w-full sm:w-4/5 md:w-2/3 lg:w-1/2 xl:w-2/5 bg-white p-6 sm:p-8 md:p-10 rounded-lg shadow-lg text-center">
         <h2 className="text-[#00c3b8] text-xl sm:text-2xl font-bold mb-2">
           APPOINTMENT REQUEST FORM
@@ -90,7 +101,7 @@ const AppointmentSubmit = () => {
           <p><b>Procedure:</b> {appointmentData.procedure_type || "N/A"}</p>
           <p><b>Date:</b> {appointmentData.pref_date || "N/A"}</p>
           <p><b>Time:</b> {appointmentData.pref_time || "N/A"}</p>
-          <p><b>Payment Method:</b> {appointmentData.payment_method || "N/A"}</p>
+          <p><b>Payment Method:</b> {appointmentData.payment_method || "Cash"}</p>
 
           {/* Patient Info */}
           <h4 className="text-[#00c3b8] font-bold text-base sm:text-lg mt-4 mb-2">
@@ -151,6 +162,7 @@ const AppointmentSubmit = () => {
           Submit
         </button>
       </div>
+      <br></br>
     </div>
   );
 };

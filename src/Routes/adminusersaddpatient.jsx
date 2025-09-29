@@ -245,23 +245,6 @@ const adminusersaddpatient = () => {
                                             
                                             <hr />
                                             <br />
-                                            <h1 className="text-xl font-bold" style={{ color: "#00458B" }}>Gcash Account Number</h1>
-                                            <div className="col-sm-6">
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Contact Number</label>
-                                                    <input 
-                                                        type="number" 
-                                                        value={registerData.gcash_num}
-                                                        onChange={(e) => updateFormData("gcash_num", e.target.value)}
-                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                                </div>
-                                            </div>
-                                            <div className="col-sm-6">
-
-                                            </div>
-
-                                            <hr />
-                                            <br />
                                             <h1 className="text-xl font-bold" style={{ color: "#00458B" }}>Personal Information</h1>
                                             <div className="col-sm-6">
                                                 <div class="mb-4 text-left">
@@ -307,6 +290,14 @@ const adminusersaddpatient = () => {
                                                         class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                                 </div>
                                                 <div class="mb-4 text-left">
+                                                    <label class="block text-[#00458b] font-semibold mb-1">City</label>
+                                                    <input 
+                                                        type="text" 
+                                                        value={registerData.city}
+                                                        onChange={(e) => updateFormData("city", e.target.value)}
+                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                </div>
+                                                <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Province</label>
                                                     <input 
                                                         type="text" 
@@ -348,14 +339,6 @@ const adminusersaddpatient = () => {
                                                         type="text" 
                                                         value={registerData.nationality}
                                                         onChange={(e) => updateFormData("nationality", e.target.value)}
-                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                                </div>
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">City</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={registerData.city}
-                                                        onChange={(e) => updateFormData("city", e.target.value)}
                                                         class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                                 </div>
                                                 <div class="mb-4 text-left">

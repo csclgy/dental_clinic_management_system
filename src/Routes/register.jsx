@@ -22,7 +22,7 @@ const Register = () => {
       setShowAlert(true); // Show custom alert instead of window.alert
       return;
     }
-    navigate("/registergcash");
+    navigate("/register2");
   };
 
   return (
