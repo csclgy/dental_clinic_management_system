@@ -261,7 +261,6 @@ const TransMed = () => {
                       <th className="px-4 py-2 text-left">Time</th>
                       <th className="px-4 py-2 text-left">Status</th>
                       <th className="px-4 py-2 text-center">Action</th>
-                      <th className="px-4 py-2 text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -279,18 +278,18 @@ const TransMed = () => {
                           </td>
                           <td className="px-4 py-2">{record.appointment_status}</td>
                           <td className="px-4 py-2 text-center">
+                            <div className="flex justify-center gap-2">
                               <button 
                               onClick={() => navigate(`/transviewmed/${record.appoint_id}`)}
                               className="bg-[#00c3b8] text-white px-4 py-1 rounded-full hover:bg-teal-500">
                                 View
                               </button>
-                          </td>
-                          <td className="px-4 py-2 text-center">
-                            <button 
-                            onClick={() => navigate(`/cancelappointment/${record.appoint_id}`)}
-                            className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-red-600">
-                              Cancel
-                            </button>
+                              <button 
+                                onClick={() => navigate(`/cancelappointment/${record.appoint_id}`)}
+                                className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-red-600">
+                                Cancel
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -315,7 +314,7 @@ const TransMed = () => {
                 className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full hover:bg-teal-600"
                 onClick={handlePrintReport}
               >
-                Print
+                Generate Report
               </button>
             </div>
           </div>
