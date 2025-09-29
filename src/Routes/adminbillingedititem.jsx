@@ -132,6 +132,11 @@ const handleUpdate = async (e) => {
                         Journal Entries
                         </p>
                     </Link>
+                     <Link to='/adminsubsidiaryreceivable'>
+                    <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                      Subsidiary 
+                    </p>
+                  </Link> 
                     <Link to="/admingeneral">
                         <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
                         General Ledger

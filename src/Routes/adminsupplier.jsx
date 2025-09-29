@@ -2,12 +2,15 @@ import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import axios from "axios";
 
-const adminaudit = () => {
-  const location = useLocation();
+const adminsupplier = () => {
+   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
+
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -21,30 +24,32 @@ const adminaudit = () => {
     }
   }, [location]);
 
-   const records = [
-    {
-      date: "05-30-2025",
-      diagnosis: "Dental Caries",
-      services: "Oral Exam & Periapical X-ray",
-      dentist: "Dr. A. Reyes",
-      status: "Completed",
-    },
-    {
-      date: "07-15-2025",
-      diagnosis: "Tooth Extraction",
-      services: "Extraction of Wisdom Tooth",
-      dentist: "Dr. M. Santos",
-      status: "Ongoing",
-    },
-  ];
+   // Fetch subsidiary data from backend
+  useEffect(() => {
+    const fetchSupplier = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/auth/suppliers");
+        setSuppliers(res.data);
+      } catch (err) {
+        console.error("Error fetching subsidiary records:", err);
+      }
+    };
+    fetchSupplier();
+  }, []);
 
-  // Filter based on search term (case-insensitive)
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      value.toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+    // Filter records based on search term
+  const filteredRecords = suppliers.filter((record) => {
+    if (!searchTerm) return true;
+    return (
+      record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.invoice_no.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
+    const handleAccountChange = (e) => {
+    const path = e.target.value;
+    navigate(path);
+  };
   return (
     <div>
       <div className="p-4">
@@ -68,7 +73,7 @@ const adminaudit = () => {
                 <button
                     onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                     className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
+                    style={{ color: "#00c3b8" }}
                 >
                     <span>
                     <i className="fa fa-book" aria-hidden="true"></i> Ledger
@@ -82,7 +87,7 @@ const adminaudit = () => {
                 {isLedgerOpen && (
                     <div className="ml-8 text-sm">
                     <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
                         Chart of Accounts
                         </p>
                     </Link>
@@ -91,11 +96,16 @@ const adminaudit = () => {
                         Journal Entries
                         </p>
                     </Link>
-                     <Link to='/adminsubsidiaryreceivable'>
-                    <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                  <Link to='/adminsubsidiaryreceivable'>
+                    <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
                       Subsidiary 
                     </p>
-                  </Link>        
+                  </Link>
+                  <Link to='/adminsubsidiaryreceivable'>
+                                      <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                                        Subsidiary 
+                                      </p>
+                                    </Link>                     
                     <Link to="/admingeneral">
                         <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
                         General Ledger
@@ -153,7 +163,7 @@ const adminaudit = () => {
                 <Link to="/adminaudit">
                     <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00c3b8" }}
+                    style={{ color: "#00458B" }}
                     >
                     <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
                     </button>
@@ -163,10 +173,15 @@ const adminaudit = () => {
                     <div className="row">
                         <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
                             <div className="row">
-                                <div className="col-sm-10">
-                                    <h1 className="text-2xl font-bold">Audit Trail</h1>
+                                <div className="col-sm-8">
+                                    <h1 className="text-2xl font-bold">Inventory Management</h1>
+                                    <h1 className="text-1xl font-bold">Suppliers</h1>
+                                </div>
+                                 <div className="col-sm-2">
+                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventory")}>Back</button>
                                 </div>
                                 <div className="col-sm-2">
+                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminsupplieradd")}>Add</button>
                                 </div>
                             </div>
                         </div>
@@ -190,60 +205,68 @@ const adminaudit = () => {
                                         />
                                         <i className="fa fa-search text-[#00458B]"></i>
                                         </div>
-                                    </div>
-                                </div>
+                                         </div>
+                                
+                                       </div>
 
                                     {/* Table */}
                                     <div className="overflow-x-auto">
                                         <table className="w-full border-collapse border border-gray-200">
                                         <thead>
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                            <th className="px-4 py-2 text-left">Date</th>
-                                            <th className="px-4 py-2 text-left">User</th>
-                                            <th className="px-4 py-2 text-left">Action</th>
-                                            <th className="px-4 py-2 text-left">Description</th>
+                                            <th className="px-4 py-2 text-center"> Supplier Name</th>
+                                            <th className="px-4 py-2 text-center"> Contact Person </th>
+                                            <th className="px-4 py-2 text-center"> Contact No</th>
+                                             <th className="px-4 py-2 text-center">Description </th>
+                                             <th className="px-4 py-2 text-center">Action </th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredRecords.length > 0 ? (
-                                            filteredRecords.map((record, index) => (
-                                                <tr key={index} className="border-b border-gray-200">
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                <td className="px-4 py-2 text-blue-700">{record.diagnosis}</td>
-                                                </tr>
-                                            ))
-                                            ) : (
-                                            <tr>
-                                                <td
-                                                colSpan="6"
-                                                className="text-center text-gray-500 py-4"
-                                                >
-                                                No records found
-                                                </td>
-                                            </tr>
+                                         {filteredRecords.length > 0 ? (
+                          filteredRecords.map((record, index) => (
+                            <tr
+                              key={index}
+                              className="border-b border-gray-200 text-center"
+                            >
+                              <td className="px-4 py-2 text-blue-700">{record.supplier_name}</td>
+                              <td className="px-4 py-2 text-blue-700">{record.contact_person}</td>
+                              <td className="px-4 py-2 text-blue-700">{record.contact_no}</td>
+                              <td className="px-4 py-2 text-blue-700">{record.description}</td>
+                                <td className="px-4 py-2">
+                                      <Link to={``}>
+                                      <button className="bg-[#04AA6D] text-white font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
+                                      Edit
+                                    </button>
+                                    </Link>
+                                </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="6" className="text-center text-gray-500 py-4">
+                              No records found
+                            </td>
+                          </tr>
                                             )}
                                         </tbody>
                                         </table>
                                     </div>
                                 </div>
                             </div>
-                            <div className="col-sm-12">
-                                <div className="row">
+                        </div>
+                    </div>
+                    <div className="col-sm-12">
+                        <div className="row">
+                            <div className="col-sm-6">
+                                </div>
                                     <div className="col-sm-6">
-                                    </div>
-                                        <div className="col-sm-6">
-                                            <div className="row">
-                                                <div className="col-sm-4">
-
-                                                </div>
+                                        <div className="row">
                                             <div className="col-sm-8">
-                                                    <br />
-                                                    <br />
-                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/register2")}>Generate Report</button>
+
                                             </div>
-                                        </div>
+                                        <div className="col-sm-4">
+                                            <br />
+                                            <br />
                                     </div>
                                 </div>
                             </div>
@@ -257,7 +280,8 @@ const adminaudit = () => {
         </div>
       </div>
     </div>
+  
   );
 };
 
-export default adminaudit;
+export default adminsupplier;

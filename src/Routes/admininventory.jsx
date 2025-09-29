@@ -132,6 +132,11 @@ const handleDelete = async (id) => {
                         Journal Entries
                         </p>
                     </Link>
+                     <Link to='/adminsubsidiaryreceivable'>
+                    <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                      Subsidiary 
+                    </p>
+                  </Link> 
                     <Link to="/admingeneral">
                         <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
                         General Ledger
@@ -229,6 +234,10 @@ const handleDelete = async (id) => {
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
                                   </select>
+
+                                    <div className="col-sm-3">
+                                        <button class="border border-[#00458B] rounded-full px-4 py-2 text-sm text-blue-700" onClick={() => navigate("/adminsupplier")}>Suppliers</button>
+                                     </div>
 
                                   {/* Search bar */}
                                   <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">

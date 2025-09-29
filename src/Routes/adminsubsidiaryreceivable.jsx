@@ -26,16 +26,34 @@ const adminSubsidiaryreceivable = () => {
 
    // Fetch subsidiary data from backend
   useEffect(() => {
-    const fetchSubsidiary = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/auth/subsidiary");
-        setSubsidiaryRecords(res.data);
-      } catch (err) {
-        console.error("Error fetching subsidiary records:", err);
+  const fetchSubsidiary = async (account_id) => {
+    try {
+      const res = await axios.get("http://localhost:3000/auth/subsidiary", {
+        params: { account_id },
+      });
+      setSubsidiaryRecords(res.data);
+    } catch (err) {
+      console.error("Error fetching subsidiary records:", err);
+    }
+  };
+
+  const fetchAccountReceivable = async () => {
+    try {
+      const res = await axios.get(`http://localhost:3000/auth/accountReceivable`);
+      if (res.data.length > 0) {
+        const { account_id } = res.data[0];
+        // fetch subsidiary ledger using this account_id
+        fetchSubsidiary(account_id);
       }
-    };
-    fetchSubsidiary();
-  }, []);
+    } catch (err) {
+      console.error("Error fetching Account Receivable:", err);
+    }
+  };
+
+  fetchAccountReceivable();
+}, []);
+
+
 
     // Filter records based on search term
   const filteredRecords = subsidiaryRecords.filter((record) => {
@@ -215,7 +233,7 @@ const adminSubsidiaryreceivable = () => {
                                         <thead>
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
                                             <th className="px-4 py-2 text-center">Date</th>
-                                            <th className="px-4 py-2 text-center">Name</th>
+                                            <th className="px-4 py-2 text-center">Patient Name</th>
                                             <th className="px-4 py-2 text-center">Invoice  No. </th>
                                             <th className="px-4 py-2 text-center"> Debit</th>
                                              <th className="px-4 py-2 text-center">Credit</th>

@@ -119,11 +119,11 @@ const filterRecord = async (account_id) => {
                       Journal Entries
                     </p>
                   </Link>
-                    <Link to='/adminsubsidiary'>
-                                      <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                                        Subsidiary 
-                                      </p>
-                                     </Link>  
+                     <Link to='/adminsubsidiaryreceivable'>
+                    <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                      Subsidiary 
+                    </p>
+                  </Link> 
                   <Link to="/admingeneral">
                     <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
                       General Ledger

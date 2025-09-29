@@ -14,17 +14,16 @@ const [selectedPatientId, setSelectedPatientId] = useState(null);
 
   const [sub,setSub] = useState([]);
 
-   const [formData, setFormData] = useState({
-  date: "",
-  description: "",
-  invoice_no: "",
-  account: "",
-  accountName: "", // 👈 add this
-  subaccount: "",
-  type: "debit",
-  amount: "",
-  comment: ""
-});
+    const [formData, setFormData] = useState({
+    date: "",
+    description: "",
+    invoice_no:"",
+    account: "",
+    subaccount: "",
+    type: "debit",
+    amount: "",
+    comment: ""
+  });
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -37,17 +36,24 @@ const [selectedPatientId, setSelectedPatientId] = useState(null);
       }
     }
 
-    const fetchAccount = async () => {
-      try {
-        const res = await axios.get(`http://localhost:3000/auth/accounts`);
-        setAccount(res.data);
-      } catch (err) {
-        console.error("Error fetching account:", err);
+const fetchAccountReceivable = async () => {
+    try {
+      const res = await axios.get(`http://localhost:3000/auth/accountReceivable`);
+      if (res.data.length > 0) {
+        const { account_id, account_name } = res.data[0];
+        setFormData(prev => ({
+          ...prev,
+          account: account_id,
+          accountName: account_name,
+        }));
       }
-    };
-    fetchAccount();
-  }, [location]
-);
+    } catch (err) {
+      console.error("Error fetching Account Receivable:", err);
+    }
+  };
+
+  fetchAccountReceivable();
+}, [location]);
   
 const fetchSuggestions = async (query) => {
   if (!query) {
@@ -63,21 +69,10 @@ const fetchSuggestions = async (query) => {
   }
 };
 
-const handleChange = (e) => {
-  const { name, value } = e.target;
-
-  // If the field is account, also get the account name
-  if (name === "account") {
-    const selected = account.find((acc) => acc.account_id === parseInt(value));
-    setFormData(prev => ({
-      ...prev,
-      account: value,
-      accountName: selected?.account_name || "", // Add this field to track name
-    }));
-  } else {
+   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
-  }
-};
+  };
 
   const handleSubmit = async (e) => {
   e.preventDefault();
@@ -161,6 +156,11 @@ const handleChange = (e) => {
                                           Subsidiary 
                                         </p>
                                        </Link>  
+                    <Link to='/adminsubsidiaryreceivable'>
+                                        <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
+                                          Subsidiary 
+                                        </p>
+                                      </Link>  
                     <Link to="/admingeneral">
                         <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
                         General Ledger
@@ -275,7 +275,7 @@ const handleChange = (e) => {
 
                                           {/* Suggestions dropdown */}
                                           {nameSuggestions.length > 0 && (
-                                            <ul className="absolute z-10 bg-white border border-gray-300 rounded w-full mt-1 max-h-40 overflow-y-auto">
+                                            <ul className="absolute z-10 bg-white border border-gray-300 rounded">
                                               {nameSuggestions.map((user) => (
                                                 <li
                                                   key={user.user_id}
@@ -310,22 +310,17 @@ const handleChange = (e) => {
                                         </div>
                                       <  div className="row">
                                             <div className="col-sm-6">
-                                                <div className="mb-4 text-left">
-                                                    <label className="block text-[#00458b] font-semibold mb-1">Account</label>
-                                                    <select
-                                                        name="account"
-                                                        value={formData.account}
-                                                        onChange={handleChange}
-                                                        className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                                                    >
-                                                        <option value="">-- Select Account --</option>
-                                                        {account.map(acc => (
-                                                        <option key={acc.account_id} value={acc.account_id}>
-                                                            {acc.account_name}
-                                                        </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                              <div className="mb-4 text-left">
+                                              <label className="block text-[#00458b] font-semibold mb-1">Account</label>
+                                              <input
+                                                type="text"
+                                                value={formData.accountName || ""}
+                                                readOnly
+                                                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                                              />
+                                              {/* Hidden input to submit account_id */}
+                                              <input type="hidden" name="account" value={formData.account || ""} />
+                                            </div>
                                                 
                                             </div>
                                         </div>

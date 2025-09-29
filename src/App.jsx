@@ -56,6 +56,11 @@ import AdminCoaViewEdit from "./Routes/admincoaviewedit";
 import AdminSubsidiary from "./Routes/adminsubsidiary";
 import AdminSubsidiaryadd from "./Routes/adminsubsidiaryadd";
 import  Adminsubsidiaryreceivable from "./Routes/adminsubsidiaryreceivable";
+import AdminSubsidiarypayable from "./Routes/adminsubsidiaryPayable";
+import Adminsubsidiarypayableadd from "./Routes/adminsubsidiaryaddpayable";
+import Adminsupplier from "./Routes/adminsupplier";
+import AdminSupplierAdd from "./Routes/adminsupplieradd";
+
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-white-50">
@@ -192,6 +197,10 @@ function App() {
              <Route path="/adminsubsidiary" element={<AdminSubsidiary />}/>
              <Route path="/adminsubsidiaryadd" element={<AdminSubsidiaryadd />}/>
              <Route path="/adminsubsidiaryreceivable" element={<Adminsubsidiaryreceivable />}/>
+             <Route path="/adminsubsidiaryPayable" element={<AdminSubsidiarypayable />}/>
+             <Route path="/adminsubsidiaryaddpayable" element={<Adminsubsidiarypayableadd />}/>
+             <Route path="/adminsupplier" element={<Adminsupplier />}/>
+             <Route path="/adminsupplieradd" element={<AdminSupplierAdd />}/>
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

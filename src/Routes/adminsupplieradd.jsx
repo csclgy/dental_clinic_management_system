@@ -2,16 +2,20 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 
-const AdminCoaAdd = () => {
+const AdminSupplierAdd= () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
-  // COA form state
-  const [accountName, setAccountName] = useState("");
-  const [accountType, setAccountType] = useState("Asset");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  const [newsupplier, setNewSupplier] = useState({
+    supplier_name: "",
+    contact_person: "",
+    contact_no: "",
+    description: "",
+  });
 
   // Scroll to section if needed
   useEffect(() => {
@@ -25,31 +29,29 @@ const AdminCoaAdd = () => {
     }
   }, [location]);
 
-  // Save COA
+  // Save supplier
   const handleSave = async () => {
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (!accountName) {
-      setErrorMessage("Account Name is required");
+    const { supplier_name, contact_person, contact_no, description } = newsupplier;
+
+    if (!supplier_name || !contact_person || !contact_no || !description) {
+      setErrorMessage("Please fill in the required fields");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:3000/auth/coa", {
-        account_name: accountName,
-        account_type: accountType,
-      });
+      const response = await axios.post("http://localhost:3000/auth/newsupplier", newsupplier);
 
-      setSuccessMessage(response.data.message || "Account saved successfully!");
-      setAccountName("");
-      setAccountType("Asset");
+      setSuccessMessage(response.data.message || "Supplier added successfully!");
+      
+      setNewSupplier({ supplier_name: "", contact_person: "", contact_no: "", description: "" });
 
-      // Optionally redirect after save
-      setTimeout(() => navigate("/admincoa"), 1500);
+      setTimeout(() => navigate("/adminsupplier"), 1500);
     } catch (err) {
       console.error(err);
-      setErrorMessage(err.response?.data?.message || "Something went wrong");
+      setErrorMessage(err.response?.data?.error || "Something went wrong");
     }
   };
 
@@ -99,11 +101,16 @@ const AdminCoaAdd = () => {
                       Journal Entries
                     </p>
                   </Link>
-                   <Link to='/adminsubsidiaryreceivable'>
+                   <Link to='/adminsubsidiary'>
                     <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
                       Subsidiary 
                     </p>
-                  </Link>                    
+                  </Link>                   
+                  <Link to='/adminsubsidiaryreceivable'>
+                                          <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                                          Subsidiary 
+                                         </p>
+                                        </Link>   
                   <Link to="/admingeneral">
                     <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
                       General Ledger
@@ -173,53 +180,65 @@ const AdminCoaAdd = () => {
                 >
                   <div className="row">
                     <div className="col-sm-10">
-                      <h1 className="text-2xl font-bold">Charts of Account</h1>
+                      <h1 className="text-2xl font-bold">Inventory Management</h1>
+                      <h1 className="text-1xl font-bold"> Suppliers </h1>
                     </div>
                   </div>
                 </div>
 
                 <p style={{ color: "transparent" }}>...</p>
-
                 {/* Add New Account Form */}
                 <div
                   className="col-sm-12 p-10 rounded-lg shadow-lg"
                   style={{ border: "solid", borderColor: "#01D5C4" }}
                 >
                   <h1 className="text-xl font-bold" style={{ color: "#00458B" }}>
-                    Add New Account
+                    Add New Supplier
                   </h1>
-
+                     <br/>
                   <div className="col-sm-6 mx-auto">
                     <div className="mb-4 text-left">
-                      <label className="block text-[#00458b] font-semibold mb-1">
-                        Name
-                      </label>
+                      <label className="block text-[#00458b] font-semibold mb-1">Supplier Name</label>
                       <input
                         type="text"
-                        value={accountName}
-                        onChange={(e) => setAccountName(e.target.value)}
+                        value={newsupplier.supplier_name}
+                        onChange={(e) => setNewSupplier({ ...newsupplier, supplier_name: e.target.value })}
                         className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                       />
                     </div>
 
+                    {/* Contact Person */}
                     <div className="mb-4 text-left">
-                      <label className="block text-[#00458b] font-semibold mb-1">
-                        Account Type
-                      </label>
-                      <select
-                        value={accountType}
-                        onChange={(e) => setAccountType(e.target.value)}
+                      <label className="block text-[#00458b] font-semibold mb-1">Contact Person</label>
+                      <input
+                        type="text"
+                        value={newsupplier.contact_person}
+                        onChange={(e) => setNewSupplier({ ...newsupplier, contact_person: e.target.value })}
                         className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                      >
-                        <option value="Asset">Asset</option>
-                        <option value="Revenue">Revenue</option>
-                        <option value="Liability">Liability</option>
-                        <option value="Equity">Equity</option>
-                        <option value="Income">Income</option>
-                        <option value="Expense">Expense</option>
-                      </select>
+                      />
                     </div>
 
+                    {/* Contact Number */}
+                    <div className="mb-4 text-left">
+                      <label className="block text-[#00458b] font-semibold mb-1">Contact Number</label>
+                      <input
+                        type="text"
+                        value={newsupplier.contact_no}
+                        onChange={(e) => setNewSupplier({ ...newsupplier, contact_no: e.target.value })}
+                        className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                      />
+                    </div>
+
+                    {/* Description */}
+                    <div className="mb-4 text-left">
+                      <label className="block text-[#00458b] font-semibold mb-1">Description</label>
+                      <input
+                        type="text"
+                        value={newsupplier.description}
+                        onChange={(e) => setNewSupplier({ ...newsupplier, description: e.target.value })}
+                        className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                      />
+                    </div>
                     {errorMessage && (
                       <p className="text-red-500 font-medium">{errorMessage}</p>
                     )}
@@ -258,4 +277,4 @@ const AdminCoaAdd = () => {
   );
 };
 
-export default AdminCoaAdd;
+export default AdminSupplierAdd;
