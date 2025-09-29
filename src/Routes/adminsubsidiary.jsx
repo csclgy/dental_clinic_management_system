@@ -24,18 +24,6 @@ const adminSubsidiary = () => {
     }
   }, [location]);
 
-     useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/auth/coa"); 
-        setAccounts(res.data); 
-      } catch (err) {
-        console.error("Error fetching accounts:", err);
-      }
-    };
-    fetchAccounts();
-  }, []);
-
   // Filter accounts by search term
   const filteredAccounts = accounts.filter((account) => {
     if (!searchTerm) return true; // if search bar empty, show all
@@ -44,19 +32,6 @@ const adminSubsidiary = () => {
       account.account_type.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
-//delete acc
-  const handleDelete = async (id) => {
-  if (window.confirm("Are you sure you want to delete this account?")) {
-    try {
-      await axios.delete(`http://localhost:3000/auth/coa/${id}`);
-      setAccounts(accounts.filter((a) => a.account_id !== id)); // update UI
-    } catch (err) {
-      console.error("Error deleting account:", err);
-      alert("Failed to delete account");
-    }
-  }
-};
-
   return (
     <div>
       <div className="p-4">
@@ -204,11 +179,12 @@ const adminSubsidiary = () => {
                                         <i className="fa fa-search text-[#00458B]"></i>
                                         </div>
                                     </div>
-                                    <div className="row justify-content-center mt-4">
+                                
+                                    <div className="row justify-content-end mt-4">
                                     <div className="col-sm-4">
                                         <button
                                         className="bg-[#00c3b8] text-white font-semibold px-3 py-2 rounded-full w-full mb-2"
-                                        onClick={() => navigate("/admincoaadd")}
+                                        onClick={() => navigate("/adminsubsidiaryreceivable")}
                                         >
                                         Accounts Receivable
                                         </button>

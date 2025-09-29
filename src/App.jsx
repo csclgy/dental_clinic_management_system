@@ -55,6 +55,7 @@ import AdminCoaViewAdd from "./Routes/admincoaviewadd";
 import AdminCoaViewEdit from "./Routes/admincoaviewedit";
 import AdminSubsidiary from "./Routes/adminsubsidiary";
 import AdminSubsidiaryadd from "./Routes/adminsubsidiaryadd";
+import  Adminsubsidiaryreceivable from "./Routes/adminsubsidiaryreceivable";
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-white-50">
@@ -190,6 +191,7 @@ function App() {
              <Route path="/admincoaviewedit/:id" element={<AdminCoaViewEdit/>} />
              <Route path="/adminsubsidiary" element={<AdminSubsidiary />}/>
              <Route path="/adminsubsidiaryadd" element={<AdminSubsidiaryadd />}/>
+             <Route path="/adminsubsidiaryreceivable" element={<Adminsubsidiaryreceivable />}/>
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

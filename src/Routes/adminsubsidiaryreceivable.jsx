@@ -4,15 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-
-
-const admincoa = () => {
-  const location = useLocation();
+const adminSubsidiaryreceivable = () => {
+   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [accounts, setAccounts] = useState([]);
-  
+  const [subsidiaryRecords, setSubsidiaryRecords] = useState([]);
+
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -26,39 +24,32 @@ const admincoa = () => {
     }
   }, [location]);
 
-     useEffect(() => {
-    const fetchAccounts = async () => {
+   // Fetch subsidiary data from backend
+  useEffect(() => {
+    const fetchSubsidiary = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/coa"); 
-        setAccounts(res.data); 
+        const res = await axios.get("http://localhost:3000/auth/subsidiary");
+        setSubsidiaryRecords(res.data);
       } catch (err) {
-        console.error("Error fetching accounts:", err);
+        console.error("Error fetching subsidiary records:", err);
       }
     };
-    fetchAccounts();
+    fetchSubsidiary();
   }, []);
 
-  // Filter accounts by search term
-  const filteredAccounts = accounts.filter((account) => {
-    if (!searchTerm) return true; // if search bar empty, show all
+    // Filter records based on search term
+  const filteredRecords = subsidiaryRecords.filter((record) => {
+    if (!searchTerm) return true;
     return (
-      account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.account_type.toLowerCase().includes(searchTerm.toLowerCase())
+      record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.invoice_no.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
-//delete acc
-  const handleDelete = async (id) => {
-  if (window.confirm("Are you sure you want to delete this account?")) {
-    try {
-      await axios.delete(`http://localhost:3000/auth/coa/${id}`);
-      setAccounts(accounts.filter((a) => a.account_id !== id)); // update UI
-    } catch (err) {
-      console.error("Error deleting account:", err);
-      alert("Failed to delete account");
-    }
-  }
-};
 
+    const handleAccountChange = (e) => {
+    const path = e.target.value;
+    navigate(path);
+  };
   return (
     <div>
       <div className="p-4">
@@ -106,7 +97,7 @@ const admincoa = () => {
                         </p>
                     </Link>
                   <Link to='/adminsubsidiaryreceivable'>
-                    <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                    <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
                       Subsidiary 
                     </p>
                   </Link>                    
@@ -178,10 +169,10 @@ const admincoa = () => {
                         <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
                             <div className="row">
                                 <div className="col-sm-10">
-                                    <h1 className="text-2xl font-bold">Charts of Account</h1>
+                                    <h1 className="text-2xl font-bold">Subsidiary Ledger</h1>
                                 </div>
-                                <div className="col-sm-2">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admincoaadd")}>Add</button>
+                                 <div className="col-sm-2">
+                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminsubsidiaryadd")}>Add</button>
                                 </div>
                             </div>
                         </div>
@@ -205,54 +196,53 @@ const admincoa = () => {
                                         />
                                         <i className="fa fa-search text-[#00458B]"></i>
                                         </div>
-                                    </div>
-                                </div>
+                                            <select defaultValue="/adminsubsidiaryreceivable" placeholder='Account Receivable' onChange={handleAccountChange}
+                                              className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
+                                            <option value="/adminsubsidiaryreceivable" className="flex-1 outline-none text-sm text-gray-700">
+                                                  Accounts Receivable
+                                            </option>
+                                            <option value="/adminsubsidiarypayable" className="text-black" >
+                                                 Accounts Payable
+                                            </option>
+                                            </select>
+                                         </div>
+                                
+                                       </div>
 
                                     {/* Table */}
                                     <div className="overflow-x-auto">
                                         <table className="w-full border-collapse border border-gray-200">
                                         <thead>
                                             <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                            <th className="px-4 py-2 text-center">Account Name</th>
-                                            <th className="px-4 py-2 text-center">Account Type</th>
-                                            <th className="px-4 py-2 text-center">Account Status</th>
-                                            <th className="px-4 py-2 text-center"> Subaccounts</th>
-                                             <th className="px-4 py-2 text-center">Action</th>
+                                            <th className="px-4 py-2 text-center">Date</th>
+                                            <th className="px-4 py-2 text-center">Name</th>
+                                            <th className="px-4 py-2 text-center">Invoice  No. </th>
+                                            <th className="px-4 py-2 text-center"> Debit</th>
+                                             <th className="px-4 py-2 text-center">Credit</th>
+                                             <th className="px-4 py-2 text-center">Balance</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {filteredAccounts.length > 0 ? (
-                                            filteredAccounts.map((account, index) => (
-                                              
-                                                <tr key={index} className="border-b border-gray-200 text-center item-center">
-                                                <td className="px-4 py-2 text-blue-700">{account.account_name}</td>
-                                                <td className="px-4 py-2 text-blue-700">{account.account_type}</td>
-                                                <td className="px-4 py-2 text-blue-700">{account.status}</td>
-                                                <td className="px-4 py-2">
-                                                     <Link to={`/admincoaview/${account.account_id}`}>
-                                                    <button className="bg-[#EF7722] text-white px-4 py-1 rounded-full hover:bg-teal-500">
-                                                      View
-                                                    </button>
-                                                    </Link>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <Link to={`/admincoaedit/${account.account_id}`}>
-                                                    <button className="bg-[#04AA6D] text-white font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
-                                                    Edit
-                                                    </button>
-                                                    </Link>
-                                                </td>
-                                                </tr>
-                                            ))
-                                            ) : (
-                                            <tr>
-                                                <td
-                                                colSpan="6"
-                                                className="text-center text-gray-500 py-4"
-                                                >
-                                                No records found
-                                                </td>
-                                            </tr>
+                                         {filteredRecords.length > 0 ? (
+                          filteredRecords.map((record, index) => (
+                            <tr
+                              key={index}
+                              className="border-b border-gray-200 text-center"
+                            >
+                              <td className="px-4 py-2 text-blue-700">{record.date}</td>
+                              <td className="px-4 py-2 text-blue-700">{record.name}</td>
+                              <td className="px-4 py-2 text-blue-700">{record.invoice_no}</td>
+                              <td className="px-4 py-2 text-blue-700">{record.debit}</td>
+                              <td className="px-4 py-2 text-blue-700">{record.credit}</td>
+                              <td className="px-4 py-2 text-blue-700">{record.balance}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="6" className="text-center text-gray-500 py-4">
+                              No records found
+                            </td>
+                          </tr>
                                             )}
                                         </tbody>
                                         </table>
@@ -286,7 +276,8 @@ const admincoa = () => {
         </div>
       </div>
     </div>
+  
   );
 };
 
-export default admincoa;
+export default adminSubsidiaryreceivable;

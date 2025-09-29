@@ -9,17 +9,22 @@ const adminsubsidiaryadd = () => {
   const navigate = useNavigate();
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const  [account,setAccount] = useState([]);
+  const [nameSuggestions, setNameSuggestions] = useState([]);
+const [selectedPatientId, setSelectedPatientId] = useState(null);
+
   const [sub,setSub] = useState([]);
 
-    const [formData, setFormData] = useState({
-    date: "",
-    description: "",
-    account: "",
-    subaccount: "",
-    type: "debit",
-    amount: "",
-    comment: ""
-  });
+   const [formData, setFormData] = useState({
+  date: "",
+  description: "",
+  invoice_no: "",
+  account: "",
+  accountName: "", // 👈 add this
+  subaccount: "",
+  type: "debit",
+  amount: "",
+  comment: ""
+});
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -41,28 +46,38 @@ const adminsubsidiaryadd = () => {
       }
     };
     fetchAccount();
-  }, [location]);
+  }, [location]
+);
   
-useEffect(() => {
-  if (formData.account) {
-    const fetchSubAccounts = async () => {
-      try {
-        const res = await axios.get(`http://localhost:3000/auth/subaccs/${formData.account}`);
-        setSub(res.data); 
-      } catch (err) {
-        console.error("Error fetching subaccounts:", err);
-      }
-    };
-    fetchSubAccounts();
-  } else {
-    setSub([]); // reset if no account selected
+const fetchSuggestions = async (query) => {
+  if (!query) {
+    setNameSuggestions([]);
+    return;
   }
-}, [formData.account]);
 
-   const handleChange = (e) => {
-    const { name, value } = e.target;
+  try {
+    const res = await axios.get(`http://localhost:3000/auth/patients/search?name=${query}`);
+    setNameSuggestions(res.data);
+  } catch (err) {
+    console.error("Error fetching name suggestions:", err);
+  }
+};
+
+const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  // If the field is account, also get the account name
+  if (name === "account") {
+    const selected = account.find((acc) => acc.account_id === parseInt(value));
+    setFormData(prev => ({
+      ...prev,
+      account: value,
+      accountName: selected?.account_name || "", // Add this field to track name
+    }));
+  } else {
     setFormData(prev => ({ ...prev, [name]: value }));
-  };
+  }
+};
 
   const handleSubmit = async (e) => {
   e.preventDefault();
@@ -77,27 +92,15 @@ useEffect(() => {
     const debit = formData.type === "debit" ? Number(formData.amount) : 0;
     const credit = formData.type === "credit" ? Number(formData.amount) : 0;
 
-    // 1️⃣ Save to journal (journal_entries + general_ledger)
-    await axios.post("http://localhost:3000/auth/journal", {
-      date: formData.date,
-      description: formData.description,
-      account_id: formData.account,
-      subaccount_id: formData.subaccount,
-      debit,
-      credit,
-      comment: formData.comment,
-    });
-
     // 2️⃣ Save to subsidiary_ledger
-    await axios.post("http://localhost:3000/auth/subsidiary", {
-      date: formData.date,
-      description: formData.description,
-      account_id: formData.account,
-      subaccount_id: formData.subaccount,
-      debit,
-      credit,
-      comment: formData.comment,
-    });
+ await axios.post("http://localhost:3000/auth/subsidiary", {
+  date: formData.date,
+  name: formData.description,    // 👈 map description → name
+  account_id: formData.account,
+  invoice_no: formData.invoice_no,
+  debit,
+  credit
+});
 
     alert("Journal + Subsidiary entry saved successfully!");
     navigate("/adminsubsidiary");
@@ -253,15 +256,41 @@ useEffect(() => {
                                             <div className="col-sm-8">
                                                 <div class="mb-4 text-left">
                                                     <label class="block text-[#00458b] font-semibold mb-1">Invoice Number</label>
-                                                   <input type="text" name="description" value={formData.description} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                   <input type="text" name="invoice_no" value={formData.invoice_no} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
                                                 </div>
                                             </div>
                                         </div>
+                                          <label className="block text-[#00458b] font-semibold mb-1">Patient Name</label>
+                                          <input
+                                            type="text"
+                                            name="description"
+                                            value={formData.description}
+                                            onChange={(e) => {
+                                              handleChange(e);
+                                              fetchSuggestions(e.target.value);
+                                            }}
+                                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                            autoComplete="off"
+                                          />
 
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Name</label>
-                                            <input type="text" name="description"/* value={formData.description} onChange={handleChange}*/ class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                        </div>
+                                          {/* Suggestions dropdown */}
+                                          {nameSuggestions.length > 0 && (
+                                            <ul className="absolute z-10 bg-white border border-gray-300 rounded w-full mt-1 max-h-40 overflow-y-auto">
+                                              {nameSuggestions.map((user) => (
+                                                <li
+                                                  key={user.user_id}
+                                                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                  onClick={() => {
+                                                    setFormData(prev => ({ ...prev, description: user.full_name }));
+                                                    setSelectedPatientId(user.user_id);
+                                                    setNameSuggestions([]); // hide suggestions
+                                                  }}
+                                                >
+                                                  {user.full_name}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          )}
                                         <div className="row">
                                               <div className="col-sm-6">
                                                 <div class="mb-4 text-left">

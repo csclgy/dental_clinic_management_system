@@ -1937,45 +1937,208 @@ router.get("/accounts", async (req, res) => {
   }
 });
 
-router.post("/subsidiary", async (req, res) => {
+// Get only Receivable & Payable
+router.get("/accounts", async (req, res) => {
   try {
-    const db = await connectToDatabase();
-
-    const { date, name, invoice_no, debit, credit, balance, account_id } = req.body;
-
-    if (!date || !name || !invoice_no || !account_id) {
-      return res.status(400).json({ error: "Missing required fields" });
-    }
-
-    const [result] = await db.query(
-      `INSERT INTO subsidiary (date, name, invoice_no, debit, credit, balance, account_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [date, name, invoice_no, debit || 0, credit || 0, balance || 0, account_id]
-    );
-
-    res.status(201).json({ message: "Subsidiary record inserted", sub_id: result.insertId });
+      const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT account_id, account_name
+      FROM chartofaccounts
+      WHERE account_name = 'Account Receivable'
+         OR account_name = 'Account Payable'
+    `);
+    res.json(rows);
   } catch (err) {
-    console.error("DB error inserting subsidiary:", err);
+    console.error("DB error:", err); // 👈 full error object
     res.status(500).json({ error: err.message });
   }
 });
 
-//get Chart of Accounts ->admincoa
-router.get("/general", async (req, res) => {
-  try {
-    const db = await connectToDatabase();
-    const [rows] =  await db.query(`
-        SELECT g.date, c.account_name AS account, c.account_type, g.description, g.debit, g.credit, g.balance
-  FROM general_ledger g
-  JOIN chartofaccounts c ON g.account_id = c.account_id
-  ORDER BY g.date, g.ledger_id
-    `);
-    return res.json(rows); // Send back as JSON array
-   } catch (err) {
-  console.error("Insert Error:", err); // full error object
-  res.status(500).json({ error: err.message, details: err });
-}
-});
+
+// Search patients by partial name
+    router.get('/patients/search', async (req, res) => {
+      try {
+        const { name } = req.query;
+
+        if (!name) {
+          return res.status(400).json({ error: 'Name query parameter is required' });
+        }
+
+        const db = await connectToDatabase();
+        const [rows] = await db.query(
+          `SELECT user_id, fname, mname, lname,
+                  CONCAT(fname, ' ', mname, ' ', lname) AS full_name
+          FROM users 
+          WHERE LOWER(role) = 'patient'
+            AND CONCAT(fname, ' ', mname, ' ', lname) LIKE ?
+          LIMIT 10`,
+          [`%${name}%`]
+        );
+
+        res.json(rows);
+      } catch (err) {
+        console.error('❌ Error searching patients:', err.message);
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+/// Insert into subsidiary
+    router.post("/subsidiary", async (req, res) => {
+      try {
+        const db = await connectToDatabase();
+        const {
+          date,
+          name,         
+          invoice_no,
+          debit,
+          credit,
+          account_id,
+        } = req.body;
+
+        // Validate required fields
+        if (!date || !name || !invoice_no || !account_id) {
+          return res.status(400).json({
+            error: "Missing required fields: date, name, invoice_no, account_id",
+          });
+        }
+
+        // Split name
+        const nameParts = name.trim().split(/\s+/);
+        if (nameParts.length < 2) {
+          return res.status(400).json({ error: "Please provide full name (first and last)" });
+        }
+
+        const fname = nameParts[0];
+        const lname = nameParts[nameParts.length - 1];
+
+        // Find the user_id from users table
+        const [userRows] = await db.query(
+          `SELECT user_id FROM users 
+          WHERE LOWER(fname) = LOWER(?) 
+            AND LOWER(lname) = LOWER(?) 
+            AND LOWER(role) = 'patient'
+          LIMIT 1`,
+          [fname, lname]
+        );
+
+        if (userRows.length === 0) {
+          return res.status(404).json({ error: "Patient not found with the given name" });
+        }
+
+        const patient_id = userRows[0].user_id;
+
+        // Parse debit/credit
+        const debitVal = parseFloat(debit) || 0;
+        const creditVal = parseFloat(credit) || 0;
+
+        if (debitVal > 0 && creditVal > 0) {
+          return res.status(400).json({
+            error: "Only one of debit or credit should be provided.",
+          });
+        }
+
+        // --- SUBSIDIARY LEDGER ---
+
+        // Get last balance for this patient + account in subsidiary ledger
+        const [subsidiaryRows] = await db.query(
+          `SELECT balance
+          FROM subsidiary
+          WHERE account_id = ? AND patient_id = ?
+          ORDER BY sub_id DESC
+          LIMIT 1`,
+          [account_id, patient_id]
+        );
+
+        const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
+        const newSubsidiaryBalance = lastSubsidiaryBalance + debitVal - creditVal;
+
+        // Insert into subsidiary ledger
+        const [subsidiaryResult] = await db.query(
+          `INSERT INTO subsidiary 
+            (date, name, invoice_no, debit, credit, balance, account_id, patient_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [date, name, invoice_no, debitVal, creditVal, newSubsidiaryBalance, account_id, patient_id]
+        );
+
+        // --- JOURNAL ENTRY ---
+
+        // Use 'description' same as 'name' here, or customize as needed
+        const description = name;
+
+    const [journalResult] = await db.query(
+      `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [date, description, account_id, debitVal, creditVal, 'n/a']
+    );
+        // --- GENERAL LEDGER ---
+
+        // Get last balance for this account in general ledger
+        const [ledgerRows] = await db.query(
+          `SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY date DESC, ledger_id DESC LIMIT 1`,
+          [account_id]
+        );
+
+        const lastLedgerBalance = ledgerRows.length > 0 ? parseFloat(ledgerRows[0].balance) || 0 : 0;
+        const newLedgerBalance = lastLedgerBalance + debitVal - creditVal;
+
+        // Insert into general ledger
+        const [ledgerResult] = await db.query(
+          `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [date, description, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
+        );
+
+        res.status(201).json({
+          message: "Subsidiary, journal entry, and general ledger records inserted successfully.",
+          subsidiaryId: subsidiaryResult.insertId,
+          journalEntryId: journalResult.insertId,
+          generalLedgerId: ledgerResult.insertId,
+          patient_id,
+          newSubsidiaryBalance,
+          newLedgerBalance,
+        });
+
+      } catch (err) {
+        console.error("❌ Error inserting records:", err);
+        res.status(500).json({ error: "Internal server error: " + err.message });
+      }
+    });
+
+// get subsidiary
+    router.get("/subsidiary", async (req, res) => {
+      try {
+        const db = await connectToDatabase();
+
+        const [rows] = await db.query(`
+          SELECT date, name, invoice_no, debit, credit, balance
+          FROM subsidiary
+          ORDER BY date ASC, sub_id ASC
+        `);
+
+        res.json(rows);
+      } catch (err) {
+        console.error("Error fetching subsidiary ledger:", err);
+        res.status(500).json({ error: "Internal server error" });
+      }
+    });
+
+
+//get general_ledger
+    router.get("/general", async (req, res) => {
+      try {
+        const db = await connectToDatabase();
+        const [rows] =  await db.query(`
+            SELECT g.date, c.account_name AS account, c.account_type, g.description, g.debit, g.credit, g.balance
+      FROM general_ledger g
+      JOIN chartofaccounts c ON g.account_id = c.account_id
+      ORDER BY g.date, g.ledger_id
+        `);
+        return res.json(rows); // Send back as JSON array
+      } catch (err) {
+      console.error("Insert Error:", err); // full error object
+      res.status(500).json({ error: err.message, details: err });
+    }
+    });
 
 
 
