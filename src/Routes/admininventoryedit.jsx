@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
 const AdminInventoryEditItem = () => {
-  const { id } = useParams();   // ✅ use inv_id instead of ci_id
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [item, setItem] = useState(null);
 
-  const [loading, setLoading] = useState(true);   // ✅ added
-  const [error, setError] = useState("");   
-  const [isLedgerOpen, setIsLedgerOpen] = useState(false);      
+  const [item, setItem] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
   // form states
   const [itemName, setItemName] = useState("");
@@ -19,365 +22,302 @@ const AdminInventoryEditItem = () => {
   const [ml, setML] = useState("");
   const [expiration, setExpiration] = useState("");
 
- // fetch item details
-useEffect(() => {
-  const fetchItem = async () => {
-    try {
-      const res = await axios.get(
-        `http://localhost:3000/auth/displayitem/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`, // or sessionStorage
-          },
-        }
-      );
-      setItem(res.data);
-    } catch (err) {
-      console.error("Error fetching item:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchItem();
-}, [id]);
+  // fetch item details
+  useEffect(() => {
+    const fetchItem = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:3000/auth/displayitem/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        setItem(res.data);
+      } catch (err) {
+        setErrorMessage("Failed to fetch item.");
+        console.error("Error fetching item:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItem();
+  }, [id]);
 
-  // populate states when item is loaded
+  // populate form
   useEffect(() => {
     if (item) {
       setItemName(item.inv_item_name || "");
       setItemType(item.inv_item_type || "");
       setQuantity(item.inv_quantity ?? "");
-      setPrice(item.inv_price_per_item !== null ? String(item.inv_price_per_item) : "");
+      setPrice(
+        item.inv_price_per_item !== null
+          ? String(item.inv_price_per_item)
+          : ""
+      );
       setML(item.inv_ml ?? "");
       setExpiration(item.inv_exp_date || "");
     }
   }, [item]);
 
   // handle update
-const handleUpdate = async (e) => {
-  e.preventDefault();
-  try {
-    await axios.put(
-      `http://localhost:3000/auth/edititem/${id}`,
-      {
-        inv_item_name: itemName,
-        inv_item_type: itemType,
-        inv_quantity: Number(quantity),
-        inv_price_per_item: Number(price),
-        inv_ml: itemType === "medicine" ? ml : null,
-        inv_exp_date: itemType === "medicine" ? expiration : null,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      await axios.put(
+        `http://localhost:3000/auth/edititem/${id}`,
+        {
+          inv_item_name: itemName,
+          inv_item_type: itemType,
+          inv_quantity: Number(quantity),
+          inv_price_per_item: Number(price),
+          inv_ml: itemType === "medicine" ? ml : null,
+          inv_exp_date: itemType === "medicine" ? expiration : null,
         },
-      }
-    );
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
 
-    alert("✅ Item updated successfully!");
-    navigate(-1);
-  } catch (err) {
-    console.error("Error updating item:", err);
-  }
-};
-
-
-useEffect(() => {
-    if (location.state?.scrollTo) {
-      const element = document.getElementById(location.state.scrollTo);
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth" });
-        }, 100);
-      }
+      setSuccessMessage("Item updated successfully!");
+      setTimeout(() => navigate("/admininventory"), 1500);
+    } catch (err) {
+      setErrorMessage("Failed to update item.");
+      console.error("Error updating item:", err);
     }
-  }, [location]);
+  };
 
   if (loading) return <p>Loading...</p>;
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            {/* Sidebar */}
-            <div
-              className="col-sm-3 p-5 rounded-lg shadow-lg"
-              style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
-            >
-              {/* Dashboard */}
-              <Link to="/">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-tachometer" aria-hidden="true"></i>{" "}
-                  Dashboard
-                </button>
-              </Link>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <nav className="flex flex-col gap-2">
+          <Link
+            to="/admindashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <BarChart3 size={18} /> Dashboard
+          </Link>
 
-              {/* Ledger Dropdown */}
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
-                style={{ color: "#00458B" }}
+          {/* Ledger with dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            <i
+              className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`}
+            />
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="hover:underline">
+                Chart of Accounts
+              </Link>
+              <Link to="/adminjournal" className="hover:underline">
+                Journal Entries
+              </Link>
+              <Link to="/admingeneral" className="hover:underline">
+                General Ledger
+              </Link>
+              <Link to="/admintrial" className="hover:underline">
+                Trial Balance
+              </Link>
+            </div>
+          )}
+
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
+        </nav>
+      </aside>
+
+      {/* Sidebar (mobile) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <span>
-                  <i className="fa fa-book" aria-hidden="true"></i> Ledger
-                </span>
-                <i
-                  className={`fa fa-chevron-${
-                    isLedgerOpen ? "up" : "down"
-                  }`}
-                  aria-hidden="true"
-                ></i>
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              {/* ...rest of mobile nav */}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-8">
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
+        >
+          <Menu size={24} /> Menu
+        </button>
+
+        <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
+          <h1 className="text-2xl font-bold text-[#00458B] mb-6">Edit Item</h1>
+
+          <form onSubmit={handleUpdate} className="space-y-6">
+            {/* Item Name */}
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Item Name
+              </label>
+              <input
+                type="text"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              />
+            </div>
+
+            {/* Item Type */}
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Item Type
+              </label>
+              <select
+                value={itemType}
+                onChange={(e) => setItemType(e.target.value)}
+                disabled
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              >
+                <option value="">-- Select Type --</option>
+                <option value="Medical Supplies">Medical Supplies</option>
+                <option value="Medicine">Medicine</option>
+              </select>
+            </div>
+
+            {/* Quantity */}
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Quantity
+              </label>
+              <input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              />
+            </div>
+
+            {/* Price */}
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Price Per Item
+              </label>
+              <input
+                type="number"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              />
+            </div>
+
+            {/* Medicine fields */}
+            {itemType === "medicine" && (
+              <>
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Amount of mL
+                  </label>
+                  <input
+                    type="number"
+                    value={ml}
+                    onChange={(e) => setML(e.target.value)}
+                    className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Expiration Date
+                  </label>
+                  <input
+                    type="date"
+                    value={expiration}
+                    onChange={(e) => setExpiration(e.target.value)}
+                    className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                  />
+                </div>
+              </>
+            )}
+
+            {errorMessage && (
+              <p className="text-red-500 font-medium">{errorMessage}</p>
+            )}
+            {successMessage && (
+              <p className="text-green-600 font-medium">{successMessage}</p>
+            )}
+
+            <div className="flex justify-end gap-4 mt-6">
+              <button
+                type="button"
+                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
+                onClick={() => navigate("/admininventory")}
+              >
+                Back to List
               </button>
 
-              {isLedgerOpen && (
-                <div className="ml-8 text-sm">
-                  <Link to="/admincoa">
-                    <p
-                      className="py-1 hover:underline"
-                      style={{ color: "#00458B" }}
-                    >
-                      Chart of Accounts
-                    </p>
-                  </Link>
-                  <Link to="/adminjournal">
-                    <p
-                      className="py-1 hover:underline"
-                      style={{ color: "#00458B" }}
-                    >
-                      Journal Entries
-                    </p>
-                  </Link>
-                  <Link to="/admingeneral">
-                    <p
-                      className="py-1 hover:underline"
-                      style={{ color: "#00458B" }}
-                    >
-                      General Ledger
-                    </p>
-                  </Link>
-                  <Link to="/admintrial">
-                    <p
-                      className="py-1 hover:underline"
-                      style={{ color: "#00458B" }}
-                    >
-                      Trial Balance
-                    </p>
-                  </Link>
-                </div>
-              )}
-
-              {/* Users */}
-              <Link to="/adminusers">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-users" aria-hidden="true"></i> Users
-                </button>
-              </Link>
-
-              {/* Inventory */}
-              <Link to="/admininventory">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00c3b8" }}
-                >
-                  <i className="fa fa-archive" aria-hidden="true"></i> Inventory
-                </button>
-              </Link>
-
-              {/* Patients */}
-              <Link to="/adminpatients">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
-                </button>
-              </Link>
-
-              {/* Schedule */}
-              <Link to="/adminschedule">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-calendar" aria-hidden="true"></i>{" "}
-                  Schedules
-                </button>
-              </Link>
-
-              {/* Audit Trail */}
-              <Link to="/adminaudit">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
-                </button>
-              </Link>
+              <button
+                type="submit"
+                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+              >
+                Update
+              </button>
             </div>
-
-            {/* Main Content */}
-            <div className="col-sm-7">
-              <div className="row">
-                <div
-                  className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg"
-                  style={{ color: "white" }}
-                >
-                  <div className="row">
-                    <div className="col-sm-9">
-                      <h1 className="text-2xl font-bold">Inventory Management</h1>
-                    </div>
-                    <div className="col-sm-3">
-                      <button
-                        className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"
-                        onClick={() => navigate("/admininventoryadd")}
-                      >
-                        + Add New Item
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <p style={{ color: "transparent" }}>...</p>
-
-                <div
-                  className="col-sm-12 p-10 rounded-lg shadow-lg"
-                  style={{ border: "solid", borderColor: "#01D5C4" }}
-                >
-                  <div className="row">
-                    <h1 className="text-xl font-bold" style={{ color: "#00458B" }}>
-                      Edit Item
-                    </h1>
-
-                    <div className="col-sm-3"></div>
-                    <div className="col-sm-6">
-                      <br />
-                      <form onSubmit={handleUpdate} className="space-y-4">
-                        {/* Item Name */}
-                        <div>
-                          <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
-                            Item Name:
-                          </label>
-                          <input
-                            type="text"
-                            value={itemName}
-                            onChange={(e) => setItemName(e.target.value)}
-                            required
-                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
-                          />
-                        </div>
-
-                        {/* Item Type */}
-                        <div>
-                          <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
-                            Item Type:
-                          </label>
-                          <select
-                            value={itemType}
-                            onChange={(e) => setItemType(e.target.value)}
-                            required
-                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
-                          >
-                            <option value="">--Select--</option>
-                            <option value="medicine">Medicine</option>
-                            <option value="tool">Tool</option>
-                          </select>
-                        </div>
-
-                        {/* Quantity */}
-                        <div>
-                          <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
-                            Quantity:
-                          </label>
-                          <input
-                            type="number"
-                            value={quantity}
-                            onChange={(e) => setQuantity(e.target.value)}
-                            required
-                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
-                          />
-                        </div>
-
-                        {/* Price */}
-                        <div>
-                          <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
-                            Price per Item: ₱
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={price}
-                            onChange={(e) => setPrice(e.target.value)}
-                            required
-                            className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
-                          />
-                        </div>
-
-                        {/* Medicine-specific fields */}
-                        {itemType === "medicine" && (
-                          <>
-                            <div>
-                              <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
-                                mL:
-                              </label>
-                              <input
-                                type="text"
-                                value={ml}
-                                onChange={(e) => setML(e.target.value)}
-                                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
-                              />
-                            </div>
-                            <div>
-                              <label className="block font-semibold mb-1" style={{ color: "#00458B" }}>
-                                Expiration Date:
-                              </label>
-                              <input
-                                type="date"
-                                value={expiration}
-                                onChange={(e) => setExpiration(e.target.value)}
-                                className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00c3b8]"
-                              />
-                            </div>
-                          </>
-                        )}
-
-                        {/* Buttons */}
-                        <div className="flex justify-between mt-6">
-                          <button
-                            type="submit"
-                            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full hover:bg-[#01d5c4] transition"
-                          >
-                            Update Item
-                          </button>
-
-                          <Link to="/admininventory">
-                            <button
-                              type="button"
-                              className="bg-gray-400 text-white font-semibold px-6 py-2 rounded-full hover:bg-gray-500 transition"
-                            >
-                              Cancel
-                            </button>
-                          </Link>
-                        </div>
-                      </form>
-
-                    </div>
-                    <div className="col-sm-3"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="col-sm-2"></div>
-          </div>
+          </form>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

@@ -1,43 +1,44 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { BarChart3, Users, Calendar, Menu, X, PlusCircle } from "lucide-react";
 
-const admincoa = () => {
+const AdminCoa = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100);
       }
     }
   }, [location]);
 
-     useEffect(() => {
+  useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/coa"); // Make sure your endpoint matches
-        setAccounts(res.data); // res.data should be an array of accounts
+        const res = await axios.get("http://localhost:3000/auth/coa");
+        setAccounts(res.data);
       } catch (err) {
         console.error("Error fetching accounts:", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchAccounts();
   }, []);
 
- // Filter accounts by search term
   const filteredAccounts = accounts.filter((account) => {
-    if (!searchTerm) return true; // if search bar empty, show all
+    if (!searchTerm) return true;
     return (
       account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       account.account_type.toLowerCase().includes(searchTerm.toLowerCase())
@@ -45,237 +46,232 @@ const admincoa = () => {
   });
 
   const handleDelete = async (id) => {
-  if (window.confirm("Are you sure you want to delete this account?")) {
-    try {
-      await axios.delete(`http://localhost:3000/auth/coa/${id}`);
-      setAccounts(accounts.filter((a) => a.account_id !== id)); // update UI
-    } catch (err) {
-      console.error("Error deleting account:", err);
-      alert("Failed to delete account");
+    if (window.confirm("Are you sure you want to delete this account?")) {
+      try {
+        await axios.delete(`http://localhost:3000/auth/coa/${id}`);
+        setAccounts(accounts.filter((a) => a.account_id !== id));
+      } catch (err) {
+        console.error("Error deleting account:", err);
+        alert("Failed to delete account");
+      }
     }
-  }
-};
+  };
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            <div
-                className="col-sm-3 p-5 rounded-lg shadow-lg"
-                style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
-                >
-                {/* Dashboard */}
-                <Link to="/">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-tachometer" aria-hidden="true"></i> Dashboard
-                    </button>
-                </Link>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <nav className="flex flex-col gap-2">
+          <Link
+            to="/admindashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <BarChart3 size={18} /> Dashboard
+          </Link>
 
-                {/* Ledger with Dropdown */}
-                <button
-                    onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                    className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
-                    style={{ color: "#00c3b8" }}
-                >
-                    <span>
-                    <i className="fa fa-book" aria-hidden="true"></i> Ledger
-                    </span>
-                    <i
-                    className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`}
-                    aria-hidden="true"
-                    ></i>
-                </button>
-
-                {isLedgerOpen && (
-                    <div className="ml-8 text-sm">
-                    <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
-                        Chart of Accounts
-                        </p>
-                    </Link>
-                    <Link to="/adminjournal">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Journal Entries
-                        </p>
-                    </Link>
-                    <Link to="/admingeneral">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        General Ledger
-                        </p>
-                    </Link>
-                    <Link to="/admintrial">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Trial Balance
-                        </p>
-                    </Link>
-                    </div>
-                )}
-
-                {/* Users */}
-                <Link to="/adminusers">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-users" aria-hidden="true"></i> Users
-                    </button>
-                </Link>
-
-                {/* Inventory */}
-                <Link to="/admininventory">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-archive" aria-hidden="true"></i> Inventory
-                    </button>
-                </Link>
-
-                {/* Patients */}
-                <Link to="/adminpatients">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
-                    </button>
-                </Link>
-
-                {/* Schedule */}
-                <Link to="/adminschedule">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
-                    </button>
-                </Link>
-
-                {/* Audit Trail */}
-                <Link to="/adminaudit">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
-                    </button>
-                </Link>
-                </div>
-                <div className="col-sm-7">
-                    <div className="row">
-                        <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
-                            <div className="row">
-                                <div className="col-sm-10">
-                                    <h1 className="text-2xl font-bold">Charts of Account</h1>
-                                </div>
-                                <div className="col-sm-2">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admincoaadd")}>Add</button>
-                                </div>
-                            </div>
-                        </div>
-                        <p style={{color:"transparent"}}>...</p>
-                        <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                            <div className="row">
-                                <div className="col-sm-12">
-                                {/* Search bar */}
-                                <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-center mb-1">
-                                        <h1 className=" font-bold text-[#00458B]"></h1>
-                                        {/* Search bar */}
-                                        <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                                        <input
-                                            type="text"
-                                            placeholder="Search"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 outline-none text-sm text-gray-700"
-                                        />
-                                        <i className="fa fa-search text-[#00458B]"></i>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                    {/* Table */}
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full border-collapse border border-gray-200">
-                                        <thead>
-                                            <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                            <th className="px-4 py-2 text-center">Account Name</th>
-                                            <th className="px-4 py-2 text-center">Account Type</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            <th className="px-4 py-2 text-center">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredAccounts.length > 0 ? (
-                                            filteredAccounts.map((account, index) => (
-                                                <tr key={index} className="border-b border-gray-200 text-center item-center">
-                                                <td className="px-4 py-2 text-blue-700">{account.account_name}</td>
-                                                <td className="px-4 py-2 text-blue-700">{account.account_type}</td>
-                                                <td className="px-4 py-2">
-                                                    <Link to={`/admincoaedit/${account.account_id}`}>
-                                                    <button className="bg-[#04AA6D] text-white font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
-                                                    Edit
-                                                    </button>
-                                                    </Link>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <Link to="/admincoa">
-                                                    <button  onClick={() => handleDelete(account.account_id)} className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-teal-500">
-                                                    Delete
-                                                    </button>
-                                                    </Link>
-                                                </td>
-                                                </tr>
-                                            ))
-                                            ) : (
-                                            <tr>
-                                                <td
-                                                colSpan="6"
-                                                className="text-center text-gray-500 py-4"
-                                                >
-                                                No records found
-                                                </td>
-                                            </tr>
-                                            )}
-                                        </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="col-sm-12">
-                        <div className="row">
-                            <div className="col-sm-6">
-                                </div>
-                                    <div className="col-sm-6">
-                                        <div className="row">
-                                            <div className="col-sm-8">
-
-                                            </div>
-                                        <div className="col-sm-4">
-                                            <br />
-                                            <br />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <div className="col-sm-2">
-                
+          {/* Ledger dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 bg-[white] text-[#00458B] rounded-lg"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link
+                to="/admincoa"
+                className="hover:underline text-[#00c3b8] font-semibold"
+              >
+                Chart of Accounts
+              </Link>
+              <Link to="/adminjournal" className="hover:underline">
+                Journal Entries
+              </Link>
+              <Link to="/adminsubsidiary" className="hover:underline">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:underline">
+                General Ledger
+              </Link>
+              <Link to="/admintrial" className="hover:underline">
+                Trial Balance
+              </Link>
             </div>
+          )}
+
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
+        </nav>
+      </aside>
+
+      {/* Sidebar (mobile) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <Users size={18} /> Users
+              </Link>
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-8">
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
+        >
+          <Menu size={24} /> Menu
+        </button>
+
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#00458B]">
+            Chart of Accounts
+          </h1>
+
+          <div className="flex gap-3">
+            <Link
+              to="/admincoaadd"
+              className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
+            >
+              <PlusCircle size={18} /> Add Account
+            </Link>
           </div>
         </div>
-      </div>
+
+        {loading ? (
+          <p>Loading accounts...</p>
+        ) : (
+          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+            {/* Search Bar */}
+            <div className="flex justify-end mb-4">
+              <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 outline-none text-sm text-gray-700"
+                />
+                <i className="fa fa-search text-[#00458B]"></i>
+              </div>
+            </div>
+            <table className="w-full border-collapse border border-gray-200">
+              <thead>
+                <tr className="bg-gray-100 text-[#00458B]">
+                  <th className="px-4 py-2 text-left">Account Name</th>
+                  <th className="px-4 py-2 text-center">Account Type</th>
+                  <th className="px-4 py-2 text-center">Status</th>
+                  <th className="px-4 py-2 text-center">Subaccounts</th>
+                  <th className="px-4 py-2 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAccounts.length > 0 ? (
+                  filteredAccounts.map((account) => (
+                    <tr
+                      key={account.account_id}
+                      className="border-b border-gray-200"
+                    >
+                      <td className="px-4 py-2 text-blue-700">
+                        {account.account_name}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {account.account_type}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        {account.status}
+                      </td>
+                      <td className="px-4 py-2 text-center">
+                        <Link to={`/admincoaview/${account.account_id}`}>
+                          <button className="bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-lg">
+                            View
+                          </button>
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2 text-center space-x-2">
+                        <Link to={`/admincoaedit/${account.account_id}`}>
+                          <button className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                            Edit
+                          </button>
+                        </Link>
+                        <button
+                          onClick={() => handleDelete(account.account_id)}
+                          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="5"
+                      className="text-center text-gray-500 py-4"
+                    >
+                      No records found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
     </div>
   );
 };
 
-export default admincoa;
+export default AdminCoa;

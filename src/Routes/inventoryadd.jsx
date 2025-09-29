@@ -1,14 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, Package, PlusCircle } from "lucide-react";
+import { BarChart3, Menu, X, Package } from "lucide-react";
 
-const AdminInventoryAdd = () => {
+const InventoryAdd = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
   const [registerData, setRegisterData] = useState({
     inv_item_type: "",
@@ -34,17 +33,14 @@ const AdminInventoryAdd = () => {
         registerData
       );
       setSuccessMessage(response.data.message || "Item added successfully!");
-      setTimeout(() => navigate("/admininventory"), 1500);
+      setTimeout(() => navigate("/inventory"), 1500);
     } catch (error) {
       if (error.response) {
         setErrorMessage(error.response.data.message || "Something went wrong");
-        console.error("Response error:", error.response.data);
       } else if (error.request) {
         setErrorMessage("No response from server. Please try again later.");
-        console.error("Request error:", error.request);
       } else {
         setErrorMessage("Error: " + error.message);
-        console.error("Axios error:", error.message);
       }
     }
   };
@@ -53,71 +49,19 @@ const AdminInventoryAdd = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-xl font-bold mb-8">Inventory Staff</h2>
         <nav className="flex flex-col gap-2">
           <Link
-            to="/admindashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            to="/inventorydashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
           >
             <BarChart3 size={18} /> Dashboard
           </Link>
-
-          {/* Ledger with dropdown */}
-          <button
-            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-            className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <span className="flex items-center gap-2">
-              <i className="fa fa-book"></i> Ledger
-            </span>
-            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
-          </button>
-          {isLedgerOpen && (
-            <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
-                Chart of Accounts
-              </Link>
-              <Link to="/adminjournal" className="hover:underline">
-                Journal Entries
-              </Link>
-              <Link to="/admingeneral" className="hover:underline">
-                General Ledger
-              </Link>
-              <Link to="/admintrial" className="hover:underline">
-                Trial Balance
-              </Link>
-            </div>
-          )}
-
           <Link
-            to="/adminusers"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            to="/inventory"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
           >
-            <Users size={18} /> Users
-          </Link>
-          <Link
-            to="/admininventory"
-            className="flex items-center gap-2 bg-[white] text-[#00458B] p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <i className="fa fa-archive"></i> Inventory
-          </Link>
-          <Link
-            to="/adminpatients"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <i className="fa fa-user-plus"></i> Patients
-          </Link>
-          <Link
-            to="/adminschedule"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <Calendar size={18} /> Schedules
-          </Link>
-          <Link
-            to="/adminaudit"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <i className="fa fa-eye"></i> Audit Trail
+            <Package size={18} /> Inventory
           </Link>
         </nav>
       </aside>
@@ -132,22 +76,20 @@ const AdminInventoryAdd = () => {
             >
               <X size={24} />
             </button>
-            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
-            {/* Same nav as desktop */}
+            <h2 className="text-xl font-bold mb-8">Inventory Staff</h2>
             <nav className="flex flex-col gap-2">
               <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
               >
                 <BarChart3 size={18} /> Dashboard
               </Link>
               <Link
-                to="/adminusers"
+                to="/inventory"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
               >
-                <Users size={18} /> Users
+                <Package size={18} /> Inventory
               </Link>
-              {/* ... add other links here */}
             </nav>
           </aside>
         </div>
@@ -264,7 +206,7 @@ const AdminInventoryAdd = () => {
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/admininventory")}
+                onClick={() => navigate("/inventory")}
               >
                 Back to List
               </button>
@@ -283,4 +225,4 @@ const AdminInventoryAdd = () => {
   );
 };
 
-export default AdminInventoryAdd;
+export default InventoryAdd;

@@ -3,24 +3,18 @@ import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
-const AdminCoaEdit = () => {
+const AdminCoaView = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { id } = useParams();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  const [account, setAccount] = useState({
-    account_name: "",
-    account_type: "Asset",
-    status: "Active",
-  });
+  const [account, setAccount] = useState(null);
+  const [sub, setSubAccounts] = useState([]);
 
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-
-  // Fetch account by id
   useEffect(() => {
     const fetchAccount = async () => {
       try {
@@ -30,35 +24,25 @@ const AdminCoaEdit = () => {
         console.error("Error fetching account:", err);
       }
     };
-    fetchAccount();
+
+    const fetchSubAccounts = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:3000/auth/coa/${id}/subaccounts`
+        );
+        setSubAccounts(res.data);
+      } catch (err) {
+        console.error("Error fetching subaccounts:", err);
+      }
+    };
+
+    if (id) {
+      fetchAccount();
+      fetchSubAccounts();
+    }
   }, [id]);
 
-  // Handle field changes
-  const handleChange = (e) => {
-    setAccount({ ...account, [e.target.name]: e.target.value });
-  };
-
-  // Update account
-  const handleUpdate = async () => {
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    if (!account.account_name) {
-      setErrorMessage("Account Name is required");
-      return;
-    }
-
-    try {
-      await axios.put(`http://localhost:3000/auth/coa/${id}`, account);
-      setSuccessMessage("Account updated successfully!");
-      setTimeout(() => navigate("/admincoa"), 1500);
-    } catch (err) {
-      console.error("Error updating account:", err);
-      setErrorMessage("Failed to update account");
-    }
-  };
-
-  // Scroll to element if provided
+  // scroll to element if passed in navigation state
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -70,6 +54,11 @@ const AdminCoaEdit = () => {
     }
   }, [location]);
 
+  // filter subaccounts
+  const filteredSubAccounts = sub.filter((s) =>
+    s.account_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
@@ -78,7 +67,7 @@ const AdminCoaEdit = () => {
         <nav className="flex flex-col gap-2">
           <Link
             to="/admindashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <BarChart3 size={18} /> Dashboard
           </Link>
@@ -86,7 +75,7 @@ const AdminCoaEdit = () => {
           {/* Ledger dropdown */}
           <button
             onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-            className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
               <i className="fa fa-book"></i> Ledger
@@ -115,31 +104,31 @@ const AdminCoaEdit = () => {
 
           <Link
             to="/adminusers"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <Users size={18} /> Users
           </Link>
           <Link
             to="/admininventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <i className="fa fa-archive"></i> Inventory
           </Link>
           <Link
             to="/adminpatients"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <i className="fa fa-user-plus"></i> Patients
           </Link>
           <Link
             to="/adminschedule"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
           </Link>
           <Link
             to="/adminaudit"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <i className="fa fa-eye"></i> Audit Trail
           </Link>
@@ -186,82 +175,89 @@ const AdminCoaEdit = () => {
         </button>
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
-          <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Edit Account
-          </h1>
-
-          <div className="space-y-6">
+          <div className="flex justify-between items-center mb-6">
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account Name
-              </label>
-              <input
-                type="text"
-                name="account_name"
-                value={account.account_name}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
+              <h1 className="text-2xl font-bold text-[#00458B]">
+                {account?.account_name || "Charts of Account"}
+              </h1>
+              <p className="text-sm text-gray-600">Sub Accounts</p>
             </div>
+            <button
+              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+              onClick={() => navigate(`/admincoaviewadd/${account?.account_id}`)}
+            >
+              Add
+            </button>
+          </div>
 
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account Type
-              </label>
-              <select
-                name="account_type"
-                value={account.account_type}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="Asset">Asset</option>
-                <option value="Revenue">Revenue</option>
-                <option value="Liability">Liability</option>
-                <option value="Equity">Equity</option>
-                <option value="Income">Income</option>
-                <option value="Expense">Expense</option>
-              </select>
-            </div>
+          {/* Search bar */}
+          <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 mb-6 w-72">
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 outline-none text-sm text-gray-700"
+            />
+            <i className="fa fa-search text-[#00458B]"></i>
+          </div>
 
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account Status
-              </label>
-              <select
-                name="status"
-                value={account.status}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="Active">Active</option>
-                <option value="Inactive">Inactive</option>
-              </select>
-            </div>
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border border-gray-200">
+              <thead>
+                <tr className="bg-white text-[#00458B] border-b border-gray-200">
+                  <th className="px-4 py-2 text-center">Account Name</th>
+                  <th className="px-4 py-2 text-center">Edit</th>
+                  <th className="px-4 py-2 text-center">Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredSubAccounts.length > 0 ? (
+                  filteredSubAccounts.map((sub, index) => (
+                    <tr
+                      key={index}
+                      className="border-b border-gray-200 text-center"
+                    >
+                      <td className="px-4 py-2 text-blue-700">
+                        {sub.account_name}
+                      </td>
+                      <td className="px-4 py-2">
+                        <button
+                          className="bg-[#04AA6D] text-white px-5 py-1 rounded-full hover:bg-teal-500"
+                          onClick={() => navigate(`/admincoaviewedit/${sub.id}`)}
+                        >
+                          Edit
+                        </button>
+                      </td>
+                      <td className="px-4 py-2">
+                        <button className="bg-[#f44336] text-white px-4 py-1 rounded-full hover:bg-red-600">
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="3"
+                      className="text-center text-gray-500 py-4"
+                    >
+                      No records found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-            {errorMessage && (
-              <p className="text-red-500 font-medium">{errorMessage}</p>
-            )}
-            {successMessage && (
-              <p className="text-green-600 font-medium">{successMessage}</p>
-            )}
-
-            <div className="flex justify-end gap-4 mt-6">
-              <button
-                type="button"
-                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/admincoa")}
-              >
-                Back to List
+          {/* Back button */}
+          <div className="mt-6">
+            <Link to="/admincoa">
+              <button className="bg-[#EBEBEB] text-black px-6 py-2 rounded-lg hover:bg-gray-300">
+                Back
               </button>
-
-              <button
-                type="button"
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
-                onClick={handleUpdate}
-              >
-                Update
-              </button>
-            </div>
+            </Link>
           </div>
         </div>
       </main>
@@ -269,4 +265,4 @@ const AdminCoaEdit = () => {
   );
 };
 
-export default AdminCoaEdit;
+export default AdminCoaView;

@@ -1,26 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import { BarChart3, Users, Calendar, Menu, X, Package, PlusCircle } from "lucide-react";
 
-const admininventory = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
-  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [items, setItems] = useState([]); // inventory state
+function admininventory() {
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("all");
-
-  // Scroll behavior
-  useEffect(() => {
-    if (location.state?.scrollTo) {
-      const element = document.getElementById(location.state.scrollTo);
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth" });
-        }, 100);
-      }
-    }
-  }, [location]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [items, setItems] = useState([]);
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Fetch inventory items on load
   useEffect(() => {
@@ -74,274 +61,218 @@ const handleDelete = async (id) => {
   }
 };
 
-// 🔹 Apply both search + status filter
+  // Filter only "pending" + search
   const filteredItems = items.filter((item) => {
+    const matchesStatus = item.inv_item_status === "active";
     const matchesSearch = Object.values(item).some((val) =>
       val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    const matchesStatus =
-      statusFilter === "all" || item.inv_item_status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+    return matchesStatus && matchesSearch;
   });
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            <div
-                className="col-sm-3 p-5 rounded-lg shadow-lg"
-                style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
-                >
-                {/* Dashboard */}
-                <Link to="/">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-tachometer" aria-hidden="true"></i> Dashboard
-                    </button>
-                </Link>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <nav className="flex flex-col gap-2">
+          <Link
+            to="/admindashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <BarChart3 size={18} /> Dashboard
+          </Link>
 
-                {/* Ledger with Dropdown */}
-                <button
-                    onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                    className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                >
-                    <span>
-                    <i className="fa fa-book" aria-hidden="true"></i> Ledger
-                    </span>
-                    <i
-                    className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`}
-                    aria-hidden="true"
-                    ></i>
-                </button>
-
-                {isLedgerOpen && (
-                    <div className="ml-8 text-sm">
-                    <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Chart of Accounts
-                        </p>
-                    </Link>
-                    <Link to="/adminjournal">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Journal Entries
-                        </p>
-                    </Link>
-                    <Link to="/admingeneral">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        General Ledger
-                        </p>
-                    </Link>
-                    <Link to="/admintrial">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Trial Balance
-                        </p>
-                    </Link>
-                    </div>
-                )}
-
-                {/* Users */}
-                <Link to="/adminusers">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-users" aria-hidden="true"></i> Users
-                    </button>
-                </Link>
-
-                {/* Inventory */}
-                <Link to="/admininventory">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00c3b8" }}
-                    >
-                    <i className="fa fa-archive" aria-hidden="true"></i> Inventory
-                    </button>
-                </Link>
-
-                {/* Patients */}
-                <Link to="/adminpatients">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
-                    </button>
-                </Link>
-
-                {/* Schedule */}
-                <Link to="/adminschedule">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
-                    </button>
-                </Link>
-
-                {/* Audit Trail */}
-                <Link to="/adminaudit">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
-                    </button>
-                </Link>
-                </div>
-                <div className="col-sm-7">
-                    <div className="row">
-                        <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
-                            <div className="row">
-                                <div className="col-sm-6">
-                                    <h1 className="text-2xl font-bold">Inventory Management</h1>
-                                </div>
-                                <div className="col-sm-3">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventoryadd")}>+ Add New Item</button>
-                                </div>
-                                <div className="col-sm-3">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventorypending")}>Pending Items</button>
-                                </div>
-                            </div>
-                        </div>
-                        <p style={{color:"transparent"}}>...</p>
-                        <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                            <div className="row">
-                                <div className="col-sm-12">
-                                {/* Table */}
-                                <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                                    {/* Search bar */}
-                                    {/* 🔹 Search + Filter */}
-                                <div className="flex justify-between items-center mb-4">
-                                  {/* Status filter dropdown */}
-                                  <select
-                                    value={statusFilter}
-                                    onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="border border-[#00458B] rounded-full px-4 py-2 text-sm text-gray-700"
-                                  >
-                                    <option value="all">All</option>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                  </select>
-
-                                  {/* Search bar */}
-                                  <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                                    <input
-                                      type="text"
-                                      placeholder="Search"
-                                      value={searchTerm}
-                                      onChange={(e) => setSearchTerm(e.target.value)}
-                                      className="flex-1 outline-none text-sm text-gray-700"
-                                    />
-                                    <i className="fa fa-search text-[#00458B]"></i>
-                                  </div>
-                                </div>
-                                </div>
-
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse border border-gray-200">
-                                    <thead>
-                                        <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                        <th className="px-4 py-2 text-center">Item Name</th>
-                                        <th className="px-4 py-2 text-center">Stock Status</th>
-                                        <th className="px-4 py-2 text-center">Quantity</th>
-                                        <th className="px-4 py-2 text-center">Item Status</th>
-                                        <th className="px-4 py-2 text-center"></th>
-                                        <th className="px-4 py-2 text-center"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                      {loading ? (
-                                        <tr>
-                                          <td colSpan="6" className="text-center py-4 text-gray-500">
-                                            Loading...
-                                          </td>
-                                        </tr>
-                                      ) : filteredItems.length > 0 ? (
-                                        filteredItems.map((item) => (
-                                          <tr key={item.inv_id} className="border-b border-gray-200 text-center">
-                                            <td className="px-4 py-2 text-blue-700">{item.inv_item_name}</td>
-                                            <td className="px-4 py-2">{item.inv_status}</td>
-                                            <td className="px-4 py-2">{item.inv_quantity}</td>
-                                            <td className="px-4 py-2">{item.inv_item_status}</td>
-
-                                            {/* Edit Button */}
-                                            <td className="px-2 py-3 whitespace-nowrap">
-                                              <Link to={`/admininventoryedit/${item.inv_id}`}>
-                                                <button
-                                                  disabled={item.inv_item_status === "inactive"}
-                                                  className={`px-4 py-2 rounded-full transition ${
-                                                    item.inv_item_status === "inactive"
-                                                      ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                                                      : "bg-[#04AA6D] text-white border-[#00458b]"
-                                                  }`}
-                                                >
-                                                  View & Edit
-                                                </button>
-                                              </Link>
-                                            </td>
-
-                                            {/* Inactive Button */}
-                                            <td className="px-4 py-2">
-                                              <button
-                                                onClick={() => handleDelete(item.inv_id)}
-                                                disabled={item.inv_item_status === "inactive"}
-                                                className={`w-full px-4 py-1 rounded-full ${
-                                                  item.inv_item_status === "inactive"
-                                                    ? "bg-gray-300 text-gray-600 cursor-not-allowed"
-                                                    : "bg-[#f44336] text-white"
-                                                }`}
-                                              >
-                                                Inactive
-                                              </button>
-                                            </td>
-                                          </tr>
-                                        ))
-                                      ) : (
-                                        <tr>
-                                          <td colSpan="6" className="text-center text-gray-500 py-4">
-                                            No items found
-                                          </td>
-                                        </tr>
-                                      )}
-                                    </tbody>
-                                    </table>
-                                    </div>
-                                  </div>
-                            </div>
-                            <div className="col-sm-12">
-                                <div className="row">
-                                    <div className="col-sm-6">
-                                    </div>
-                                        <div className="col-sm-6">
-                                            <div className="row">
-                                                <div className="col-sm-4">
-
-                                                </div>
-                                            <div className="col-sm-8">
-                                                    <br />
-                                                    <br />
-                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/register2")}>Generate Report</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <div className="col-sm-2">
-                
+          {/* Ledger with dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="hover:underline">
+                Chart of Accounts
+              </Link>
+              <Link to="/adminjournal" className="hover:underline">
+                Journal Entries
+              </Link>
+              <Link to="/admingeneral" className="hover:underline">
+                General Ledger
+              </Link>
+              <Link to="/admintrial" className="hover:underline">
+                Trial Balance
+              </Link>
             </div>
+          )}
+
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 bg-[white] text-[#00458B] p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
+        </nav>
+      </aside>
+
+      {/* Sidebar (mobile with toggle) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            {/* Same nav as desktop */}
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <Users size={18} /> Users
+              </Link>
+              {/* ... add other links here */}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-8">
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
+        >
+          <Menu size={24} /> Menu
+        </button>
+
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#00458B]">Inventory</h1>
+
+          <div className="flex gap-3">
+            <Link
+              to="/admininventorypending"
+              className="flex items-center gap-2 bg-[#00c3b8] text-white px-4 py-2 rounded-lg"
+            >
+              Pending Items
+            </Link>
+
+            <Link
+              to="/admininventoryadd"
+              className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
+            >
+              <PlusCircle size={18} /> Add Item
+            </Link>
           </div>
         </div>
-      </div>
+
+        {loading ? (
+          <p>Loading inventory data...</p>
+        ) : (
+          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+            {/* Search Bar */}
+            <div className="flex justify-end mb-4">
+              <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 outline-none text-sm text-gray-700"
+                />
+                <i className="fa fa-search text-[#00458B]"></i>
+              </div>
+            </div>
+            <table className="w-full border-collapse border border-gray-200">
+              <thead>
+                <tr className="bg-gray-100 text-[#00458B]">
+                  <th className="px-4 py-2 text-left">Item Name</th>
+                  <th className="px-4 py-2 text-center">Category</th>
+                  <th className="px-4 py-2 text-center">Quantity</th>
+                  <th className="px-4 py-2 text-center">Status</th>
+                  <th className="px-4 py-2 text-center">Expiration Date</th>
+                  <th className="px-4 py-2 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.inv_id} className="border-b border-gray-200">
+                    <td className="px-4 py-2 text-blue-700">{item.inv_item_name}</td>
+                    <td className="px-4 py-2 text-center">{item.inv_item_type}</td>
+                    <td className="px-4 py-2 text-center">{item.inv_quantity}</td>
+                    <td
+                      className={`px-4 py-2 text-center font-bold ${
+                        Number(item.inv_quantity) <= 50
+                          ? "text-red-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {Number(item.inv_quantity) <= 50 ? "Low" : "OK"}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      {item.inv_exp_date
+                        ? new Date(item.inv_exp_date).toLocaleDateString()
+                        : "N/A"}
+                    </td>
+                    <td className="px-4 py-2 text-center space-x-2">
+                      <Link
+                        to={`/admininventoryedit/${item.inv_id}`}
+                        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                      >
+                        Edit
+                      </Link>
+                      <button
+                        onClick={() => handleDelete(item.inv_id)}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </main>
     </div>
   );
 };
