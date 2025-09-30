@@ -204,16 +204,19 @@ useEffect(() => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -226,8 +229,14 @@ useEffect(() => {
             <Users size={18} /> Users
           </Link>
           <Link
-            to="/adminpatients"
+            to="/admininventory"
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg"
           >
             <i className="fa fa-user-plus"></i> Patients
           </Link>
@@ -246,7 +255,7 @@ useEffect(() => {
         </nav>
       </aside>
 
-      {/* Sidebar (mobile) */}
+      {/* Sidebar (mobile with toggle) */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
           <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
@@ -260,13 +269,13 @@ useEffect(() => {
             <nav className="flex flex-col gap-2">
               <Link
                 to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
               >
                 <BarChart3 size={18} /> Dashboard
               </Link>
               <Link
                 to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
               >
                 <Users size={18} /> Users
               </Link>
@@ -274,6 +283,7 @@ useEffect(() => {
           </aside>
         </div>
       )}
+      
       <main className="flex-1 p-6 md:p-8">
                         <p style={{color:"transparent"}}>...</p>
                         <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
@@ -329,7 +339,7 @@ useEffect(() => {
                                     <br />
                                     <div className="row">
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
-                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date}</p>
+                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date} | {consultation.pref_time}</p>
                                             <br />
                                             {/* Dentist Selection */}
                                             <p className="font-bold">Attending Dentist:</p>
@@ -402,6 +412,20 @@ useEffect(() => {
                                             overflowY: "auto",    // 🔹 enables vertical scrolling
                                           }}
                                         >
+                                                <div className="col-sm-12 mb-2">
+                                                  <div className="row">
+                                                    <div className="col-sm-4">
+                                                      <p className="font-bold">OR Number:</p><p>{consultation.or_num} </p>
+                                                    </div>
+                                                    <div className="col-sm-4">
+                                                      <p className="font-bold mb-2">Payment Method:</p> <p>{consultation.payment_method} </p>
+                                                    </div>
+                                                    <div className="col-sm-4">
+                                                      <p className="font-bold mb-2">Payment Status:</p> <p>{consultation.payment_status} </p>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <hr className="mb-2"></hr>
                                           <p className="font-bold mb-2">Charged Service</p>
                                           <p>
                                             {consultation.procedure_type} - ₱{consultation.total_service_charged.toFixed(2)}

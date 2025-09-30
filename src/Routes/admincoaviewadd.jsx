@@ -101,35 +101,35 @@ const AdminCoaViewAdd = () => {
                 ></i>
               </button>
 
-              {isLedgerOpen && (
-                <div className="ml-8 text-sm">
-                  <Link to="/admincoa">
-                    <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
-                      Chart of Accounts
-                    </p>
-                  </Link>
-                  <Link to="/adminjournal">
-                    <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                      Journal Entries
-                    </p>
-                  </Link>
-                    <Link to='/adminsubsidiary'>
-                                      <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                                        Subsidiary 
-                                      </p>
-                                     </Link>  
-                  <Link to="/admingeneral">
-                    <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                      General Ledger
-                    </p>
-                  </Link>
-                  <Link to="/admintrial">
-                    <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                      Trial Balance
-                    </p>
-                  </Link>
-                </div>
-              )}
+                {isLedgerOpen && (
+                    <div className="ml-8 text-sm">
+                    <Link to="/admincoa">
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        Chart of Accounts
+                        </p>
+                    </Link>
+                    <Link to="/adminjournal">
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        Journal Entries
+                        </p>
+                    </Link>
+                    <Link to="/adminsubsidiaryreceivable">
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        Subsidiary
+                        </p>
+                    </Link>
+                    <Link to="/admingeneral">
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        General Ledger
+                        </p>
+                    </Link>
+                    <Link to="/admintrial">
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        Trial Balance
+                        </p>
+                    </Link>
+                    </div>
+                )}
 
               {/* Other Links */}
               <Link to="/adminusers">

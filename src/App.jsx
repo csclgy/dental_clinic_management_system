@@ -53,14 +53,20 @@ import Admininventorypending from "./Routes/admininventorypending";
 import AdminCoaView from "./Routes/admincoaview";
 import AdminCoaViewAdd from "./Routes/admincoaviewadd";
 import AdminCoaViewEdit from "./Routes/admincoaviewedit";
-import AdminSubsidiary from "./Routes/adminsubsidiary";
-import AdminSubsidiaryadd from "./Routes/adminsubsidiaryadd";
-import Admindashboard from "./Routes/admindashboard";
 import InventoryDashboard from "./Routes/inventorydashboard";
 import Inventory from "./Routes/inventory";
 import InventoryEdit from "./Routes/inventoryedit";
 import InventoryAdd from "./Routes/inventoryadd"; 
 import AdminDashboard from "./Routes/admindashboard";
+import AdminSubsidiary from "./Routes/adminsubsidiary";
+import AdminSubsidiaryadd from "./Routes/adminsubsidiaryadd";
+import  Adminsubsidiaryreceivable from "./Routes/adminsubsidiaryreceivable";
+import AdminSubsidiarypayable from "./Routes/adminsubsidiaryPayable";
+import Adminsubsidiarypayableadd from "./Routes/adminsubsidiaryaddpayable";
+import Adminsupplier from "./Routes/adminsupplier";
+import AdminSupplierAdd from "./Routes/adminsupplieradd";
+import AdminSupplierEdit from "./Routes/adminsupplieredit.jsx";
+import AdminInventoryView from "./Routes/admininventoryview.jsx";
 
 function App() {
   return (
@@ -195,13 +201,21 @@ function App() {
              <Route path="/admincoaview/:id" element={<AdminCoaView/>} />
              <Route path="/admincoaviewadd/:id" element={<AdminCoaViewAdd/>} />
              <Route path="/admincoaviewedit/:id" element={<AdminCoaViewEdit/>} />
-             <Route path="/adminsubsidiary" element={<AdminSubsidiary />}/>
-             <Route path="/adminsubsidiaryadd" element={<AdminSubsidiaryadd />}/>
              <Route path="/admindashboard" element={<AdminDashboard />}/>
             <Route path="/inventorydashboard" element={<InventoryDashboard />} />
             <Route path="/inventory" element={<Inventory />} />
             <Route path="/inventoryedit/:id" element={<InventoryEdit />} />
             <Route path="/inventoryadd" element={<InventoryAdd />} />
+            <Route path="/adminsubsidiaryreceivable" element={<Adminsubsidiaryreceivable />}/>
+            <Route path="/adminsubsidiary" element={<AdminSubsidiary />}/>
+             <Route path="/adminsubsidiaryadd" element={<AdminSubsidiaryadd />}/>
+             <Route path="/adminsubsidiaryreceivable" element={<Adminsubsidiaryreceivable />}/>
+             <Route path="/adminsubsidiaryPayable" element={<AdminSubsidiarypayable />}/>
+             <Route path="/adminsubsidiaryaddpayable" element={<Adminsubsidiarypayableadd />}/>
+             <Route path="/adminsupplier" element={<Adminsupplier />}/>
+             <Route path="/adminsupplieradd" element={<AdminSupplierAdd />}/>
+             <Route path="/adminsupplieredit/:id" element={<AdminSupplierEdit />}/>
+             <Route path="/admininventoryview/:id" element={<AdminInventoryView />}/>
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

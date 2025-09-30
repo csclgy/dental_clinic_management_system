@@ -1,27 +1,25 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import {
-  BarChart3,
-  Users,
-  Calendar,
-  Menu,
-  X,
-  Package,
-} from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
-const AdminCoaAdd = () => {
+const AdminSupplierAdd = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
-  const [accountName, setAccountName] = useState("");
-  const [accountType, setAccountType] = useState("Asset");
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  const [newsupplier, setNewSupplier] = useState({
+    supplier_name: "",
+    contact_person: "",
+    contact_no: "",
+    description: "",
+  });
+
+  // Scroll to section if needed
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -33,28 +31,36 @@ const AdminCoaAdd = () => {
     }
   }, [location]);
 
+  // Save supplier
   const handleSave = async () => {
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (!accountName) {
-      setErrorMessage("Account Name is required");
+    const { supplier_name, contact_person, contact_no, description } = newsupplier;
+
+    if (!supplier_name || !contact_person || !contact_no || !description) {
+      setErrorMessage("Please fill in the required fields");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:3000/auth/coa", {
-        account_name: accountName,
-        account_type: accountType,
+      const response = await axios.post(
+        "http://localhost:3000/auth/newsupplier",
+        newsupplier
+      );
+
+      setSuccessMessage(response.data.message || "Supplier added successfully!");
+      setNewSupplier({
+        supplier_name: "",
+        contact_person: "",
+        contact_no: "",
+        description: "",
       });
 
-      setSuccessMessage(response.data.message || "Account saved successfully!");
-      setAccountName("");
-      setAccountType("Asset");
-      setTimeout(() => navigate("/admincoa"), 1500);
+      setTimeout(() => navigate("/adminsupplier"), 1500);
     } catch (err) {
       console.error(err);
-      setErrorMessage(err.response?.data?.message || "Something went wrong");
+      setErrorMessage(err.response?.data?.error || "Something went wrong");
     }
   };
 
@@ -71,7 +77,7 @@ const AdminCoaAdd = () => {
             <BarChart3 size={18} /> Dashboard
           </Link>
 
-          {/* Ledger with dropdown */}
+          {/* Ledger Dropdown */}
           <button
             onClick={() => setIsLedgerOpen(!isLedgerOpen)}
             className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
@@ -134,7 +140,7 @@ const AdminCoaAdd = () => {
         </nav>
       </aside>
 
-      {/* Sidebar (mobile with toggle) */}
+      {/* Sidebar (mobile) */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
           <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
@@ -165,7 +171,7 @@ const AdminCoaAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* Mobile menu button */}
+        {/* Mobile menu */}
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -175,38 +181,64 @@ const AdminCoaAdd = () => {
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add New Account
+            Add New Supplier
           </h1>
 
-          <div className="space-y-6">
+          <form className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account Name
+                Supplier Name:
               </label>
               <input
                 type="text"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
+                value={newsupplier.supplier_name}
+                onChange={(e) =>
+                  setNewSupplier({ ...newsupplier, supplier_name: e.target.value })
+                }
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
             </div>
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account Type
+                Contact Person Name:
               </label>
-              <select
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value)}
+              <input
+                type="text"
+                value={newsupplier.contact_person}
+                onChange={(e) =>
+                  setNewSupplier({ ...newsupplier, contact_person: e.target.value })
+                }
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="Asset">Asset</option>
-                <option value="Revenue">Revenue</option>
-                <option value="Liability">Liability</option>
-                <option value="Equity">Equity</option>
-                <option value="Income">Income</option>
-                <option value="Expense">Expense</option>
-              </select>
+              />
+            </div>
+
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Contact Number:
+              </label>
+              <input
+                type="number"
+                value={newsupplier.contact_no}
+                onChange={(e) =>
+                  setNewSupplier({ ...newsupplier, contact_no: e.target.value })
+                }
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Description:
+              </label>
+              <input
+                type="text"
+                value={newsupplier.description}
+                onChange={(e) =>
+                  setNewSupplier({ ...newsupplier, description: e.target.value })
+                }
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              />
             </div>
 
             {errorMessage && (
@@ -220,24 +252,23 @@ const AdminCoaAdd = () => {
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/admincoa")}
+                onClick={() => navigate("/adminsupplier")}
               >
-                Back to List
+                Back
               </button>
-
               <button
                 type="button"
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
                 onClick={handleSave}
+                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
               >
                 Save
               </button>
             </div>
-          </div>
+          </form>
         </div>
       </main>
     </div>
   );
 };
 
-export default AdminCoaAdd;
+export default AdminSupplierAdd;

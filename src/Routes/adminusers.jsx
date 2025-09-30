@@ -112,16 +112,19 @@ function AdminUsers() {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -260,6 +263,7 @@ function AdminUsers() {
                       <th className="px-4 py-2 text-center">Username</th>
                       <th className="px-4 py-2 text-center">Access Level</th>
                       <th className="px-4 py-2 text-center">Name</th>
+                      <th className="px-4 py-2 text-center">Status</th>
                       <th className="px-4 py-2 text-center">Actions</th>
                     </tr>
                   </thead>
@@ -270,6 +274,7 @@ function AdminUsers() {
                           <td className="px-4 py-2 text-blue-700">{user.user_name}</td>
                           <td className="px-4 py-2">{user.role}</td>
                           <td className="px-4 py-2">{`${user.fname} ${user.mname || ""} ${user.lname}`}</td>
+                          <td className="px-4 py-2">{user.user_status}</td>
                           <td className="px-4 py-2 flex gap-2 justify-center">
                             <Link to={`/adminusersedit/${user.user_id}`}>
                               <button className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Edit</button>

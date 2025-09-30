@@ -95,16 +95,19 @@ const handleDelete = async (id) => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -201,7 +204,14 @@ const handleDelete = async (id) => {
             >
               <PlusCircle size={18} /> Add Item
             </Link>
+            <Link
+              to="/adminsupplier"
+              className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
+            >
+              View Suppliers
+            </Link>
           </div>
+          
         </div>
 
         {loading ? (
@@ -227,8 +237,9 @@ const handleDelete = async (id) => {
                   <th className="px-4 py-2 text-left">Item Name</th>
                   <th className="px-4 py-2 text-center">Category</th>
                   <th className="px-4 py-2 text-center">Quantity</th>
-                  <th className="px-4 py-2 text-center">Status</th>
+                  <th className="px-4 py-2 text-center">Stocks</th>
                   <th className="px-4 py-2 text-center">Expiration Date</th>
+                  <th className="px-4 py-2 text-center">Status</th>
                   <th className="px-4 py-2 text-center">Actions</th>
                 </tr>
               </thead>
@@ -252,19 +263,38 @@ const handleDelete = async (id) => {
                         ? new Date(item.inv_exp_date).toLocaleDateString()
                         : "N/A"}
                     </td>
+                    <td className="px-4 py-2 text-center">{item.inv_item_status}</td>
                     <td className="px-4 py-2 text-center space-x-2">
                       <Link
+                        to={`/admininventoryview/${item.inv_id}`}
+                        className={`px-4 py-2 rounded-lg text-white ${
+                          item.inv_item_status === "inactive"
+                            ? "bg-gray-400 cursor-not-allowed pointer-events-none"
+                            : "bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-lg"
+                        }`}
+                      >
+                        View
+                      </Link>
+                      <Link
                         to={`/admininventoryedit/${item.inv_id}`}
-                        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                        className={`px-4 py-2 rounded-lg text-white ${
+                          item.inv_item_status === "inactive"
+                            ? "bg-gray-400 cursor-not-allowed pointer-events-none"
+                            : "bg-green-500 hover:bg-green-600"
+                        }`}
                       >
                         Edit
                       </Link>
-                      <button
+                      <Link
                         onClick={() => handleDelete(item.inv_id)}
-                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                        className={`px-4 py-2 rounded-lg text-white ${
+                          item.inv_item_status === "inactive"
+                            ? "bg-gray-400 cursor-not-allowed pointer-events-none"
+                            : "bg-red-500 hover:bg-red-600"
+                        }`}
                       >
                         Delete
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

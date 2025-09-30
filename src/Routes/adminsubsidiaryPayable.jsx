@@ -3,15 +3,13 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
-const Admingeneral = () => {
+const AdminSubsidiaryPayable = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [records, setRecords] = useState([]);
-  const [accounts, setAccounts] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState("");
+  const [subsidiaryRecords, setSubsidiaryRecords] = useState([]);
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -24,52 +22,42 @@ const Admingeneral = () => {
     }
   }, [location]);
 
+  // Fetch subsidiary ledger for Accounts Payable
   useEffect(() => {
-    const fetchLedger = async () => {
+    const fetchSubsidiary = async (account_id) => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/general");
-        setRecords(res.data);
+        const res = await axios.get("http://localhost:3000/auth/subsidiary", {
+          params: { account_id },
+        });
+        setSubsidiaryRecords(res.data);
       } catch (err) {
-        console.error("Error fetching general ledger:", err);
+        console.error("Error fetching subsidiary records:", err);
       }
     };
-    fetchLedger();
-  }, []);
 
-  useEffect(() => {
-    const fetchAccounts = async () => {
+    const fetchAccountPayable = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/coa");
-        setAccounts(res.data);
+        const res = await axios.get("http://localhost:3000/auth/accountPayable");
+        if (res.data.length > 0) {
+          const { account_id } = res.data[0];
+          fetchSubsidiary(account_id);
+        }
       } catch (err) {
-        console.error("Error fetching accounts:", err);
+        console.error("Error fetching Account Payable:", err);
       }
     };
-    fetchAccounts();
+
+    fetchAccountPayable();
   }, []);
 
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
-
-  const filterRecord = async (account_id) => {
-    try {
-      if (!account_id) {
-        const res = await axios.get("http://localhost:3000/auth/general");
-        setRecords(res.data);
-        return;
-      }
-
-      const res = await axios.get("http://localhost:3000/auth/general_ledger1", {
-        params: { account_id },
-      });
-      setRecords(res.data);
-    } catch (err) {
-      console.error("Error fetching filtered ledger:", err);
-    }
-  };
+  // Filter records
+  const filteredRecords = subsidiaryRecords.filter((record) => {
+    if (!searchTerm) return true;
+    return (
+      record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.invoice_no.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -188,38 +176,21 @@ const Admingeneral = () => {
 
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#00458B]">General Ledger</h1>
-
-          <div>
-            <label
-              htmlFor="accounts"
-              className="block mb-1 text-sm font-medium text-gray-700"
-            >
-              Account Name
-            </label>
-            <select
-              id="accounts"
-              value={selectedAccount}
-              onChange={(e) => {
-                setSelectedAccount(e.target.value);
-                filterRecord(e.target.value);
-              }}
-              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"
-            >
-              <option value="">All</option>
-              {accounts.map((acc) => (
-                <option key={acc.account_id} value={acc.account_id}>
-                  {acc.account_name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <h1 className="text-2xl font-bold text-[#00458B]">
+            Subsidiary Ledger (Payable)
+          </h1>
+          <button
+            onClick={() => navigate("/adminsubsidiaryaddpayable")}
+            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
+          >
+            Add
+          </button>
         </div>
 
         {/* Table */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
           {/* Search Bar */}
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-between mb-4">
             <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
               <input
                 type="text"
@@ -230,14 +201,26 @@ const Admingeneral = () => {
               />
               <i className="fa fa-search text-[#00458B]"></i>
             </div>
+
+            {/* Switch Dropdown */}
+            <select
+              defaultValue="/adminsubsidiarypayable"
+              onChange={(e) => navigate(e.target.value)}
+              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"
+            >
+              <option value="/adminsubsidiaryreceivable">
+                Accounts Receivable
+              </option>
+              <option value="/adminsubsidiarypayable">Accounts Payable</option>
+            </select>
           </div>
 
           <table className="w-full border-collapse border border-gray-200">
             <thead>
               <tr className="bg-gray-100 text-[#00458B]">
                 <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Account Name</th>
-                <th className="px-4 py-2 text-left">Account Type</th>
+                <th className="px-4 py-2 text-left">Name</th>
+                <th className="px-4 py-2 text-left">Invoice No.</th>
                 <th className="px-4 py-2 text-left">Debit</th>
                 <th className="px-4 py-2 text-left">Credit</th>
                 <th className="px-4 py-2 text-left">Balance</th>
@@ -248,10 +231,8 @@ const Admingeneral = () => {
                 filteredRecords.map((record, index) => (
                   <tr key={index} className="border-b border-gray-200">
                     <td className="px-4 py-2 text-black">{record.date}</td>
-                    <td className="px-4 py-2 text-blue-700">{record.account}</td>
-                    <td className="px-4 py-2 text-black">
-                      {record.account_type || "-"}
-                    </td>
+                    <td className="px-4 py-2 text-blue-700">{record.name}</td>
+                    <td className="px-4 py-2 text-black">{record.invoice_no}</td>
                     <td className="px-4 py-2 text-black">
                       ₱ {(Number(record.debit) || 0).toFixed(2)}
                     </td>
@@ -272,20 +253,10 @@ const Admingeneral = () => {
               )}
             </tbody>
           </table>
-
-          {/* Generate Report Button */}
-          <div className="flex justify-end mt-6">
-            <button
-              onClick={() => navigate("/register2")}
-              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
-            >
-              Generate Report
-            </button>
-          </div>
         </div>
       </main>
     </div>
   );
 };
 
-export default Admingeneral;
+export default AdminSubsidiaryPayable;

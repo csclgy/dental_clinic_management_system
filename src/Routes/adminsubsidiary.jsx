@@ -4,13 +4,25 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
-const adminSubsidiary = () => {
-   const location = useLocation();
+const adminsubsidiaryadd = () => {
+  const location = useLocation();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [accounts, setAccounts] = useState([]);
-  
+  const  [account,setAccount] = useState([]);
+  const [nameSuggestions, setNameSuggestions] = useState([]);
+const [selectedPatientId, setSelectedPatientId] = useState(null);
+
+
+    const [formData, setFormData] = useState({
+    date: "",
+    description: "",
+    invoice_no:"",
+    account: "",
+    subaccount: "",
+    type: "debit",
+    amount: "",
+    comment: ""
+  });
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -22,40 +34,87 @@ const adminSubsidiary = () => {
         }, 100); // delay ensures DOM is rendered
       }
     }
-  }, [location]);
 
-     useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/auth/coa"); 
-        setAccounts(res.data); 
-      } catch (err) {
-        console.error("Error fetching accounts:", err);
-      }
-    };
-    fetchAccounts();
-  }, []);
-
-  // Filter accounts by search term
-  const filteredAccounts = accounts.filter((account) => {
-    if (!searchTerm) return true; // if search bar empty, show all
-    return (
-      account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.account_type.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
-//delete acc
-  const handleDelete = async (id) => {
-  if (window.confirm("Are you sure you want to delete this account?")) {
+const fetchAccountReceivable = async () => {
     try {
-      await axios.delete(`http://localhost:3000/auth/coa/${id}`);
-      setAccounts(accounts.filter((a) => a.account_id !== id)); // update UI
+      const res = await axios.get(`http://localhost:3000/auth/accountReceivable`);
+      if (res.data.length > 0) {
+        const { account_id, account_name } = res.data[0];
+        setFormData(prev => ({
+          ...prev,
+          account: account_id,
+          accountName: account_name,
+        }));
+      }
     } catch (err) {
-      console.error("Error deleting account:", err);
-      alert("Failed to delete account");
+      console.error("Error fetching Account Receivable:", err);
     }
+  };
+
+  fetchAccountReceivable();
+}, [location]);
+  
+const fetchSuggestions = async (query) => {
+  if (!query) {
+    setNameSuggestions([]);
+    return;
+  }
+
+  try {
+    const res = await axios.get(`http://localhost:3000/auth/patients/search?name=${query}`);
+    setNameSuggestions(res.data);
+  } catch (err) {
+    console.error("Error fetching name suggestions:", err);
   }
 };
+
+   const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (!formData.date || !formData.description || !formData.account || !formData.amount) {
+    alert("Please fill in all required fields.");
+    return;
+  }
+
+  const debit = formData.type === "debit" ? Number(formData.amount) : 0;
+  const credit = formData.type === "credit" ? Number(formData.amount) : 0;
+  const balance = debit - credit;
+
+  console.log("Submitting form data:", {
+    date: formData.date,
+    name: formData.description,
+    invoice_no: formData.invoice_no,
+    account_id: formData.account,
+    patient_id: selectedPatientId,  
+    debit,
+    credit,
+    balance
+  });
+
+  try {
+    await axios.post("http://localhost:3000/auth/subsidiary", {
+      date: formData.date,
+      name: formData.description,
+      invoice_no: formData.invoice_no,
+      account_id: formData.account,
+      patient_id: selectedPatientId,  
+      debit,
+      credit,
+      balance
+    });
+    alert("Journal + Subsidiary entry saved successfully!");
+    navigate("/adminsubsidiaryreceivable");
+  } catch (err) {
+    console.error("Error saving entry:", err.response?.data || err.message);
+    alert(err.response?.data?.message || "Something went wrong");
+  }
+};
+
 
   return (
     <div>
@@ -94,27 +153,27 @@ const adminSubsidiary = () => {
                 {isLedgerOpen && (
                     <div className="ml-8 text-sm">
                     <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Chart of Accounts
                         </p>
                     </Link>
                     <Link to="/adminjournal">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Journal Entries
                         </p>
                     </Link>
-                  <Link to='/adminsubsidiary'>
-                    <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
-                      Subsidiary 
-                    </p>
-                  </Link>                    
+                    <Link to="/adminsubsidiaryreceivable">
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        Subsidiary
+                        </p>
+                    </Link>
                     <Link to="/admingeneral">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         General Ledger
                         </p>
                     </Link>
                     <Link to="/admintrial">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Trial Balance
                         </p>
                     </Link>
@@ -155,8 +214,7 @@ const adminSubsidiary = () => {
                 <Link to="/adminschedule">
                     <button
                     className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
+                    style={{ color: "#00458B" }}>
                     <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
                     </button>
                 </Link>
@@ -175,137 +233,140 @@ const adminSubsidiary = () => {
                     <div className="row">
                         <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
                             <div className="row">
-                                <div className="col-sm-9">
-                                    <h1 className="text-2xl font-bold">Subsidiary</h1>
+                                <div className="col-sm-6">
+                                    <h1 className="text-2xl font-bold">Subsidiary Ledger</h1>
                                 </div>
-                                <div className="col-sm-3">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminsubsidiaryadd")}>Add New Entry +</button>
-                                </div>
+                               
                             </div>
                         </div>
                         <p style={{color:"transparent"}}>...</p>
                         <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
+                            <form onSubmit={handleSubmit}>
                             <div className="row">
-                                <div className="col-sm-12">
-                                {/* Search bar */}
-                                <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                                    {/* Header */}
-                                    <div className="flex justify-between items-center mb-1">
-                                        <h1 className=" font-bold text-[#00458B]"> </h1>
-                                        {/* Search bar */}
-                                        <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                                        <input
+                                 
+                                    <h1 className="text-xl font-bold" style={{ color: "#00458B" }}> Add New Entry</h1>
+                                    <div className="col-sm-2">
+                                    </div>
+                                
+                                    <div className="col-sm-9">
+                                        <br />
+                                        <br />
+                                        
+                                        <div className="row">
+                                            <div className="col-sm-4">
+                                                <div class="mb-4 text-left">
+                                                    <label class="block text-[#00458b] font-semibold mb-1">Date</label>
+                                                    <input type="date" name="date" value={formData.date} onChange={handleChange}  class="w-full border border-[#00458b] rounded-full px-3 py-2 outline-none" />
+                                                </div>
+                                            </div>
+                                            <div className="col-sm-8">
+                                                <div class="mb-4 text-left">
+                                                    <label class="block text-[#00458b] font-semibold mb-1">Invoice Number</label>
+                                                   <input type="text" name="invoice_no" value={formData.invoice_no} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                          <label className="block text-[#00458b] font-semibold mb-1">Patient Name</label>
+                                          <input
                                             type="text"
-                                            placeholder="Search"
-                                            value={searchTerm}
-                                            onChange={(e) => setSearchTerm(e.target.value)}
-                                            className="flex-1 outline-none text-sm text-gray-700"
-                                        />
-                                        <i className="fa fa-search text-[#00458B]"></i>
+                                            name="description"
+                                            value={formData.description}
+                                            onChange={(e) => {
+                                              handleChange(e);
+                                              fetchSuggestions(e.target.value);
+                                            }}
+                                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                            autoComplete="off"
+                                          />
+
+                                          {/* Suggestions dropdown */}
+                                          {nameSuggestions.length > 0 && (
+                                            <ul className="absolute z-10 bg-white border border-gray-300 rounded">
+                                              {nameSuggestions.map((user) => (
+                                                <li
+                                                  key={user.user_id}
+                                                  className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                                                  onClick={() => {
+                                                    setFormData(prev => ({ ...prev, description: user.full_name }));
+                                                    setSelectedPatientId(user.user_id);
+                                                    setNameSuggestions([]); // hide suggestions
+                                                  }}
+                                                >
+                                                  {user.full_name}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          )}
+                                        <div className="row">
+                                              <div className="col-sm-6">
+                                                <div class="mb-4 text-left">
+                                                    <label class="block text-[#00458b] font-semibold mb-1">Debit/Credit</label>
+                                                    <select  name="type" value={formData.type} onChange={handleChange}   class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none">
+                                                        <option value="debit">Debit</option>
+                                                        <option value="credit">Credit</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="col-sm-6">
+                                                <div class="mb-4 text-left">
+                                                    <label class="block text-[#00458b] font-semibold mb-1">Amount</label>
+                                                    <input type="number" name="amount" value={formData.amount} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                      <  div className="row">
+                                            <div className="col-sm-6">
+                                              <div className="mb-4 text-left">
+                                              <label className="block text-[#00458b] font-semibold mb-1">Account</label>
+                                              <input
+                                                type="text"
+                                                value={formData.accountName || ""}
+                                                readOnly
+                                                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                                              />
+                                              {/* Hidden input to submit account_id */}
+                                              <input type="hidden" name="account" value={formData.account || ""} />
+                                            </div>
+                                                
+                                            </div>
+                                        </div>
+                                        
+                                    </div>
+                                    <div className="col-sm-2">
+
+                                    </div>
+                                    <div className="col-sm-12">
+                                        <br />
+                                        <br /> 
+                                        <div className="row">
+                                            <div className="col-sm-6">
+                                            </div>
+                                        <div className="col-sm-6">
+                                            <div className="row">
+                                                <div className="col-sm-4">
+                                                    <button type="button" className="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full mb-4" onClick={() => navigate("/adminsubsidiaryreceivable")}>Back</button>
+                          </div>
+                          <div className="col-sm-4">
+                            <button type="submit" className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full mb-4">Save</button>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="row justify-content-center mt-4">
-                                    <div className="col-sm-4">
-                                        <button
-                                        className="bg-[#00c3b8] text-white font-semibold px-3 py-2 rounded-full w-full mb-2"
-                                        onClick={() => navigate("/admincoaadd")}
-                                        >
-                                        Accounts Receivable
-                                        </button>
-                                    </div>
-                                    <div className="col-sm-4">
-                                        <button
-                                        className="bg-[#00c3b8] text-white font-semibold px-3 py-2 rounded-full w-full mb-2"
-                                        onClick={() => navigate("/admincoaadd")}
-                                        >
-                                        Accounts Payable
-                                        </button>
-                                    </div>
-                                    </div>
-
-                                </div>
-
-                                    {/* Table */}
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full border-collapse border border-gray-200">
-                                        <thead>
-                                            <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                            <th className="px-4 py-2 text-center">Date</th>
-                                            <th className="px-4 py-2 text-center">Name</th>
-                                            <th className="px-4 py-2 text-center">Invoice  No. </th>
-                                            <th className="px-4 py-2 text-center"> Debit</th>
-                                             <th className="px-4 py-2 text-center">Credit</th>
-                                             <th className="px-4 py-2 text-center">Balance</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredAccounts.length > 0 ? (
-                                            filteredAccounts.map((account, index) => (
-                                              
-                                                <tr key={index} className="border-b border-gray-200 text-center item-center">
-                                                <td className="px-4 py-2 text-blue-700">{account.account_name}</td>
-                                                <td className="px-4 py-2 text-blue-700">{account.account_type}</td>
-                                                <td className="px-4 py-2 text-blue-700">{account.status}</td>
-                                                <td className="px-4 py-2">
-                                                     <Link to={`/admincoaview/${account.account_id}`}>
-                                                    <button className="bg-[#EF7722] text-white px-4 py-1 rounded-full hover:bg-teal-500">
-                                                      View
-                                                    </button>
-                                                    </Link>
-                                                </td>
-                                                <td className="px-4 py-2">
-                                                    <Link to={`/admincoaedit/${account.account_id}`}>
-                                                    <button className="bg-[#04AA6D] text-white font-semibold w-full border border-[#00458b] px-4 py-1 rounded-full">
-                                                    Edit
-                                                    </button>
-                                                    </Link>
-                                                </td>
-                                                </tr>
-                                            ))
-                                            ) : (
-                                            <tr>
-                                                <td
-                                                colSpan="6"
-                                                className="text-center text-gray-500 py-4"
-                                                >
-                                                No records found
-                                                </td>
-                                            </tr>
-                                            )}
-                                        </tbody>
-                                        </table>
-                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                    <div className="col-sm-12">
-                        <div className="row">
-                            <div className="col-sm-6">
-                                </div>
-                                    <div className="col-sm-6">
-                                        <div className="row">
-                                            <div className="col-sm-8">
-
-                                            </div>
-                                        <div className="col-sm-4">
-                                            <br />
-                                            <br />
-                                    </div>
-                                </div>
+                            
                             </div>
+                            </form>
                         </div>
+                        
                     </div>
-                </div>
-            <div className="col-sm-2">
-                
+                    </div>
+            <div className="col-sm-2"> 
             </div>
           </div>
         </div>
       </div>
     </div>
-  
   );
 };
 
-export default adminSubsidiary;
+export default adminsubsidiaryadd; 

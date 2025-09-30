@@ -131,21 +131,23 @@ const AdminInventoryPending = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
           )}
-
           <Link
             to="/adminusers"
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -222,7 +224,7 @@ const AdminInventoryPending = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-[#00458B]">
-              Inventory Management
+              Inventory
             </h1>
             <p className="text-gray-600">(Pending Items)</p>
           </div>
@@ -239,6 +241,12 @@ const AdminInventoryPending = () => {
               className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
             >
               <PlusCircle size={18} /> Add Item
+            </Link>
+            <Link
+              to="/adminsupplier"
+              className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
+            >
+              <PlusCircle size={18} /> Supplier
             </Link>
           </div>
         </div>
@@ -262,9 +270,13 @@ const AdminInventoryPending = () => {
             <thead>
               <tr className="bg-gray-100 text-[#00458B]">
                 <th className="px-4 py-2 text-center">Item Name</th>
-                <th className="px-4 py-2 text-center">Status</th>
+                <th className="px-4 py-2 text-center">Category</th>
                 <th className="px-4 py-2 text-center">Quantity</th>
-                <th className="px-4 py-2 text-center">Actions</th>
+                <th className="px-4 py-2 text-center">Company Name</th>
+                <th className="px-4 py-2 text-center">Status</th>
+                <th className=" text-center"></th>
+                <th className=" text-center"></th>
+                <th className=" text-center"></th>
               </tr>
             </thead>
             <tbody>
@@ -283,15 +295,28 @@ const AdminInventoryPending = () => {
                     <td className="px-4 py-2 text-blue-700">
                       {item.inv_item_name}
                     </td>
-                    <td className="px-4 py-2">{item.inv_item_status}</td>
+                    <td className="px-4 py-2">{item.inv_item_type}</td>
                     <td className="px-4 py-2">{item.inv_quantity}</td>
-                    <td className="px-4 py-2 space-x-2">
+                    <td className="px-4 py-2">{item.supplier_name}</td>
+                    <td className="px-4 py-2">{item.inv_item_status}</td>
+                    <td className="">
+                        <button
+                          onClick={() => navigate(`/admininventoryview/${item.inv_id}`)}
+                          className="bg-[#008CBA] text-white px-4 py-2 rounded-lg hover:bg-[#008CBA]"
+                        >
+                          View
+                        </button>
+                    </td>
+                    <td className="px-2 py-2">
+                    
                       <button
                         onClick={() => handleApprove(item.inv_id)}
                         className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
                       >
                         Approve
                       </button>
+                    </td>
+                    <td className="px-1 py-2">
                       <button
                         onClick={() => handleDelete(item.inv_id)}
                         className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"

@@ -10,6 +10,8 @@ const AdminInventoryAdd = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
+  const [suppliers, setSuppliers] = useState([]);
+
   const [registerData, setRegisterData] = useState({
     inv_item_type: "",
     inv_item_name: "",
@@ -17,11 +19,25 @@ const AdminInventoryAdd = () => {
     inv_quantity: "",
     inv_ml: "",
     inv_exp_date: "",
+    supplier_id: "", 
   });
 
   const updateFormData = (field, value) => {
     setRegisterData((prev) => ({ ...prev, [field]: value }));
   };
+
+    // 🔹 Fetch suppliers on mount
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/auth/suppliers");
+        setSuppliers(response.data);
+      } catch (error) {
+        console.error("Error fetching suppliers:", error);
+      }
+    };
+    fetchSuppliers();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -74,16 +90,19 @@ const AdminInventoryAdd = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -179,8 +198,8 @@ const AdminInventoryAdd = () => {
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               >
                 <option value="">-- Select Type --</option>
-                <option value="tool">Tools</option>
-                <option value="medicine">Medicine</option>
+                <option value="Medical Supply">Medical Supply</option>
+                <option value="Medicine">Medicine</option>
               </select>
             </div>
 
@@ -252,6 +271,24 @@ const AdminInventoryAdd = () => {
                 </div>
               </>
             )}
+
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Supplier
+                  </label>
+                  <select
+                    value={registerData.supplier_id}
+                    onChange={(e) => updateFormData("supplier_id", e.target.value)}
+                    className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                  >
+                    <option value="">-- Select Supplier --</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.supplier_id} value={supplier.supplier_id}>
+                        {supplier.supplier_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
             {errorMessage && (
               <p className="text-red-500 font-medium">{errorMessage}</p>

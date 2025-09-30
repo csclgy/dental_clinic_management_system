@@ -122,16 +122,19 @@ const AdminInventoryEditItem = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -221,21 +224,17 @@ const AdminInventoryEditItem = () => {
               />
             </div>
 
-            {/* Item Type */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
                 Item Type
               </label>
-              <select
+              <input
+                type="text"
                 value={itemType}
+                readOnly
                 onChange={(e) => setItemType(e.target.value)}
-                disabled
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="">-- Select Type --</option>
-                <option value="Medical Supplies">Medical Supplies</option>
-                <option value="Medicine">Medicine</option>
-              </select>
+              />
             </div>
 
             {/* Quantity */}

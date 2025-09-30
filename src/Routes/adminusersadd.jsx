@@ -20,6 +20,9 @@ const AdminUsersAdd = () => {
     lname: "",
     email: "",
     contact_no: "",
+    date_birth: "",
+    gender: "",
+    age: "",
   });
 
   const updateFormData = (field, value) => {
@@ -49,6 +52,21 @@ const AdminUsersAdd = () => {
         setErrorMessage("Error: " + error.message);
         console.error("Axios error:", error.message);
       }
+    }
+  };
+
+  const handleDateChange = (dateValue) => {
+    updateFormData("date_birth", dateValue);
+
+    if (dateValue) {
+      const today = new Date();
+      const birthDate = new Date(dateValue);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+      updateFormData("age", age);
+    } else {
+      updateFormData("age", "");
     }
   };
 
@@ -89,16 +107,19 @@ const AdminUsersAdd = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -230,10 +251,22 @@ const AdminUsersAdd = () => {
                 Contact Number
               </label>
               <input
-                type="number"
+                type="text"
                 value={registerData.contact_no}
-                onChange={(e) => updateFormData("contact_no", e.target.value)}
+                onChange={(e) => {
+                  // Remove any non-digit characters
+                  const onlyDigits = e.target.value.replace(/\D/g, "");
+                  // Limit input to 11 digits
+                  if (onlyDigits.length <= 11) {
+                    updateFormData("contact_no", onlyDigits);
+                  }
+                }}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                pattern="\d{11}"
+                maxLength={11}
+                required
+                title="Contact number must be exactly 11 digits"
+                placeholder="Enter 11-digit number"
               />
             </div>
 
@@ -290,6 +323,46 @@ const AdminUsersAdd = () => {
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
             </div>
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Gender
+                  </label>
+                  <select
+                    value={registerData.gender}
+                    onChange={(e) => updateFormData("gender", e.target.value)}
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  >
+                    <option value="">-- Select --</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    value={registerData.date_birth}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                    max={new Date().toISOString().split("T")[0]} // prevents future and present dates
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    value={registerData.age}
+                    readOnly
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  />
+                </div>
 
             {errorMessage && (
               <p className="text-red-500 font-medium">{errorMessage}</p>

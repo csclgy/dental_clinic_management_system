@@ -18,6 +18,7 @@ const Adminbillingedit = () => {
   // Payment / service fields
   const [paymentMode, setPaymentMode] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
+  const [paymentOR, setPaymentOR] = useState("");
 
   // Service charge (receptionist-entered)
   const [serviceCharge, setServiceCharge] = useState(0);
@@ -51,6 +52,7 @@ const fetchBillingData = async () => {
     if (appoint) {
       setPaymentMode(appoint.payment_mode || "");
       setPaymentStatus(appoint.payment_status || "");
+      setPaymentOR(appoint.or_num || "");
       setServiceCharge(Number(appoint.total_service_charged || 0));
     }
   } catch (err) {
@@ -73,14 +75,15 @@ const fetchBillingData = async () => {
   const totalCharged = itemsTotal + Number(serviceCharge || 0);
 
   // add item
-  const handleAddItem = async () => {
+    const handleAddItem = async () => {
     if (!newInvId || !newQuantity || !newAmount) {
       return alert("Please select item, quantity, and amount.");
     }
     try {
       const token = localStorage.getItem("token");
       const inv = inventory.find((i) => String(i.inv_id) === String(newInvId));
-      await axios.post(
+
+      const res = await axios.post(
         `http://localhost:3000/auth/billing/${appointId}`,
         {
           inv_id: inv.inv_id,
@@ -91,10 +94,16 @@ const fetchBillingData = async () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // refresh charged items (so itemsTotal updates)
-      await fetchBillingData();
+      // ✅ Instead of re-fetching everything, just append the new item locally
+      const newItem = {
+        ci_id: res.data.ci_id, // assuming backend returns the new item ID
+        ci_item_name: inv.inv_item_name,
+        ci_quantity: newQuantity,
+        ci_amount: parseFloat(newAmount),
+      };
+      setChargedItems((prev) => [...prev, newItem]);
 
-      // reset new item fields
+      // Reset new item fields
       setNewInvId("");
       setNewQuantity(1);
       setNewAmount(0);
@@ -128,6 +137,7 @@ const fetchBillingData = async () => {
       const formData = new FormData();
       formData.append("payment_method", paymentMode);
       formData.append("payment_status", paymentStatus);
+      formData.append("or_num", paymentOR);
       formData.append("total_service_charged", Number(serviceCharge || 0));
 
       // only attach file if GCash and proof is selected
@@ -191,16 +201,19 @@ const fetchBillingData = async () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -309,18 +322,15 @@ const fetchBillingData = async () => {
                                     <br></br>
                                      {/* Payment Info */}
                                     <div className="mb-4 grid grid-cols-2 gap-4">
-                                      <div>
-                                        <label className="block font-medium">Mode of Payment</label>
-                                        <select
-                                          className="border p-2 w-full rounded"
-                                          value={paymentMode}
-                                          onChange={(e) => setPaymentMode(e.target.value)}
-                                        >
-                                          <option value="">--Select--</option>
-                                          <option value="Cash">Cash</option>
-                                          <option value="GCash">GCash</option>
-                                        </select>
-                                      </div>
+                                        <div>
+                                          <label className="block font-semibold">OR Number:</label>
+                                          <input
+                                            type="text"
+                                            className="w-full border rounded px-3 py-2"
+                                            value={paymentOR}
+                                            onChange={(e) => setPaymentOR(e.target.value)}
+                                          />
+                                        </div>
                                       <div>
                                         <label className="block font-medium">Payment Status</label>
                                         <select
@@ -332,6 +342,18 @@ const fetchBillingData = async () => {
                                           <option value="Unpaid">Unpaid</option>
                                           <option value="Paid">Paid</option>
                                           <option value="Partial">Partial</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block font-medium">Mode of Payment</label>
+                                        <select
+                                          className="border p-2 w-full rounded"
+                                          value={paymentMode}
+                                          onChange={(e) => setPaymentMode(e.target.value)}
+                                        >
+                                          <option value="">--Select--</option>
+                                          <option value="Cash">Cash</option>
+                                          <option value="GCash">GCash</option>
                                         </select>
                                       </div>
                                       <div>
@@ -360,7 +382,7 @@ const fetchBillingData = async () => {
 
                                     {/* Charged Items Table */}
                                     <table className="w-full border mb-4">
-                                      <thead className="bg-gray-100">
+                                      <thead className="font-bold bg-gray-200">
                                         <tr>
                                               <th className="px-4 py-2 text-center">Charged Item</th>
                                               <th className="px-4 py-2 text-center">Quantity</th>

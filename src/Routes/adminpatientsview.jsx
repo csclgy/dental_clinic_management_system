@@ -65,6 +65,27 @@ const AdminPatientsView = () => {
     fetchPatient();
   }, [id]);
 
+const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
+  try {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`http://localhost:3000/auth/followup/${appoint_id}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: `Reminder: Today is your appointment, ${p_fname} ${p_lname}.` }),
+    });
+
+    if (!res.ok) throw new Error("Failed to send follow-up notification");
+    const data = await res.json();
+    alert(data.message || "Follow-up notification sent!");
+  } catch (err) {
+    console.error("Follow-up error:", err);
+    alert("Error sending follow-up notification.");
+  }
+};
+
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -116,16 +137,19 @@ const AdminPatientsView = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -272,6 +296,7 @@ const AdminPatientsView = () => {
                 <option value="pending">Pending</option>
                 <option value="done">Done</option>
                 <option value="incomplete">Incomplete</option>
+                <option value="cancelled">cancelled</option>
               </select>
             </div>
 
@@ -329,22 +354,17 @@ const AdminPatientsView = () => {
                           </button>
                         </td>
                         <td className="px-2 py-2">
-                          <button
-                            disabled={
-                              !(
-                                c.appointment_status === "incomplete" ||
-                                c.appointment_status === "pending"
-                              )
-                            }
-                            className={`px-3 py-1 rounded-lg ${
-                              c.appointment_status === "incomplete" ||
-                              c.appointment_status === "pending"
-                                ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
-                                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            }`}
-                          >
-                            + Follow Up
-                          </button>
+                        <button
+                          disabled={!(c.appointment_status === "incomplete" || c.appointment_status === "pending")}
+                          onClick={() => handleFollowUp(c.appoint_id, patient.fname, patient.lname)}
+                          className={`px-4 py-2 rounded-lg font-semibold ${
+                            c.appointment_status === "incomplete" || c.appointment_status === "pending"
+                              ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          }`}
+                        >
+                          + Follow Up
+                        </button>
                         </td>
                         <td className="px-2 py-2">
                           <button

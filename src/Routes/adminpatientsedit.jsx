@@ -128,16 +128,19 @@ const AdminPatientsEdit = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -235,12 +238,18 @@ const AdminPatientsEdit = () => {
               </select>
             </div>
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Age</label>
-              <input type="text" value={patient.age} onChange={(e) => setPatient({ ...patient, age: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+              <label className="block text-[#00458b] font-semibold mb-1">Date of Birth</label>
+              <input
+                type="date"
+                value={patient.date_birth}
+                onChange={(e) => setPatient({ ...patient, date_birth: e.target.value })}
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                max={new Date().toISOString().split("T")[0]} // only allow past dates
+              />
             </div>
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Date of Birth</label>
-              <input type="date" value={patient.date_birth} onChange={(e) => setPatient({ ...patient, date_birth: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+              <label className="block text-[#00458b] font-semibold mb-1">Age</label>
+              <input type="text" value={patient.age} onChange={(e) => setPatient({ ...patient, age: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
             </div>
           </div>
 
@@ -266,7 +275,22 @@ const AdminPatientsEdit = () => {
 
           <div className="mt-6">
             <label className="block text-[#00458b] font-semibold mb-1">Contact Number</label>
-            <input type="number" value={patient.contact_no} onChange={(e) => setPatient({ ...patient, contact_no: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+            <input
+              type="text"
+              value={patient.contact_no}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Only allow digits and max length 11
+                if (/^\d{0,11}$/.test(val)) {
+                  setPatient({ ...patient, contact_no: val });
+                }
+              }}
+              placeholder="Enter 11-digit number"
+              className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+              required
+              pattern="\d{11}"
+              title="Contact number must be exactly 11 digits"
+            />
           </div>
 
           <div className="flex justify-end gap-4 mt-8">

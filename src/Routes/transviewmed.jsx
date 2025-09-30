@@ -131,7 +131,7 @@ const transviewmed = () => {
 
                                         <div className="row">
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
-                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date}</p>
+                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date} | {consultation.pref_time}</p>
                                             <br />
                                             <p className="font-bold">Attending Dentist:</p><p>{consultation.attending_dentist}</p>
                                             <br />
@@ -216,6 +216,20 @@ const transviewmed = () => {
                                                 overflowY: "auto",
                                                 }}
                                             >
+                                                <div className="col-sm-12 mb-2">
+                                                  <div className="row">
+                                                    <div className="col-sm-4">
+                                                      <p className="font-bold">OR Number:</p><p>{consultation.or_num} </p>
+                                                    </div>
+                                                    <div className="col-sm-4">
+                                                      <p className="font-bold mb-2">Payment Method:</p> <p>{consultation.payment_method} </p>
+                                                    </div>
+                                                    <div className="col-sm-4">
+                                                      <p className="font-bold mb-2">Payment Status:</p> <p>{consultation.payment_status} </p>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <hr className="mb-2"></hr>
                                                 <p className="font-bold mb-2">Charged Service</p>
                                                 <p>
                                                 {consultation.procedure_type} - ₱

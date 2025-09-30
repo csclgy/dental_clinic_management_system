@@ -1,342 +1,356 @@
 import React, { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
-const adminsubsidiaryadd = () => {
+const AdminSubsidiaryAdd = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const  [account,setAccount] = useState([]);
-  const [sub,setSub] = useState([]);
+  const [nameSuggestions, setNameSuggestions] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
 
-    const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({
     date: "",
     description: "",
+    invoice_no: "",
     account: "",
-    subaccount: "",
+    accountName: "",
     type: "debit",
     amount: "",
-    comment: ""
   });
 
-  // Scroll to the section if state.scrollTo is passed
+  // Scroll into view if coming from another page
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100); // delay ensures DOM is rendered
+        }, 100);
       }
     }
 
-    const fetchAccount = async () => {
+    const fetchAccountReceivable = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/accounts`);
-        setAccount(res.data);
+        const res = await axios.get(
+          `http://localhost:3000/auth/accountReceivable`
+        );
+        if (res.data.length > 0) {
+          const { account_id, account_name } = res.data[0];
+          setFormData((prev) => ({
+            ...prev,
+            account: account_id,
+            accountName: account_name,
+          }));
+        }
       } catch (err) {
-        console.error("Error fetching account:", err);
+        console.error("Error fetching Account Receivable:", err);
       }
     };
-    fetchAccount();
-  }, [location]);
-  
-useEffect(() => {
-  if (formData.account) {
-    const fetchSubAccounts = async () => {
-      try {
-        const res = await axios.get(`http://localhost:3000/auth/subaccs/${formData.account}`);
-        setSub(res.data); 
-      } catch (err) {
-        console.error("Error fetching subaccounts:", err);
-      }
-    };
-    fetchSubAccounts();
-  } else {
-    setSub([]); // reset if no account selected
-  }
-}, [formData.account]);
 
-   const handleChange = (e) => {
+    fetchAccountReceivable();
+  }, [location]);
+
+  const fetchSuggestions = async (query) => {
+    if (!query) {
+      setNameSuggestions([]);
+      return;
+    }
+    try {
+      const res = await axios.get(
+        `http://localhost:3000/auth/patients/search?name=${query}`
+      );
+      setNameSuggestions(res.data);
+    } catch (err) {
+      console.error("Error fetching name suggestions:", err);
+    }
+  };
+
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!formData.date || !formData.description || !formData.account || !formData.amount) {
-    alert("Please fill in all required fields.");
-    return;
-  }
+    if (!formData.date || !formData.description || !formData.account || !formData.amount) {
+      alert("Please fill in all required fields.");
+      return;
+    }
 
-  try {
-    // Determine debit and credit amounts
     const debit = formData.type === "debit" ? Number(formData.amount) : 0;
     const credit = formData.type === "credit" ? Number(formData.amount) : 0;
+    const balance = debit - credit;
 
-    // 1️⃣ Save to journal (journal_entries + general_ledger)
-    await axios.post("http://localhost:3000/auth/journal", {
-      date: formData.date,
-      description: formData.description,
-      account_id: formData.account,
-      subaccount_id: formData.subaccount,
-      debit,
-      credit,
-      comment: formData.comment,
-    });
-
-    // 2️⃣ Save to subsidiary_ledger
-    await axios.post("http://localhost:3000/auth/subsidiary", {
-      date: formData.date,
-      description: formData.description,
-      account_id: formData.account,
-      subaccount_id: formData.subaccount,
-      debit,
-      credit,
-      comment: formData.comment,
-    });
-
-    alert("Journal + Subsidiary entry saved successfully!");
-    navigate("/adminsubsidiary");
-  } catch (err) {
-    console.error("Error saving entry:", err);
-    alert(err.response?.data?.message || "Something went wrong");
-  }
-};
+    try {
+      await axios.post("http://localhost:3000/auth/subsidiary", {
+        date: formData.date,
+        name: formData.description,
+        invoice_no: formData.invoice_no,
+        account_id: formData.account,
+        patient_id: selectedPatientId,
+        debit,
+        credit,
+        balance,
+      });
+      alert("Subsidiary entry saved successfully!");
+      navigate("/adminsubsidiaryreceivable");
+    } catch (err) {
+      console.error("Error saving entry:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Something went wrong");
+    }
+  };
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            <div
-                className="col-sm-3 p-5 rounded-lg shadow-lg"
-                style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
-                >
-                {/* Dashboard */}
-                <Link to="/">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-tachometer" aria-hidden="true"></i> Dashboard
-                    </button>
-                </Link>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <nav className="flex flex-col gap-2">
+          <Link
+            to="/admindashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <BarChart3 size={18} /> Dashboard
+          </Link>
 
-                {/* Ledger with Dropdown */}
-                <button
-                    onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                    className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
-                    style={{ color: "#00c3b8" }}
-                >
-                    <span>
-                    <i className="fa fa-book" aria-hidden="true"></i> Ledger
-                    </span>
-                    <i
-                    className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`}
-                    aria-hidden="true"
-                    ></i>
-                </button>
-
-                {isLedgerOpen && (
-                    <div className="ml-8 text-sm">
-                    <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Chart of Accounts
-                        </p>
-                    </Link>
-                    <Link to="/adminjournal">
-                        <p className="py-1 hover:underline" style={{ color: "#00c3b8" }}>
-                        Journal Entries
-                        </p>
-                    </Link>
-                      <Link to='/adminsubsidiary'>
-                                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                                          Subsidiary 
-                                        </p>
-                                       </Link>  
-                    <Link to="/admingeneral">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        General Ledger
-                        </p>
-                    </Link>
-                    <Link to="/admintrial">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Trial Balance
-                        </p>
-                    </Link>
-                    </div>
-                )}
-
-                {/* Users */}
-                <Link to="/adminusers">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-users" aria-hidden="true"></i> Users
-                    </button>
-                </Link>
-
-                {/* Inventory */}
-                <Link to="/admininventory">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-archive" aria-hidden="true"></i> Inventory
-                    </button>
-                </Link>
-
-                {/* Patients */}
-                <Link to="/adminpatients">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
-                    </button>
-                </Link>
-
-                {/* Schedule */}
-                <Link to="/adminschedule">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}>
-                    <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
-                    </button>
-                </Link>
-
-                {/* Audit Trail */}
-                <Link to="/adminaudit">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
-                    </button>
-                </Link>
-                </div>
-                <div className="col-sm-7">
-                    <div className="row">
-                        <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
-                            <div className="row">
-                                <div className="col-sm-6">
-                                    <h1 className="text-2xl font-bold">Subsidiary Ledger</h1>
-                                </div>
-                               
-                            </div>
-                        </div>
-                        <p style={{color:"transparent"}}>...</p>
-                        <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                            <form onSubmit={handleSubmit}>
-                            <div className="row">
-                                 
-                                    <h1 className="text-xl font-bold" style={{ color: "#00458B" }}> Add New Entry</h1>
-                                    <div className="col-sm-2">
-                                    </div>
-                                
-                                    <div className="col-sm-9">
-                                        <br />
-                                        <br />
-                                        
-                                        <div className="row">
-                                            <div className="col-sm-4">
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Date</label>
-                                                    <input type="date" name="date" value={formData.date} onChange={handleChange}  class="w-full border border-[#00458b] rounded-full px-3 py-2 outline-none" />
-                                                </div>
-                                            </div>
-                                            <div className="col-sm-8">
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Invoice Number</label>
-                                                   <input type="text" name="description" value={formData.description} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Name</label>
-                                            <input type="text" name="description"/* value={formData.description} onChange={handleChange}*/ class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                        </div>
-                                        <div className="row">
-                                              <div className="col-sm-6">
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Debit/Credit</label>
-                                                    <select  name="type" value={formData.type} onChange={handleChange}   class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none">
-                                                        <option value="debit">Debit</option>
-                                                        <option value="credit">Credit</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div className="col-sm-6">
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Amount</label>
-                                                    <input type="number" name="amount" value={formData.amount} onChange={handleChange} class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                      <  div className="row">
-                                            <div className="col-sm-6">
-                                                <div className="mb-4 text-left">
-                                                    <label className="block text-[#00458b] font-semibold mb-1">Account</label>
-                                                    <select
-                                                        name="account"
-                                                        value={formData.account}
-                                                        onChange={handleChange}
-                                                        className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                                                    >
-                                                        <option value="">-- Select Account --</option>
-                                                        {account.map(acc => (
-                                                        <option key={acc.account_id} value={acc.account_id}>
-                                                            {acc.account_name}
-                                                        </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                
-                                            </div>
-                                        </div>
-                                        
-                                    </div>
-                                    <div className="col-sm-2">
-
-                                    </div>
-                                    <div className="col-sm-12">
-                                        <br />
-                                        <br /> 
-                                        <div className="row">
-                                            <div className="col-sm-6">
-                                            </div>
-                                        <div className="col-sm-6">
-                                            <div className="row">
-                                                <div className="col-sm-4">
-                                                    <button type="button" className="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full mb-4" onClick={() => navigate("/adminsubsidiary")}>Back</button>
-                          </div>
-                          <div className="col-sm-4">
-                            <button type="submit" className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full mb-4">Save</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            </div>
-                            </form>
-                        </div>
-                        
-                    </div>
-                    </div>
-            <div className="col-sm-2"> 
+          {/* Ledger Dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+                Chart of Accounts
+              </Link>
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+                Journal Entries
+              </Link>
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+                General Ledger
+              </Link>
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+                Trial Balance
+              </Link>
             </div>
-          </div>
+          )}
+
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
+        </nav>
+      </aside>
+
+      {/* Sidebar (mobile) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <Users size={18} /> Users
+              </Link>
+            </nav>
+          </aside>
         </div>
-      </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-8">
+        {/* Mobile menu */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
+        >
+          <Menu size={24} /> Menu
+        </button>
+
+        <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
+          <h1 className="text-2xl font-bold text-[#00458B] mb-6">
+            Add Subsidiary Entry
+          </h1>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Invoice Number
+                </label>
+                <input
+                  type="text"
+                  name="invoice_no"
+                  value={formData.invoice_no}
+                  onChange={handleChange}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Patient Name
+              </label>
+              <input
+                type="text"
+                name="description"
+                value={formData.description}
+                onChange={(e) => {
+                  handleChange(e);
+                  fetchSuggestions(e.target.value);
+                }}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                autoComplete="off"
+              />
+              {nameSuggestions.length > 0 && (
+                <ul className="absolute z-10 bg-white border border-gray-300 rounded">
+                  {nameSuggestions.map((user) => (
+                    <li
+                      key={user.user_id}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          description: user.full_name,
+                        }));
+                        setSelectedPatientId(user.user_id);
+                        setNameSuggestions([]);
+                      }}
+                    >
+                      {user.full_name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Debit/Credit
+                </label>
+                <select
+                  name="type"
+                  value={formData.type}
+                  onChange={handleChange}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                >
+                  <option value="debit">Debit</option>
+                  <option value="credit">Credit</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Amount
+                </label>
+                <input
+                  type="number"
+                  name="amount"
+                  value={formData.amount}
+                  onChange={handleChange}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Account
+              </label>
+              <input
+                type="text"
+                value={formData.accountName || ""}
+                readOnly
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+              />
+              <input type="hidden" name="account" value={formData.account || ""} />
+            </div>
+
+            <div className="flex justify-end gap-4 mt-6">
+              <button
+                type="button"
+                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
+                onClick={() => navigate("/adminsubsidiaryreceivable")}
+              >
+                Back
+              </button>
+              <button
+                type="submit"
+                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+              >
+                Save
+              </button>
+            </div>
+          </form>
+        </div>
+      </main>
     </div>
   );
 };
 
-export default adminsubsidiaryadd; 
+export default AdminSubsidiaryAdd;

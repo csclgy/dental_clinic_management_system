@@ -51,28 +51,38 @@ const Appointment = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Left Column */}
           <div>
-            {[
-              { label: "First Name", key: "p_fname", type: "text" },
-              { label: "Middle Name", key: "p_mname", type: "text" },
-              { label: "Last Name", key: "p_lname", type: "text" },
-              { label: "Home Address", key: "p_home_address", type: "text" },
-              { label: "Email", key: "p_email", type: "email" },
-              { label: "Contact Number", key: "p_contact_no", type: "text" },
-            ].map((field) => (
-              <div key={field.key} className="mb-4 text-left">
-                <label className="block text-[#00458b] font-semibold mb-1">
-                  {field.label}
-                </label>
-                <input
-                  type={field.type}
-                  className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                  value={appointmentData[field.key]}
-                  onChange={(e) =>
-                    updateAppointment(field.key, e.target.value)
+          {[
+            { label: "First Name", key: "p_fname", type: "text" },
+            { label: "Middle Name", key: "p_mname", type: "text" },
+            { label: "Last Name", key: "p_lname", type: "text" },
+            { label: "Home Address", key: "p_home_address", type: "text" },
+            { label: "Email", key: "p_email", type: "email" },
+            { label: "Contact Number", key: "p_contact_no", type: "text" },
+          ].map((field) => (
+            <div key={field.key} className="mb-4 text-left">
+              <label className="block text-[#00458b] font-semibold mb-1">
+                {field.label}
+              </label>
+              <input
+                type={field.type}
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                value={appointmentData[field.key]}
+                onChange={(e) => {
+                  // Optional: allow only numbers for Contact Number
+                  if (field.key === "p_contact_no") {
+                    const value = e.target.value.replace(/\D/g, ""); // remove non-digits
+                    if (value.length <= 11) updateAppointment(field.key, value);
+                  } else {
+                    updateAppointment(field.key, e.target.value);
                   }
-                />
-              </div>
-            ))}
+                }}
+                required={field.key === "p_contact_no"} // make required
+                pattern={field.key === "p_contact_no" ? "[0-9]{11}" : undefined} // require 11 digits
+                maxLength={field.key === "p_contact_no" ? 11 : undefined} // limit to 11 digits
+                placeholder={field.key === "p_contact_no" ? "Enter 11-digit number" : ""}
+              />
+            </div>
+          ))}
               <label className="block text-[#00458b] font-semibold mb-1">
                 Blood Type
               </label>
@@ -179,18 +189,20 @@ const Appointment = () => {
               </select>
             </div>
 
-            {/* Preferred Date */}
-            <div className="mb-4 text-left">
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Preferred Date
-              </label>
-              <input
-                type="date"
-                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                value={appointmentData.pref_date}
-                onChange={(e) => updateAppointment("pref_date", e.target.value)}
-              />
-            </div>
+          {/* Preferred Date */}
+          <div className="mb-4 text-left">
+            <label className="block text-[#00458b] font-semibold mb-1">
+              Preferred Date
+            </label>
+            <input
+              type="date"
+              className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+              value={appointmentData.pref_date}
+              onChange={(e) => updateAppointment("pref_date", e.target.value)}
+              min={new Date().toISOString().split("T")[0]} // prevents selecting past dates
+              required
+            />
+          </div>
 
             {/* Preferred Time */}
             <div className="mb-4 text-left">

@@ -7,7 +7,13 @@ const ProfileLogin = () => {
     user_name: "",
     email: "",
     contact_no: "",
+    fname: "",
+    lname: "",
+    mname: "",
+    gender: "",
+    date_birth: "",
     gcash_num: "",
+    role: "",
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -39,7 +45,13 @@ const ProfileLogin = () => {
           user_name: data.user_name,
           email: data.email,
           contact_no: data.contact_no,
+          fname: data.fname,
+          mname: data.mname,
+          lname: data.lname,
+          gender: data.gender,
+          date_birth: data.date_birth,
           gcash_num: data.gcash_num,
+          role: data.role,
         });
         setLoading(false);
       } catch (err) {
@@ -96,11 +108,13 @@ const ProfileLogin = () => {
                 <i className="fa fa-user-circle-o mr-2" /> Login Information
               </button>
             </Link>
-            <Link to="/profileinfo">
-              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
-                <i className="fa fa-info-circle mr-2" /> User Information
-              </button>
-            </Link>
+            {user.role === "patient" && (
+                <Link to="/profileinfo">
+                  <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                    <i className="fa fa-info-circle mr-2" /> User Information
+                  </button>
+                </Link>
+              )}
             <Link to="/profilechange">
               <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
                 <i className="fa fa-lock mr-2" /> Change Password
@@ -120,6 +134,71 @@ const ProfileLogin = () => {
           {/* Form */}
           <div className="p-6 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
             <div className="space-y-4">
+              {user.role !== "patient" && (
+                <div>
+                  <p className="block text-[#00458b] font-semibold text-xl">Personal Information</p>
+                  <br></br>
+                  <div>
+                    <label className="block text-[#00458b] font-semibold mb-1">
+                      First Name
+                    </label>
+                    <input
+                      type="text"
+                      value={user.fname}
+                      readOnly
+                      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[#00458b] font-semibold mb-1">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      value={user.lname}
+                      readOnly
+                      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[#00458b] font-semibold mb-1">
+                      Middle Name
+                    </label>
+                    <input
+                      type="text"
+                      value={user.mname}
+                      readOnly
+                      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[#00458b] font-semibold mb-1">
+                      Gender
+                    </label>
+                    <input
+                      type="text"
+                      value={user.gender}
+                      readOnly
+                      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[#00458b] font-semibold mb-1">
+                      Date of Birth
+                    </label>
+                    <input
+                      type="text"
+                      value={user.date_birth}
+                      readOnly
+                      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                    />
+                  </div>
+                  <br />
+                  <hr />
+                  <br />
+                  <p className="block text-[#00458b] font-semibold text-xl">Login Information</p>
+                </div>
+              )}
               {/* Username */}
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
@@ -153,15 +232,22 @@ const ProfileLogin = () => {
               {/* Contact Number */}
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Contact Number
+                  Contact Number (Edit)
                 </label>
                 <input
                   type="text"
                   value={user.contact_no}
-                  onChange={(e) =>
-                    setUser({ ...user, contact_no: e.target.value })
-                  }
+                  onChange={(e) => {
+                    // Remove non-numeric characters
+                    const value = e.target.value.replace(/\D/g, "");
+                    // Limit to 11 digits
+                    if (value.length <= 11) setUser({ ...user, contact_no: value });
+                  }}
                   className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  required
+                  pattern="[0-9]{11}" // requires exactly 11 digits
+                  maxLength={11}
+                  placeholder="Enter 11-digit number"
                 />
               </div>
 

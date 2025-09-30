@@ -109,16 +109,19 @@ const AdminConsultationAdd = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -206,14 +209,15 @@ const AdminConsultationAdd = () => {
             {/* Left Side */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Date of Visit
-              </label>
-              <input
-                type="date"
-                value={dateOfVisit}
-                onChange={(e) => setDateOfVisit(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-4"
-              />
+                  Date of Visit
+                </label>
+                <input
+                  type="date"
+                  value={dateOfVisit}
+                  onChange={(e) => setDateOfVisit(e.target.value)}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-4"
+                  min={new Date().toISOString().split("T")[0]} // today or future dates only
+                />
 
               <label className="block text-[#00458b] font-semibold mb-1">
                 Preferred Time

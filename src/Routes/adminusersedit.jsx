@@ -20,6 +20,10 @@ const AdminUsersEdit = () => {
     fname: "",
     mname: "",
     lname: "",
+    date_birth: "",
+    gender: "",
+    age: "",
+    user_status: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -59,6 +63,10 @@ const AdminUsersEdit = () => {
           fname: data.fname,
           mname: data.mname,
           lname: data.lname,
+          date_birth: data.date_birth,
+          gender: data.gender,
+          age: data.age,
+          user_status: data.user_status,
         });
         setLoading(false);
       } catch (err) {
@@ -103,6 +111,21 @@ const AdminUsersEdit = () => {
     }
   };
 
+  const handleDateChange = (dateValue) => {
+    updateFormData("date_birth", dateValue);
+
+    if (dateValue) {
+      const today = new Date();
+      const birthDate = new Date(dateValue);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+      updateFormData("age", age);
+    } else {
+      updateFormData("age", "");
+    }
+  };
+
   if (loading) return <p className="p-6 text-center">Loading...</p>;
 
   return (
@@ -129,16 +152,19 @@ const AdminUsersEdit = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -295,11 +321,18 @@ const AdminUsersEdit = () => {
                 Contact Number
               </label>
               <input
-                type="number"
+                type="text"
                 value={user.contact_no}
-                onChange={(e) =>
-                  setUser({ ...user, contact_no: e.target.value })
-                }
+                onChange={(e) => {
+                  // allow only numbers
+                  const value = e.target.value.replace(/\D/g, "");
+                  if (value.length <= 11) {
+                    setUser({ ...user, contact_no: value });
+                  }
+                }}
+                pattern="\d{11}" // regex: exactly 11 digits
+                required
+                placeholder="Enter 11-digit number"
                 className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
               />
             </div>
@@ -356,6 +389,61 @@ const AdminUsersEdit = () => {
                 className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
               />
             </div>
+
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Gender
+                  </label>
+                  <select
+                    value={user.gender}
+                    onChange={(e) => setUser({ ...user, gender: e.target.value })}
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  >
+                    <option value="">-- Select --</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    value={user.date_birth}
+                    onChange={(e) => handleDateChange(e.target.value)}
+                    max={new Date().toISOString().split("T")[0]} // today's date
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    value={user.age}
+                    readOnly
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    User Status
+                  </label>
+                  <select
+                    value={user.user_status}
+                    onChange={(e) => setUser({ ...user, user_status: e.target.value })}
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  >
+                    <option value="">-- Select --</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
           </div>
 
           {/* Buttons */}

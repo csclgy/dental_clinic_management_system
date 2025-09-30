@@ -113,16 +113,19 @@ const Adminconsultationview = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -198,16 +201,9 @@ const Adminconsultationview = () => {
                                         <div className="col-sm-9">
                                             <h1 className="text-2xl font-bold" style={{color:"#00458B"}}>Patients Information</h1>
                                         </div>
-                                        <div className="col-sm-3">
-                                                <button className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full mb-4" 
-                                                    onClick={() => navigate(`/adminpatientsedit/${patient.user_id}`)}
-                                                >
-                                                    Edit Profile
-                                                </button>
-                                        </div>
                                     </div>
                                 </div>
-
+                                <br></br>
                                 <hr></hr>
 
                                 <div className="col-sm-12">
@@ -245,7 +241,7 @@ const Adminconsultationview = () => {
                                     <br />
                                     <div className="row">
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
-                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date}</p>
+                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date} | {consultation.pref_time}</p>
                                             <br />
                                             <p className="font-bold">Attending Dentist:</p><p>{consultation.attending_dentist}</p>
                                             <br />
@@ -348,6 +344,20 @@ const Adminconsultationview = () => {
                                             overflowY: "auto",    // 🔹 enables vertical scrolling
                                           }}
                                         >
+                                          <div className="col-sm-12 mb-2">
+                                            <div className="row">
+                                              <div className="col-sm-4">
+                                                <p className="font-bold">OR Number:</p><p>{consultation.or_num} </p>
+                                              </div>
+                                              <div className="col-sm-4">
+                                                <p className="font-bold mb-2">Payment Method:</p> <p>{consultation.payment_method} </p>
+                                              </div>
+                                              <div className="col-sm-4">
+                                                <p className="font-bold mb-2">Payment Status:</p> <p>{consultation.payment_status} </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <hr className="mb-2"></hr>
                                           <p className="font-bold mb-2">Charged Service</p>
                                           <p>
                                             {consultation.procedure_type} - ₱{consultation.total_service_charged.toFixed(2)}

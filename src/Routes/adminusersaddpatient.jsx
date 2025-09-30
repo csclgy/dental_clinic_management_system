@@ -112,16 +112,19 @@ const AdminUsersAddPatient = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:underline">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -254,14 +257,21 @@ const AdminUsersAddPatient = () => {
                     Contact Number
                   </label>
                   <input
-                    type="number"
+                    type="text"
                     value={registerData.contact_no}
-                    onChange={(e) =>
-                      updateFormData("contact_no", e.target.value)
-                    }
+                    onChange={(e) => {
+                      // Only allow numbers and max 11 digits
+                      const value = e.target.value.replace(/\D/g, "").slice(0, 11);
+                      updateFormData("contact_no", value);
+                    }}
+                    pattern="\d{11}" // exactly 11 digits
+                    maxLength={11}
+                    required
                     className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                    placeholder="Enter 11-digit number"
                   />
                 </div>
+
               </div>
             </div>
 
@@ -329,9 +339,11 @@ const AdminUsersAddPatient = () => {
                     type="date"
                     value={registerData.date_birth}
                     onChange={(e) => handleDateChange(e.target.value)}
+                    max={new Date().toISOString().split("T")[0]} // only allow past dates
                     className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                   />
                 </div>
+
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
                     Age

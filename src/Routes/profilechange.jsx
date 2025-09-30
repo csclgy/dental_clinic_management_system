@@ -5,11 +5,38 @@ const ProfileChange = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const [user, setUser] = useState({ role: "" }); // add role here
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Fetch logged-in user info
+  useEffect(() => {
+    const fetchUser = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+
+      try {
+        const res = await fetch("http://localhost:3000/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("Failed to fetch user");
+
+        const data = await res.json();
+        setUser(data); // now user.role will exist
+      } catch (err) {
+        console.error(err);
+        navigate("/login");
+      }
+    };
+
+    fetchUser();
+  }, [navigate]);
 
   const handleChangePassword = async () => {
     setError("");
@@ -48,22 +75,10 @@ const ProfileChange = () => {
     }
   };
 
-  // Smooth scroll if location.state.scrollTo exists
-  useEffect(() => {
-    if (location.state?.scrollTo) {
-      const element = document.getElementById(location.state.scrollTo);
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth" });
-        }, 100);
-      }
-    }
-  }, [location]);
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-      {/* Sidebar */}
+        {/* Sidebar */}
         <div className="bg-white rounded-lg shadow-md p-4 md:col-span-1">
           <h2 className="text-2xl font-bold text-[#00458B] mb-6">Profile</h2>
           <div className="flex flex-col gap-2">
@@ -72,11 +87,16 @@ const ProfileChange = () => {
                 <i className="fa fa-user-circle-o mr-2" /> Login Information
               </button>
             </Link>
-            <Link to="/profileinfo">
-              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
-                <i className="fa fa-info-circle mr-2" /> User Information
-              </button>
-            </Link>
+
+            {/* Show only for patient */}
+            {user.role === "patient" && (
+              <Link to="/profileinfo">
+                <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                  <i className="fa fa-info-circle mr-2" /> User Information
+                </button>
+              </Link>
+            )}
+
             <Link to="/profilechange">
               <button className="w-full text-left px-4 py-2 rounded-md font-medium bg-[#E6FCF9] text-[#00c3b8] hover:bg-[#d0f8f5]">
                 <i className="fa fa-lock mr-2" /> Change Password
@@ -93,8 +113,8 @@ const ProfileChange = () => {
           </div>
 
           {/* Form Card */}
-          <div className="p-6 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-            <br></br>
+          <div className="p-6 rounded-lg shadow-lg" style={{ border: "solid", borderColor: "#01D5C4" }}>
+            <br />
             <div className="max-w-md mx-auto">
               {error && <p className="text-red-600 mb-2">{error}</p>}
               {success && <p className="text-green-600 mb-2">{success}</p>}

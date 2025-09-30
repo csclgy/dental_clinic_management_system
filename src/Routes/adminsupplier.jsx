@@ -1,60 +1,65 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import { BarChart3, Users, Calendar, Menu, X, Package, PlusCircle } from "lucide-react";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, PlusCircle } from "lucide-react";
 
-const AdminCoa = () => {
-  const location = useLocation();
+const AdminSupplier = () => {
+   const location = useLocation();
   const navigate = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [accounts, setAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
 
+
+  // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
       if (element) {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
-        }, 100);
+        }, 100); // delay ensures DOM is rendered
       }
     }
   }, [location]);
 
+   // Fetch subsidiary data from backend
   useEffect(() => {
-    const fetchAccounts = async () => {
+    const fetchSupplier = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/coa");
-        setAccounts(res.data);
+        const res = await axios.get("http://localhost:3000/auth/suppliers");
+        setSuppliers(res.data);
       } catch (err) {
-        console.error("Error fetching accounts:", err);
+        console.error("Error fetching subsidiary records:", err);
       } finally {
-        setLoading(false);
+        setLoading(false); // ✅ stop loading no matter what
       }
     };
-    fetchAccounts();
+    fetchSupplier();
   }, []);
 
-  const filteredAccounts = accounts.filter((account) => {
-    if (!searchTerm) return true;
-    return (
-      account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.account_type.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+    const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this supplier?")) return;
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Are you sure you want to delete this account?")) {
-      try {
-        await axios.delete(`http://localhost:3000/auth/coa/${id}`);
-        setAccounts(accounts.filter((a) => a.account_id !== id));
-      } catch (err) {
-        console.error("Error deleting account:", err);
-        alert("Failed to delete account");
-      }
+    try {
+      await axios.delete(`http://localhost:3000/auth/suppliers/${id}`);
+      setSuppliers(suppliers.filter((s) => s.supplier_id !== id));
+    } catch (err) {
+      console.error("Error deleting supplier:", err);
+      alert("Failed to delete supplier");
     }
+  };
+
+    // Filter records based on search term
+    const filteredRecords = suppliers.filter((record) => {
+      if (!searchTerm) return true;
+      return record.supplier_name.toLowerCase().includes(searchTerm.toLowerCase());
+    });
+    const handleAccountChange = (e) => {
+    const path = e.target.value;
+    navigate(path);
   };
 
   return (
@@ -65,7 +70,7 @@ const AdminCoa = () => {
         <nav className="flex flex-col gap-2">
           <Link
             to="/admindashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <BarChart3 size={18} /> Dashboard
           </Link>
@@ -73,7 +78,7 @@ const AdminCoa = () => {
           {/* Ledger dropdown */}
           <button
             onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-            className="flex justify-between items-center p-2 bg-[white] text-[#00458B] rounded-lg"
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
               <i className="fa fa-book"></i> Ledger
@@ -102,38 +107,38 @@ const AdminCoa = () => {
 
           <Link
             to="/adminusers"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <Users size={18} /> Users
           </Link>
           <Link
             to="/admininventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
-            <i className="fa fa-archive"></i> Inventory
+            <Package size={18} /> Inventory
           </Link>
           <Link
             to="/adminpatients"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <i className="fa fa-user-plus"></i> Patients
           </Link>
           <Link
             to="/adminschedule"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
           </Link>
           <Link
             to="/adminaudit"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <i className="fa fa-eye"></i> Audit Trail
           </Link>
         </nav>
       </aside>
 
-      {/* Sidebar (mobile) */}
+      {/* Sidebar (mobile with toggle) */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
           <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
@@ -147,7 +152,7 @@ const AdminCoa = () => {
             <nav className="flex flex-col gap-2">
               <Link
                 to="/admindashboard"
-                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
               >
                 <BarChart3 size={18} /> Dashboard
               </Link>
@@ -162,9 +167,9 @@ const AdminCoa = () => {
         </div>
       )}
 
-      {/* Main Content */}
+      {/* Main content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* Mobile menu button */}
+        {/* Mobile menu */}
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -173,22 +178,27 @@ const AdminCoa = () => {
         </button>
 
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#00458B]">
-            Chart of Accounts
-          </h1>
+          <h1 className="text-2xl font-bold text-[#00458B]">Suppliers</h1>
 
           <div className="flex gap-3">
             <Link
-              to="/admincoaadd"
+              to="/admininventory"
+              className="flex items-center gap-2 bg-[#00c3b8] text-white px-4 py-2 rounded-lg"
+            >
+              Back
+            </Link>
+
+            <Link
+              to="/adminsupplieradd"
               className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
             >
-              <PlusCircle size={18} /> Add Account
+              <PlusCircle size={18} /> Add Supplier
             </Link>
           </div>
         </div>
 
         {loading ? (
-          <p>Loading accounts...</p>
+          <p>Loading supplier data...</p>
         ) : (
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
             {/* Search Bar */}
@@ -204,48 +214,37 @@ const AdminCoa = () => {
                 <i className="fa fa-search text-[#00458B]"></i>
               </div>
             </div>
+
             <table className="w-full border-collapse border border-gray-200">
               <thead>
                 <tr className="bg-gray-100 text-[#00458B]">
-                  <th className="px-4 py-2 text-left">Account Name</th>
-                  <th className="px-4 py-2 text-center">Account Type</th>
-                  <th className="px-4 py-2 text-center">Status</th>
-                  <th className="px-4 py-2 text-center">Subaccounts</th>
-                  <th className="px-4 py-2 text-center">Actions</th>
+                  <th className="px-4 py-2 text-center">Supplier Name</th>
+                  <th className="px-4 py-2 text-center">Contact Person</th>
+                  <th className="px-4 py-2 text-center">Contact No</th>
+                  <th className="px-4 py-2 text-center">Description</th>
+                  <th className="px-4 py-2 text-center"></th>
+                  <th className="px-4 py-2 text-center"></th>
                 </tr>
               </thead>
               <tbody>
-                {filteredAccounts.length > 0 ? (
-                  filteredAccounts.map((account) => (
-                    <tr
-                      key={account.account_id}
-                      className="border-b border-gray-200"
-                    >
-                      <td className="px-4 py-2 text-blue-700">
-                        {account.account_name}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {account.account_type}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {account.status}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <Link to={`/admincoaview/${account.account_id}`}>
-                          <button className="bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-lg">
-                            View
-                          </button>
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2 text-center space-x-2">
-                        <Link to={`/admincoaedit/${account.account_id}`}>
-                          <button className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
+                {filteredRecords.length > 0 ? (
+                  filteredRecords.map((record, index) => (
+                    <tr key={index} className="border-b border-gray-200 text-center">
+                      <td className="px-4 py-2 text-blue-700">{record.supplier_name}</td>
+                      <td className="px-4 py-2 text-center">{record.contact_person}</td>
+                      <td className="px-4 py-2 text-center">{record.contact_no}</td>
+                      <td className="px-4 py-2 text-center">{record.description}</td>
+                      <td className="px-4 py-2">
+                        <Link to={`/adminsupplieredit/${record.supplier_id}`}>
+                          <button className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-lg">
                             Edit
                           </button>
                         </Link>
+                      </td>
+                      <td className="px-4 py-2">
                         <button
-                          onClick={() => handleDelete(account.account_id)}
-                          className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                          onClick={() => handleDelete(record.supplier_id)}
+                          className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-lg"
                         >
                           Delete
                         </button>
@@ -254,10 +253,7 @@ const AdminCoa = () => {
                   ))
                 ) : (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="text-center text-gray-500 py-4"
-                    >
+                    <td colSpan="5" className="text-center text-gray-500 py-4">
                       No records found
                     </td>
                   </tr>
@@ -271,4 +267,4 @@ const AdminCoa = () => {
   );
 };
 
-export default AdminCoa;
+export default AdminSupplier;

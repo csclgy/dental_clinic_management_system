@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
+import axios from "axios";
 
 const AdminTrial = () => {
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const [trialData, setTrialData] = useState([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [totalDebit, setTotalDebit] = useState(0);
+  const [totalCredit, setTotalCredit] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
-  const records = [
-    { account: "Cash", debit: 5000, credit: 0 },
-    { account: "Accounts Payable", debit: 0, credit: 3000 },
-  ];
-
-  // Scroll to section if passed
+  // Scroll to section if location.state.scrollTo is passed
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -26,14 +26,26 @@ const AdminTrial = () => {
     }
   }, [location]);
 
-  const filteredRecords = records.filter((record) =>
-    Object.values(record).some((value) =>
-      String(value).toLowerCase().includes(searchTerm.toLowerCase())
-    )
-  );
+  // Fetch trial balance from backend
+  useEffect(() => {
+    const fetchTrialBalance = async () => {
+      try {
+        const response = await axios.get("http://localhost:3000/auth/trial"); 
+        setTrialData(response.data.data);
+        setTotalDebit(response.data.totalDebit);
+        setTotalCredit(response.data.totalCredit);
+      } catch (error) {
+        console.error("Error fetching trial balance:", error);
+      }
+    };
 
-  const totalDebit = records.reduce((sum, r) => sum + (r.debit || 0), 0);
-  const totalCredit = records.reduce((sum, r) => sum + (r.credit || 0), 0);
+    fetchTrialBalance();
+  }, []);
+
+  // Filter based on search term
+  const filteredRecords = trialData.filter((record) =>
+    record.account_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -60,22 +72,19 @@ const AdminTrial = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:underline">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:underline">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiary" className="hover:underline">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:underline">
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link
-                to="/admintrial"
-                className="hover:underline text-[#00c3b8] font-semibold"
-              >
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -178,20 +187,21 @@ const AdminTrial = () => {
             <thead>
               <tr className="bg-gray-100 text-[#00458B]">
                 <th className="px-4 py-2 text-left">Account Name</th>
-                <th className="px-4 py-2 text-left">Debit</th>
-                <th className="px-4 py-2 text-left">Credit</th>
+                <th className="px-4 py-2 text-center">₱ Debit</th>
+                <th className="px-4 py-2 text-center">₱ Credit</th>
               </tr>
             </thead>
+
             <tbody>
               {filteredRecords.length > 0 ? (
                 filteredRecords.map((record, index) => (
                   <tr key={index} className="border-b border-gray-200">
-                    <td className="px-4 py-2 text-blue-700">{record.account}</td>
-                    <td className="px-4 py-2 text-black">
-                      ₱ {(Number(record.debit) || 0).toFixed(2)}
+                    <td className="px-4 py-2 text-blue-700">{record.account_name}</td>
+                    <td className="px-4 py-2 text-center">
+                      {Number(record.debit).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="px-4 py-2 text-black">
-                      ₱ {(Number(record.credit) || 0).toFixed(2)}
+                    <td className="px-4 py-2 text-center">
+                      {Number(record.credit).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                     </td>
                   </tr>
                 ))
@@ -203,16 +213,20 @@ const AdminTrial = () => {
                 </tr>
               )}
             </tbody>
-          </table>
 
-          {/* Totals */}
-          <div className="flex justify-between mt-6 text-[#00458B] font-bold">
-            <span>Total:</span>
-            <div className="flex gap-12">
-              <span>₱ {totalDebit.toFixed(2)}</span> |
-              <span>₱ {totalCredit.toFixed(2)}</span>
-            </div>
-          </div>
+            {/* Totals row */}
+            <tfoot>
+              <tr className="bg-gray-100 font-bold text-[#00458B]">
+                <td className="px-4 py-2 text-right">Total:</td>
+                <td className="px-4 py-2 text-center">
+                  ₱ {Number(totalDebit).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                </td>
+                <td className="px-4 py-2 text-center">
+                  ₱ {Number(totalCredit).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
 
           {/* Generate Report Button */}
           <div className="flex justify-end mt-6">
