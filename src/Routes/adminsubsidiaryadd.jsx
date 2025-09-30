@@ -12,7 +12,6 @@ const adminsubsidiaryadd = () => {
   const [nameSuggestions, setNameSuggestions] = useState([]);
 const [selectedPatientId, setSelectedPatientId] = useState(null);
 
-  const [sub,setSub] = useState([]);
 
     const [formData, setFormData] = useState({
     date: "",
@@ -74,7 +73,7 @@ const fetchSuggestions = async (query) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
   e.preventDefault();
 
   if (!formData.date || !formData.description || !formData.account || !formData.amount) {
@@ -82,28 +81,40 @@ const fetchSuggestions = async (query) => {
     return;
   }
 
+  const debit = formData.type === "debit" ? Number(formData.amount) : 0;
+  const credit = formData.type === "credit" ? Number(formData.amount) : 0;
+  const balance = debit - credit;
+
+  console.log("Submitting form data:", {
+    date: formData.date,
+    name: formData.description,
+    invoice_no: formData.invoice_no,
+    account_id: formData.account,
+    patient_id: selectedPatientId,  
+    debit,
+    credit,
+    balance
+  });
+
   try {
-    // Determine debit and credit amounts
-    const debit = formData.type === "debit" ? Number(formData.amount) : 0;
-    const credit = formData.type === "credit" ? Number(formData.amount) : 0;
-
-    // 2️⃣ Save to subsidiary_ledger
- await axios.post("http://localhost:3000/auth/subsidiary", {
-  date: formData.date,
-  name: formData.description,    // 👈 map description → name
-  account_id: formData.account,
-  invoice_no: formData.invoice_no,
-  debit,
-  credit
-});
-
+    await axios.post("http://localhost:3000/auth/subsidiary", {
+      date: formData.date,
+      name: formData.description,
+      invoice_no: formData.invoice_no,
+      account_id: formData.account,
+      patient_id: selectedPatientId,  
+      debit,
+      credit,
+      balance
+    });
     alert("Journal + Subsidiary entry saved successfully!");
-    navigate("/adminsubsidiary");
+    navigate("/adminsubsidiaryreceivable");
   } catch (err) {
-    console.error("Error saving entry:", err);
+    console.error("Error saving entry:", err.response?.data || err.message);
     alert(err.response?.data?.message || "Something went wrong");
   }
 };
+
 
   return (
     <div>
@@ -338,7 +349,7 @@ const fetchSuggestions = async (query) => {
                                         <div className="col-sm-6">
                                             <div className="row">
                                                 <div className="col-sm-4">
-                                                    <button type="button" className="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full mb-4" onClick={() => navigate("/adminsubsidiary")}>Back</button>
+                                                    <button type="button" className="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full mb-4" onClick={() => navigate("/adminsubsidiaryreceivable")}>Back</button>
                           </div>
                           <div className="col-sm-4">
                             <button type="submit" className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full mb-4">Save</button>

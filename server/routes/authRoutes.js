@@ -2006,6 +2006,21 @@ router.get("/accountReceivable", async (req, res) => {
   }
 });
 
+//Get Inventory
+router.get("/accountInventory", async (req, res) => {
+  try {
+      const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT account_id, account_name
+      FROM chartofaccounts
+      WHERE account_name = 'Dental Supplies' or account_name = 'Dental Equipment' 
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("DB error:", err); // 👈 full error object
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Search patients by  name
     router.get('/patients/search', async (req, res) => {
@@ -2052,126 +2067,189 @@ router.get('/supplier/search', async (req, res) => {
 
 
 /// Insert into subsidiary+general+journal for account receivable
-      router.post("/subsidiary", async (req, res) => {
-        try {
-          const db = await connectToDatabase();
-          const {
-            date,
-            name,         
-            invoice_no,
-            debit,
-            credit,
-            account_id,
-          } = req.body;
+router.post("/subsidiary", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const {
+      date,
+      name,
+      invoice_no,
+      debit,
+      credit,
+      account_id,
+    } = req.body;
 
-          // Validate required fields
-          if (!date || !name || !invoice_no || !account_id) {
-            return res.status(400).json({
-              error: "Missing required fields: date, name, invoice_no, account_id",
-            });
-          }
+    // Validate required fields
+    if (!date || !name || !invoice_no || !account_id) {
+      return res.status(400).json({
+        error: "Missing required fields: date, name, invoice_no, account_id",
+      });
+    }
 
-          // Split name
-          const nameParts = name.trim().split(/\s+/);
-          if (nameParts.length < 2) {
-            return res.status(400).json({ error: "Please provide full name (first and last)" });
-          }
+    // Split name
+    const nameParts = name.trim().split(/\s+/);
+    if (nameParts.length < 2) {
+      return res.status(400).json({ error: "Please provide full name (first and last)" });
+    }
 
-          const fname = nameParts[0];
-          const lname = nameParts[nameParts.length - 1];
+    const fname = nameParts[0];
+    const lname = nameParts[nameParts.length - 1];
 
-          // Find the user_id from users table
-          const [userRows] = await db.query(
-            `SELECT user_id FROM users 
-            WHERE LOWER(fname) = LOWER(?) 
-              AND LOWER(lname) = LOWER(?) 
-              AND LOWER(role) = 'patient'
-            LIMIT 1`,
-            [fname, lname]
-          );
+    // Find the user_id from users table
+    const [userRows] = await db.query(
+      `SELECT user_id FROM users 
+       WHERE LOWER(fname) = LOWER(?) 
+         AND LOWER(lname) = LOWER(?) 
+         AND LOWER(role) = 'patient'
+       LIMIT 1`,
+      [fname, lname]
+    );
 
-          if (userRows.length === 0) {
-            return res.status(404).json({ error: "Patient not found with the given name" });
-          }
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: "Patient not found with the given name" });
+    }
 
-          const patient_id = userRows[0].user_id;
+    const patient_id = userRows[0].user_id;
 
-          // Parse debit/credit
-          const debitVal = parseFloat(debit) || 0;
-          const creditVal = parseFloat(credit) || 0;
+    // Parse debit/credit
+    const debitVal = parseFloat(debit) || 0;
+    const creditVal = parseFloat(credit) || 0;
 
-          if (debitVal > 0 && creditVal > 0) {
-            return res.status(400).json({
-              error: "Only one of debit or credit should be provided.",
-            });
-          }
+    if (debitVal > 0 && creditVal > 0) {
+      return res.status(400).json({
+        error: "Only one of debit or credit should be provided.",
+      });
+    }
 
-          // --- SUBSIDIARY LEDGER ---
+    // --- SUBSIDIARY LEDGER ---
 
-          // Get last balance for this patient + account in subsidiary ledger
-          const [subsidiaryRows] = await db.query(
-            `SELECT balance
-            FROM subsidiary
-            WHERE account_id = ? AND patient_id = ?
-            ORDER BY sub_id DESC
-            LIMIT 1`,
-            [account_id, patient_id]
-          );
+    // Get last balance for this patient + account in subsidiary ledger
+    const [subsidiaryRows] = await db.query(
+      `SELECT balance
+       FROM subsidiary
+       WHERE account_id = ? AND patient_id = ?
+       ORDER BY sub_id DESC
+       LIMIT 1`,
+      [account_id, patient_id]
+    );
 
-          const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
-          const newSubsidiaryBalance = lastSubsidiaryBalance + debitVal - creditVal;
+    const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
+    const newSubsidiaryBalance = lastSubsidiaryBalance + debitVal - creditVal;
 
-          // Insert into subsidiary ledger
-          const [subsidiaryResult] = await db.query(
-            `INSERT INTO subsidiary 
-              (date, name, invoice_no, debit, credit, balance, account_id, patient_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [date, name, invoice_no, debitVal, creditVal, newSubsidiaryBalance, account_id, patient_id]
-          );
+    // Insert into subsidiary ledger
+    const [subsidiaryResult] = await db.query(
+      `INSERT INTO subsidiary 
+       (date, name, invoice_no, debit, credit, balance, account_id, patient_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, name, invoice_no, debitVal, creditVal, newSubsidiaryBalance, account_id, patient_id]
+    );
 
-          // --- JOURNAL ENTRY ---
+    // --- JOURNAL ENTRY ---
 
-          // Use 'description' same as 'name' here, or customize as needed
-          const description = name;
+    const description = name;
 
-      const [journalResult] = await db.query(
+    // Insert main journal entry (for the provided account)
+    const [journalResult] = await db.query(
+      `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [date, description, account_id, debitVal, creditVal, 'n/a']
+    );
+
+    // --- GENERAL LEDGER ---
+
+    // Get last balance for this account in general ledger
+    const [ledgerRows] = await db.query(
+      `SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY date DESC, ledger_id DESC LIMIT 1`,
+      [account_id]
+    );
+
+    const lastLedgerBalance = ledgerRows.length > 0 ? parseFloat(ledgerRows[0].balance) || 0 : 0;
+    const newLedgerBalance = lastLedgerBalance + debitVal - creditVal;
+
+    // Insert into general ledger
+    const [ledgerResult] = await db.query(
+      `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
+    );
+
+    // --- PARTNER ACCOUNT: Service Income ---
+      let partnerAccountName = null;
+
+      if (debitVal > 0) {
+        // AR is debited -> partner is Sales Revenue (credited)
+        partnerAccountName = 'Service Income';
+      } else if (creditVal > 0) {
+        // AR is credited -> partner is Cash (debited)
+        partnerAccountName = 'Cash';
+      }
+
+      if (!partnerAccountName) {
+        return res.status(400).json({ error: "Either debit or credit must be provided." });
+      }
+
+      // Find partner account_id dynamically
+      const [partnerRows] = await db.query(
+        `SELECT account_id FROM chartofaccounts 
+        WHERE LOWER(account_name) = LOWER(?) 
+        LIMIT 1`,
+        [partnerAccountName]
+      );
+
+      if (partnerRows.length === 0) {
+        return res.status(500).json({ error: `${partnerAccountName} account not found in chart of accounts` });
+      }
+
+      const partnerAccountId = partnerRows[0].account_id;
+
+      // Partner debit/credit is the reverse of AR entry
+      const partnerDebit = creditVal;  
+      const partnerCredit = debitVal;  
+
+      // Insert partner journal entry
+      const [partnerJournalResult] = await db.query(
         `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [date, description, account_id, debitVal, creditVal, 'n/a']
+        [date, description, partnerAccountId, partnerDebit, partnerCredit, 'Partner entry']
       );
-          // --- GENERAL LEDGER ---
 
-          // Get last balance for this account in general ledger
-          const [ledgerRows] = await db.query(
-            `SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY date DESC, ledger_id DESC LIMIT 1`,
-            [account_id]
-          );
+      // Get last balance for partner account in general ledger
+      const [partnerLedgerRows] = await db.query(
+        `SELECT balance FROM general_ledger 
+        WHERE account_id = ? 
+        ORDER BY date DESC, ledger_id DESC 
+        LIMIT 1`,
+        [partnerAccountId]
+      );
 
-          const lastLedgerBalance = ledgerRows.length > 0 ? parseFloat(ledgerRows[0].balance) || 0 : 0;
-          const newLedgerBalance = lastLedgerBalance + debitVal - creditVal;
+      const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
+      const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
 
-          // Insert into general ledger
-          const [ledgerResult] = await db.query(
-            `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [date, description, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
-          );
+      // Insert partner entry into general ledger
+      await db.query(
+        `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId]
+      );
 
-          res.status(201).json({
-            message: "Subsidiary, journal entry, and general ledger records inserted successfully.",
-            subsidiaryId: subsidiaryResult.insertId,
-            journalEntryId: journalResult.insertId,
-            generalLedgerId: ledgerResult.insertId,
-            patient_id,
-            newSubsidiaryBalance,
-            newLedgerBalance,
-          });
+    res.status(201).json({
+      message: "Subsidiary, journal entry, general ledger, and partner entries inserted successfully.",
+      subsidiaryId: subsidiaryResult.insertId,
+      journalEntryId: journalResult.insertId,
+      generalLedgerId: ledgerResult.insertId,
+      partnerJournalEntryId: partnerJournalResult.insertId,
+      patient_id,
+      newSubsidiaryBalance,
+      newLedgerBalance,
+      newPartnerLedgerBalance,
+    });
 
-        } catch (err) {
-          console.error("❌ Error inserting records:", err);
-          res.status(500).json({ error: "Internal server error: " + err.message });
-        }
-      });
+  } catch (err) {
+    console.error("❌ Error inserting records:", err);
+    res.status(500).json({ error: "Internal server error: " + err.message });
+  }
+});
+
 
 /// Insert into subsidiary+general+journal for account payable
     router.post("/subsidiary1", async (req, res) => {
@@ -2184,9 +2262,10 @@ router.get('/supplier/search', async (req, res) => {
           debit,
           credit,
           account_id,
+          expense_id,
         } = req.body;
 
-                  // Validate required fields
+          // Validate required fields
           if (!date || !name || !invoice_no || !account_id) {
             return res.status(400).json({
               error: "Missing required fields: date, name, invoice_no, account_id",
@@ -2196,7 +2275,7 @@ router.get('/supplier/search', async (req, res) => {
           // Split name
           const nameParts = name;
 
-          // Find the user_id from users table
+          // Find the user_id from suppliertable
           const [userRows] = await db.query(
             `SELECT supplier_id FROM supplier
             WHERE supplier_name = ?
@@ -2208,7 +2287,25 @@ router.get('/supplier/search', async (req, res) => {
             return res.status(404).json({ error: "Supplier not found with the given name" });
           }
 
-            const supplier_id = userRows[0].supplier_id;
+        const supplier_id = userRows[0].supplier_id;
+
+        //find expense_id
+
+        const expense = expense_id;
+
+         const [expenseRows] = await db.query(
+            `SELECT account_name FROM chartofaccounts
+            WHERE account_id = ?
+            LIMIT 1`,
+            [expense]
+          );
+
+          if (expenseRows.length === 0) {
+            return res.status(404).json({ error: "account not found with the given name" });
+          }
+
+        const expensename = expenseRows[0].account_name;
+
         // Parse debit/credit
         const debitVal = parseFloat(debit) || 0;
         const creditVal = parseFloat(credit) || 0;
@@ -2221,7 +2318,7 @@ router.get('/supplier/search', async (req, res) => {
 
         // --- SUBSIDIARY LEDGER ---
 
-        // Get last balance for this patient + account in subsidiary ledger
+        // Get last balance for this supplier + account in subsidiary ledger
         const [subsidiaryRows] = await db.query(
           `SELECT balance
           FROM subsidiary
@@ -2239,18 +2336,17 @@ router.get('/supplier/search', async (req, res) => {
           `INSERT INTO subsidiary 
             (date, name, invoice_no, debit, credit, balance, account_id, patient_id)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [date, name, invoice_no, debitVal, creditVal, newSubsidiaryBalance, account_id, supplier_id]
+          [date, `${name} - ${expensename}`, invoice_no, debitVal, creditVal, newSubsidiaryBalance, account_id, supplier_id, expensename]
         );
 
         // --- JOURNAL ENTRY ---
 
-        // Use 'description' same as 'name' here, or customize as needed
         const description = name;
 
     const [journalResult] = await db.query(
       `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
       VALUES (?, ?, ?, ?, ?, ?)`,
-      [date, description, account_id, debitVal, creditVal, 'n/a']
+      [date, description, account_id, debitVal, creditVal, expensename]
     );
         // --- GENERAL LEDGER ---
 
@@ -2267,8 +2363,68 @@ router.get('/supplier/search', async (req, res) => {
         const [ledgerResult] = await db.query(
           `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [date, description, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
+          [date, `${description} - ${expensename}`, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
         );
+
+        //PARTNER ACCOUNT: Cash & Inventory==========
+
+        let partnerAccountName = null;
+        if (debitVal > 0) {
+
+        // AR is debited -> partner is Sales Revenue (credited)
+        partnerAccountName = 'Cash';
+      } else if (creditVal > 0) {
+        // AR is credited -> partner is Cash (debited)
+        partnerAccountName = expensename;
+      }
+
+      if (!partnerAccountName) {
+        return res.status(400).json({ error: "Either debit or credit must be provided." });
+      }
+
+      // Find partner account_id dynamically
+      const [partnerRows] = await db.query(
+        `SELECT account_id FROM chartofaccounts 
+        WHERE LOWER(account_name) = LOWER(?) 
+        LIMIT 1`,
+        [partnerAccountName]
+      );
+
+      if (partnerRows.length === 0) {
+      return res.status(500).json({ error: `${partnerAccountName} account not found in chart of accounts` });
+      }
+
+      const partnerAccountId = partnerRows[0].account_id;
+
+      // Partner debit/credit is the reverse of AR entry
+      const partnerDebit = creditVal;  
+      const partnerCredit = debitVal;  
+
+        // Insert partner journal entry
+      const [partnerJournalResult] = await db.query(
+        `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [date, description, partnerAccountId, partnerDebit, partnerCredit, expensename]
+      );
+
+       // Get last balance for partner account in general ledger
+      const [partnerLedgerRows] = await db.query(
+        `SELECT balance FROM general_ledger 
+        WHERE account_id = ? 
+        ORDER BY date DESC, ledger_id DESC 
+        LIMIT 1`,
+        [partnerAccountId]
+      );
+
+      const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
+      const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
+
+      // Insert partner entry into general ledger
+      await db.query(
+        `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId]
+      );
 
         res.status(201).json({
           message: "Subsidiary, journal entry, and general ledger records inserted successfully.",
@@ -2330,8 +2486,55 @@ router.get("/subsidiary", async (req, res) => {
     }
     });
 
+router.get("/trial", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT
+        gl.account_id,
+        coa.account_name,
+        COALESCE(SUM(gl.debit), 0) AS total_debit,
+        COALESCE(SUM(gl.credit), 0) AS total_credit,
+        (COALESCE(SUM(gl.credit), 0) - COALESCE(SUM(gl.debit), 0)) AS net_credit_minus_debit
+      FROM general_ledger gl
+      JOIN chartofaccounts coa ON coa.account_id = gl.account_id
+      GROUP BY gl.account_id, coa.account_name
+      ORDER BY coa.account_name
+    `);
 
+    let totalDebit = 0;
+    let totalCredit = 0;
 
+    const data = rows.map((r) => {
+      const net = Number(r.net_credit_minus_debit) || 0;
+
+      let debit = 0;
+      let credit = 0;
+
+      if (net >= 0) {
+        credit = net;
+      } else {
+        debit = -net;
+      }
+
+      totalDebit += debit;
+      totalCredit += credit;
+
+      return {
+        account_id: r.account_id,
+        account_name: r.account_name,
+        debit,
+        credit
+      };
+    });
+
+    res.json({ data, totalDebit, totalCredit });
+  } catch (error) {
+    console.error("Trial Balance Route Error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+;
 
 
 

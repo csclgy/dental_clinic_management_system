@@ -12,13 +12,13 @@ const adminsubsidiarypayableadd = () => {
   const [nameSuggestions, setNameSuggestions] = useState([]);
 const [selectedPatientId, setSelectedPatientId] = useState(null);
 
-  const [sub,setSub] = useState([]);
 
     const [formData, setFormData] = useState({
     date: "",
     description: "",
     invoice_no:"",
     account: "",
+    account1:"",
     subaccount: "",
     type: "debit",
     amount: "",
@@ -36,23 +36,35 @@ const [selectedPatientId, setSelectedPatientId] = useState(null);
       }
     }
 
-const fetchAccountPayable = async () => {
-    try {
-      const res = await axios.get(`http://localhost:3000/auth/accountPayable`);
-      if (res.data.length > 0) {
-        const { account_id, account_name } = res.data[0];
-        setFormData(prev => ({
-          ...prev,
-          account: account_id,
-          accountName: account_name,
-        }));
-      }
-    } catch (err) {
-      console.error("Error fetching Account Receivable:", err);
+    const fetchAccountPayable = async () => {
+        try {
+          const res = await axios.get(`http://localhost:3000/auth/accountPayable`);
+          if (res.data.length > 0) {
+            const { account_id, account_name } = res.data[0];
+            setFormData(prev => ({
+              ...prev,
+              account: account_id,
+              accountName: account_name,
+            }));
+          }
+        } catch (err) {
+          console.error("Error fetching Account Receivable:", err);
+        }
+      };
+
+    const fetchInventory = async () => {
+  try {
+    const res = await axios.get(`http://localhost:3000/auth/accountInventory`);
+    if (res.data.length > 0) {
+      setAccount(res.data);
     }
-  };
+  } catch (err) {
+    console.error("Error fetching Inventory Accounts:", err);
+  }
+};
 
   fetchAccountPayable();
+   fetchInventory();
 }, [location]);
   
 const fetchSuggestions = async (query) => {
@@ -77,7 +89,7 @@ const fetchSuggestions = async (query) => {
   const handleSubmit = async (e) => {
   e.preventDefault();
 
-  if (!formData.date || !formData.description || !formData.account || !formData.amount) {
+  if (!formData.date || !formData.description || !formData.account || !formData.amount || !formData.account1) {
     alert("Please fill in all required fields.");
     return;
   }
@@ -90,15 +102,16 @@ const fetchSuggestions = async (query) => {
     // 2️⃣ Save to subsidiary_ledger
  await axios.post("http://localhost:3000/auth/subsidiary1", {
   date: formData.date,
-  name: formData.description,    // 👈 map description → name
+  name: formData.description,    
   account_id: formData.account,
+  expense_id: formData.account1,
   invoice_no: formData.invoice_no,
   debit,
   credit
 });
 
     alert("Journal + Subsidiary entry saved successfully!");
-    navigate("/adminsubsidiary");
+    navigate("/adminsubsidiaryPayable");
   } catch (err) {
     console.error("Error saving entry:", err);
     alert(err.response?.data?.message || "Something went wrong");
@@ -306,18 +319,35 @@ const fetchSuggestions = async (query) => {
                                       <  div className="row">
                                             <div className="col-sm-6">
                                               <div className="mb-4 text-left">
-    <label className="block text-[#00458b] font-semibold mb-1">Account</label>
-    <input
-      type="text"
-      value={formData.accountName || ""}
-      readOnly
-      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
-    />
-    {/* Hidden input to submit account_id */}
-    <input type="hidden" name="account" value={formData.account || ""} />
-  </div>
-                                                
+                                                <label className="block text-[#00458b] font-semibold mb-1">Account</label>
+                                                <input
+                                                  type="text"
+                                                  value={formData.accountName || ""}
+                                                  readOnly
+                                                  className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                                                />
+                                                {/* Hidden input to submit account_id */}
+                                                <input type="hidden" name="account" value={formData.account || ""} />
+                                              </div> 
                                             </div>
+                                            <div className="col-sm-6">
+                                              <div class="mb-4 text-left">
+                                               <br/>
+                                                    <select
+                                                        name="account1"
+                                                        value={formData.account1}
+                                                        onChange={handleChange}
+                                                        className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                                                    >
+                                                        <option value="">-- Select Account --</option>
+                                                        {account.map(acc => (
+                                                        <option key={acc.account_id} value={acc.account_id}>
+                                                            {acc.account_name}
+                                                        </option>
+                                                        ))}
+                                                    </select>
+                                              </div>
+                                             </div>   
                                         </div>
                                         
                                     </div>
@@ -333,10 +363,10 @@ const fetchSuggestions = async (query) => {
                                         <div className="col-sm-6">
                                             <div className="row">
                                                 <div className="col-sm-4">
-                                                    <button type="button" className="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full mb-4" onClick={() => navigate("/adminsubsidiary")}>Back</button>
+                                                    <button type="button" className="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full mb-4" onClick={() => navigate("/adminsubsidiaryPayable")}>Back</button>
                           </div>
                           <div className="col-sm-4">
-                            <button type="submit" className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full mb-4">Save</button>
+                                 <button type="submit" className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full mb-4" >Save</button>
                                             </div>
                                         </div>
                                     </div>
