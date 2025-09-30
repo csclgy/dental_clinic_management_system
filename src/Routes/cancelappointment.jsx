@@ -134,7 +134,7 @@ const cancelappointment = () => {
                             <option value="Found another clinic">Found another clinic</option>
                             <option value="Booked by mistake">Booked by mistake</option>
                             <option value="Personal reasons">Personal reasons</option>
-                            <option value="Refund request">Refund request</option>
+                            {/* <option value="Refund request">Refund request</option> */}
                           </select>
                         </div>
                         {/* Note only shows when reason is not empty & not refund */}

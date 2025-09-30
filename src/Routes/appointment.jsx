@@ -135,6 +135,7 @@ const Appointment = () => {
                 type="date"
                 value={appointmentData.p_date_birth}
                 onChange={(e) => handleDateChange(e.target.value)}
+                max={new Date().toISOString().split("T")[0]} // restrict to past dates
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
               />
             </div>
@@ -167,9 +168,9 @@ const Appointment = () => {
               >
                 <option value="">Select a procedure</option>
                 <option value="TMJ TREATMENT">TMJ TREATMENT</option>
-                <option value="ORTHODONTIC TREATMENT">
+                {/* <option value="ORTHODONTIC TREATMENT">
                   ORTHODONTIC TREATMENT
-                </option>
+                </option> */}
                 <option value="MYOFUNCTIONAL TREATMENT">
                   MYOFUNCTIONAL TREATMENT
                 </option>
@@ -187,6 +188,7 @@ const Appointment = () => {
                 <option value="TEETH WHITENING">TEETH WHITENING</option>
                 <option value="DENTAL X-RAY">DENTAL X-RAY</option>
               </select>
+              <p style={{color:"gray"}}>For Orthodontic Treatment services, please contact our clinic first to arrange an agreement.</p>
             </div>
 
           {/* Preferred Date */}
@@ -262,7 +264,7 @@ const Appointment = () => {
             }`}
             disabled={!appointmentData.procedure_type}
             onClick={() => {
-              if (appointmentData.procedure_type === "DENTURES") {
+              if (appointmentData.procedure_type === "ORTHODONTIC TREATMENT") {
                 navigate("/appointment2");
               } else {
                 navigate("/appointmentsubmit");
