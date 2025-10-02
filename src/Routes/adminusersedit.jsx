@@ -439,7 +439,6 @@ const AdminUsersEdit = () => {
                     onChange={(e) => setUser({ ...user, user_status: e.target.value })}
                     className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                   >
-                    <option value="">-- Select --</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                   </select>

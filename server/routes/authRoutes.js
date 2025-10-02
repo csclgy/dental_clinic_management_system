@@ -2362,7 +2362,7 @@ router.post("/subsidiary", async (req, res) => {
     // Insert main journal entry (for the provided account)
     const [journalResult] = await db.query(
       `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [date, description, account_id, debitVal, creditVal, 'n/a']
     );
 
