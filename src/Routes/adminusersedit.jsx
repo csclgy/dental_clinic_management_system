@@ -111,19 +111,24 @@ const AdminUsersEdit = () => {
     }
   };
 
-  const handleDateChange = (dateValue) => {
-    updateFormData("date_birth", dateValue);
+    const handleDateChange = (dob) => {
+    const birthDate = new Date(dob);
+    const today = new Date();
 
-    if (dateValue) {
-      const today = new Date();
-      const birthDate = new Date(dateValue);
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-      updateFormData("age", age);
-    } else {
-      updateFormData("age", "");
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    const dayDiff = today.getDate() - birthDate.getDate();
+
+    // Adjust age if the birthday hasn't happened yet this year
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+      age--;
     }
+
+    setUser((prev) => ({
+      ...prev,
+      date_birth: dob,
+      age: age >= 0 ? age : 0, // prevent negative ages
+    }));
   };
 
   if (loading) return <p className="p-6 text-center">Loading...</p>;

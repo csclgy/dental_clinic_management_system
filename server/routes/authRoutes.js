@@ -2255,13 +2255,13 @@ router.get("/accountInventory", async (req, res) => {
 
         res.json(rows);
       } catch (err) {
-        console.error('❌ Error searching patients:', err.message);
+        console.error('Error searching patients:', err.message);
         res.status(500).json({ error: err.message });
       }
     });
 
 //get supplier
-router.get('/supplier/search', async (req, res) => {
+router.get('/supplier', async (req, res) => {
   const { name } = req.query;
   if (!name) return res.status(400).json({ error: 'Name query parameter is required' });
 

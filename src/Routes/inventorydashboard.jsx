@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, Menu, X, Package, AlertTriangle, Clock } from "lucide-react";
+import { BarChart3, Menu, X, Package, AlertTriangle, Clock, Calendar, Users, ChevronDown, ChevronUp } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -15,6 +15,8 @@ function InventoryDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [openDashboard, setOpenDashboard] = useState(false);
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
   // Fetch inventory data from backend
   useEffect(() => {
@@ -79,21 +81,98 @@ function InventoryDashboard() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar (desktop) */}
+    {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Inventory Staff</h2>
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
+    {/* Dashboard Dropdown */}
+      <button
+        onClick={() => setOpenDashboard(!openDashboard)}
+        className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+      >
+        <span className="flex items-center gap-2">
+          <BarChart3 size={18} /> Dashboard
+        </span>
+        {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+
+      {openDashboard && (
+        <div className="ml-6 flex flex-col gap-1 text-sm">
           <Link
-            to="/inventorydashboard"
-            className="flex items-center gap-2 bg-[#01D5C4] text-white p-2 rounded-lg"
+            to="/admindashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
-            <BarChart3 size={18} /> Dashboard
+            Admin Dashboard
           </Link>
           <Link
-            to="/inventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+            to="/inventorydashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
-            <Package size={18} /> Inventory
+            Inventory Dashboard
+          </Link>
+        </div>
+      )}
+
+
+          {/* Ledger with dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Chart of Accounts
+              </Link>
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Journal Entries
+              </Link>
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                General Ledger
+              </Link>
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Trial Balance
+              </Link>
+            </div>
+          )}
+
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
           </Link>
         </nav>
       </aside>
@@ -108,20 +187,22 @@ function InventoryDashboard() {
             >
               <X size={24} />
             </button>
-            <h2 className="text-xl font-bold mb-8">Inventory Staff</h2>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            {/* Same nav as desktop */}
             <nav className="flex flex-col gap-2">
               <Link
-                to="/inventorydashboard"
+                to="/admindashboard"
                 className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
               >
                 <BarChart3 size={18} /> Dashboard
               </Link>
               <Link
-                to="/inventory"
+                to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
               >
-                <Package size={18} /> Inventory
+                <Users size={18} /> Users
               </Link>
+              {/* ... add other links here */}
             </nav>
           </aside>
         </div>

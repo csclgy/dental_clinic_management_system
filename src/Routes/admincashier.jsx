@@ -13,7 +13,7 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 
 const localizer = momentLocalizer(moment);
 
-const AdminSchedule = () => {
+const AdminCashier = () => {
   const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -172,13 +172,13 @@ const AdminSchedule = () => {
           </Link>
           <Link
             to="/adminschedule"
-            className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
           </Link>
           <Link
             to="/admincashier"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+            className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <Calendar size={18} /> Cashier
           </Link>
@@ -322,37 +322,16 @@ const AdminSchedule = () => {
                       </td>
                       <td className="px-2 py-3 whitespace-nowrap">
                         <button
-                          onClick={() => navigate(`/adminschedulecancel/${record.appoint_id}`)}
-                          disabled={
-                            !(
-                              record.appointment_status === "incomplete" ||
-                              record.appointment_status === "pending" ||
-                              record.appointment_status === "cancel with refund request"
-                            )
-                          }
+                          onClick={() => navigate(`/adminconsultationcomplete/${record.appoint_id}`)}
+                          disabled={record.appointment_status !== "incomplete"}
                           className={`px-4 py-2 rounded-lg font-semibold ${
-                            record.appointment_status === "incomplete" ||
-                            record.appointment_status === "pending" ||
-                            record.appointment_status === "cancel with refund request"
-                              ? "bg-gray-200 hover:bg-gray-300 text-black"
+                            record.appointment_status === "incomplete"
+                              ? "bg-green-600 hover:bg-green-700 text-white"
                               : "bg-gray-300 text-gray-500 cursor-not-allowed"
                           }`}
                         >
-                          Cancel
+                          Complete
                         </button>
-                      </td>
-                      <td className="px-2 py-3 whitespace-nowrap">
-                      <button
-                        disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending")}
-                        onClick={() => handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)}
-                        className={`px-4 py-2 rounded-lg font-semibold ${
-                          record.appointment_status === "incomplete" || record.appointment_status === "pending"
-                            ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        }`}
-                      >
-                        + Follow Up
-                      </button>
                       </td>
                     </tr>
                   ))
@@ -392,4 +371,4 @@ const AdminSchedule = () => {
   );
 };
 
-export default AdminSchedule;
+export default AdminCashier;

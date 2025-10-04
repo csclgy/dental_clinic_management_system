@@ -67,6 +67,7 @@ import Adminsupplier from "./Routes/adminsupplier";
 import AdminSupplierAdd from "./Routes/adminsupplieradd";
 import AdminSupplierEdit from "./Routes/adminsupplieredit.jsx";
 import AdminInventoryView from "./Routes/admininventoryview.jsx";
+import AdminCashier from "./Routes/admincashier.jsx";
 
 function App() {
   return (
@@ -216,6 +217,7 @@ function App() {
              <Route path="/adminsupplieradd" element={<AdminSupplierAdd />}/>
              <Route path="/adminsupplieredit/:id" element={<AdminSupplierEdit />}/>
              <Route path="/admininventoryview/:id" element={<AdminInventoryView />}/>
+             <Route path="/admincashier" element={<AdminCashier />}/>
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

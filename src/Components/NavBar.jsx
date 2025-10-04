@@ -145,6 +145,8 @@ const Navbar = () => {
                 >
                   Logout
                 </button>
+                <br></br>
+                <br></br>
               </div>
             )}
           </div>

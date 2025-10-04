@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { Calendar, Users, DollarSign, BarChart3, Menu, X } from "lucide-react";
+import { Calendar, Users, DollarSign, BarChart3, ChevronDown, ChevronUp, Menu, X } from "lucide-react";
 import {
   PieChart,
   Pie,
@@ -21,6 +21,8 @@ function AdminDashboard() {
   const [appointmentsCount, setAppointmentsCount] = useState(0);
   const [patientsCount, setPatientsCount] = useState(0);
   const [patientDemographics, setPatientDemographics] = useState([]);
+  const [openDashboard, setOpenDashboard] = useState(false);
+
 
   const COLORS = ["#01D5C4", "#00458B", "#A3A3A3"];
 
@@ -44,12 +46,34 @@ function AdminDashboard() {
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
+    {/* Dashboard Dropdown */}
+      <button
+        onClick={() => setOpenDashboard(!openDashboard)}
+        className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+      >
+        <span className="flex items-center gap-2">
+          <BarChart3 size={18} /> Dashboard
+        </span>
+        {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+      </button>
+
+      {openDashboard && (
+        <div className="ml-6 flex flex-col gap-1 text-sm">
           <Link
             to="/admindashboard"
-            className="flex items-center gap-2 p-2 bg-[white] text-[#00458B] rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
-            <BarChart3 size={18} /> Dashboard
+            Admin Dashboard
           </Link>
+          <Link
+            to="/inventorydashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            Inventory Dashboard
+          </Link>
+        </div>
+      )}
+
 
           {/* Ledger with dropdown */}
           <button
@@ -63,19 +87,19 @@ function AdminDashboard() {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>

@@ -71,7 +71,7 @@ const AdminSubsidiaryPayableAdd = () => {
     }
     try {
       const res = await axios.get(
-        `http://localhost:3000/auth/supplier/search?name=${query}`
+        `http://localhost:3000/auth/supplier?name=${query}`
       );
       setNameSuggestions(res.data);
     } catch (err) {
