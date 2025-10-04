@@ -331,7 +331,7 @@ const AdminPatients = () => {
           <p>Loading...</p>
         ) : (
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
-            <div className="flex justify-end mb-4">
+            <div className="flex justify-between mb-4">
               <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
                 <input
                   type="text"
@@ -341,19 +341,16 @@ const AdminPatients = () => {
                   className="flex-1 outline-none text-sm text-gray-700"
                 />
                 <i className="fa fa-search text-[#00458B]"></i>
-                                                </div>
-                                            <div className="col-sm-8">
-                                                    <br />
-                                                    <br />
-                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={handlePrintReport}>Generate Report</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                </div>
+              </div>
+              <div className="ml-4">
+                <button
+                  className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full mb-4"
+                  onClick={handlePrintReport}
+                >
+                  Generate Report
+                </button>
               </div>
             </div>
-
             <table className="w-full border-collapse border border-gray-200">
               <thead>
                 <tr className="bg-gray-100 text-[#00458B]">

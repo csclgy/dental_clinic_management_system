@@ -31,8 +31,10 @@ function admininventory() {
     fetchItems();
   }, []);
 
-const handleDelete = async (id) => {
+const handleToggleStatus = async (id, currentStatus) => {
   const token = localStorage.getItem("token");
+  const newStatus = currentStatus === "inactive" ? "active" : "inactive";
+  
   try {
     const res = await fetch(`http://localhost:3000/auth/inactiveitem/${id}`, {
       method: "PUT",
@@ -44,20 +46,20 @@ const handleDelete = async (id) => {
 
     if (!res.ok) {
       const errorData = await res.json();
-      throw new Error(errorData.message || "Failed to approve item");
+      throw new Error(errorData.message || "Failed to update item status");
     }
 
-    // Update state to remove approved item from pending list
+    // Update state to toggle the status
     setItems((prevItems) =>
       prevItems.map((item) =>
-        item.inv_id === id ? { ...item, inv_item_status: "inactive" } : item
+        item.inv_id === id ? { ...item, inv_item_status: newStatus } : item
       )
     );
 
-    alert("Item Inactive successfully");
+    alert(`Item ${newStatus === "active" ? "activated" : "deactivated"} successfully`);
   } catch (err) {
-    console.error("Error Inactive item:", err);
-    alert(err.message || "Could not approve item");
+    console.error("Error updating item status:", err);
+    alert(err.message || "Could not update item status");
   }
 };
   
@@ -146,6 +148,7 @@ const handleDelete = async (id) => {
             <thead>
               <tr>
                 <th>Item Name</th>
+                <th>Category</th>
                 <th>Status</th>
                 <th>Quantity</th>
               </tr>
@@ -154,7 +157,8 @@ const handleDelete = async (id) => {
               ${filteredItems.map(item => `
                 <tr>
                   <td>${item.inv_item_name}</td>
-                  <td>${item.inv_status}</td>
+                  <td>${item.inv_item_type}</td>
+                  <td>${item.inv_item_status.charAt(0).toUpperCase() + item.inv_item_status.slice(1).toLowerCase()}</td>
                   <td>${item.inv_quantity}</td>
                 </tr>
               `).join('')}
@@ -372,22 +376,14 @@ const handleDelete = async (id) => {
                 />
                 <i className="fa fa-search text-[#00458B]"></i>
               </div>
-                                                </div>
-                                            <div className="col-sm-8">
-                                                    <br />
-                                                    <br />
-                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" 
-                                                    onClick={handlePrintReport}>Generate Report</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <div className="col-sm-2">
-                
+            </div>
+            <div className="mb-4">
+              <button
+                className="bg-[#00c3b8] text-white px-4 py-2 rounded-lg"
+                onClick={handlePrintReport}
+              >
+                Generate Report
+              </button>
             </div>
             <table className="w-full border-collapse border border-gray-200">
               <thead>
@@ -421,38 +417,40 @@ const handleDelete = async (id) => {
                         ? new Date(item.inv_exp_date).toLocaleDateString()
                         : "N/A"}
                     </td>
-                    <td className="px-4 py-2 text-center">{item.inv_item_status}</td>
-                    <td className="px-4 py-2 text-center space-x-2">
-                      <Link
-                        to={`/admininventoryview/${item.inv_id}`}
-                        className={`px-4 py-2 rounded-lg text-white ${
-                          item.inv_item_status === "inactive"
-                            ? "bg-gray-400 cursor-not-allowed pointer-events-none"
-                            : "bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-lg"
-                        }`}
-                      >
-                        View
-                      </Link>
-                      <Link
-                        to={`/admininventoryedit/${item.inv_id}`}
-                        className={`px-4 py-2 rounded-lg text-white ${
-                          item.inv_item_status === "inactive"
-                            ? "bg-gray-400 cursor-not-allowed pointer-events-none"
-                            : "bg-green-500 hover:bg-green-600"
-                        }`}
-                      >
-                        Edit
-                      </Link>
-                      <Link
-                        onClick={() => handleDelete(item.inv_id)}
-                        className={`px-4 py-2 rounded-lg text-white ${
-                          item.inv_item_status === "inactive"
-                            ? "bg-gray-400 cursor-not-allowed pointer-events-none"
-                            : "bg-red-500 hover:bg-red-600"
-                        }`}
-                      >
-                        Delete
-                      </Link>
+                    <td className="px-4 py-2 text-center capitalize">{item.inv_item_status}</td>
+                    <td className="px-4 py-2 text-center">
+                      <div className="flex justify-center gap-2">
+                        <Link
+                          to={`/admininventoryview/${item.inv_id}`}
+                          className={`px-4 py-2 rounded-lg text-white ${
+                            item.inv_item_status === "inactive"
+                              ? "bg-gray-400 cursor-not-allowed pointer-events-none"
+                              : "bg-[#008CBA] hover:bg-[#007399]"
+                          }`}
+                        >
+                          View
+                        </Link>
+                        <Link
+                          to={`/admininventoryedit/${item.inv_id}`}
+                          className={`px-4 py-2 rounded-lg text-white ${
+                            item.inv_item_status === "inactive"
+                              ? "bg-gray-400 cursor-not-allowed pointer-events-none"
+                              : "bg-green-500 hover:bg-green-600"
+                          }`}
+                        >
+                          Edit
+                        </Link>
+                        <Link
+                          onClick={() => handleToggleStatus(item.inv_id, item.inv_item_status)}
+                          className={`px-4 py-2 rounded-lg text-white cursor-pointer ${
+                            item.inv_item_status === "inactive"
+                              ? "bg-green-500 hover:bg-green-600"
+                              : "bg-red-500 hover:bg-red-600"
+                          }`}
+                        >
+                          {item.inv_item_status === "inactive" ? "Activate" : "Deactivate"}
+                        </Link>
+                      </div>
                     </td>
                   </tr>
                 ))}

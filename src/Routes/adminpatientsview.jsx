@@ -100,6 +100,144 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
   if (error) return <p className="text-red-500">{error}</p>;
   if (!patient) return <p>Loading...</p>;
 
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Patient Consultation Report</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #00458B;
+            padding-bottom: 20px;
+          }
+          .header h1 {
+            color: #00458B;
+            margin: 0;
+          }
+          .patient-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-left: 4px solid #00c3b8;
+          }
+          .summary {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-left: 4px solid #00c3b8;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+          }
+          th {
+            background-color: #00458B;
+            color: white;
+            font-weight: bold;
+          }
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Patient Consultation Report</h1>
+          <p>Generated on: ${currentDate}</p>
+        </div>
+        
+        <div class="patient-info">
+          <strong>Patient Information:</strong><br>
+          Name: ${patient.fname} ${patient.mname} ${patient.lname}<br>
+          Age: ${patient.age} | Gender: ${patient.gender}<br>
+          Contact: ${patient.contact_no}<br>
+          Email: ${patient.email}
+        </div>
+
+        <div class="summary">
+          <strong>Report Summary:</strong><br>
+          Total Consultations: ${filteredConsultations.length}<br>
+          Status Filter: ${statusFilter || 'All'}<br>
+          Search Filter: ${searchTerm ? `"${searchTerm}"` : 'None'}
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Procedure</th>
+              <th>Dentist</th>
+              <th>Payment Status</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredConsultations.map(c => `
+              <tr>
+                <td>${new Date(c.pref_date).toLocaleDateString()}</td>
+                <td>${c.procedure_type}</td>
+                <td>${c.attending_dentist}</td>
+                <td style="text-transform: capitalize;">${c.payment_status}</td>
+                <td>₱${c.total_charged}</td>
+                <td style="text-transform: capitalize;">${c.appointment_status}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>This report was automatically generated for Arciaga-Juntilla TMJ Ortho Dental Clinic.</p>
+        </div>
+        
+        <script>
+          window.addEventListener('afterprint', function() {
+            window.close();
+          });
+
+          setTimeout(function() {
+            window.print();
+          }, 250);
+        </script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+  };
+
   // ✅ Filter + sort consultations
   const filteredConsultations = consultations
     .filter((c) =>
@@ -323,9 +461,9 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
                         <td className="px-2 py-2 text-blue-700">{c.pref_date}</td>
                         <td className="px-2 py-2">{c.procedure_type}</td>
                         <td className="px-2 py-2">{c.attending_dentist}</td>
-                        <td className="px-2 py-2">{c.payment_status}</td>
+                        <td className="px-2 py-2 capitalize">{c.payment_status}</td>
                         <td className="px-2 py-2">₱{c.total_charged}</td>
-                        <td className="px-2 py-2">{c.appointment_status}</td>
+                        <td className="px-2 py-2 capitalize">{c.appointment_status}</td>
                         <td className="px-2 py-2">
                           <button
                             onClick={() => navigate(`/adminconsultationview/${c.appoint_id}`)}
@@ -391,7 +529,7 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
           <div className="flex justify-end">
             <button
               className="bg-[#00c3b8] text-white px-6 py-2 rounded-full"
-              onClick={() => navigate("/register2")}
+              onClick={handlePrintReport}
             >
               Generate Report
             </button>

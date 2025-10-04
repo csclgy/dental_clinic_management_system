@@ -2887,6 +2887,24 @@ router.get("/appointments/count", async (req, res) => {
   }
 });
 
+// Add this to your routes file
+router.get("/appointments/all", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT appoint_id, user_name, procedure_type, pref_date, pref_time, 
+             attending_dentist, appointment_status
+      FROM appointment
+      ORDER BY pref_date ASC
+    `);
+    
+    return res.json(rows);
+  } catch (err) {
+    console.error("Fetch all appointments error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Count Patients
 router.get("/patients/count", async (req, res) => {
   const db = await connectToDatabase();

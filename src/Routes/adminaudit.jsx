@@ -37,25 +37,6 @@ function adminaudit() {
     }
   }, [location]);
 
-
-  // Filter search
-   const records = [
-    {
-      date: "05-30-2025",
-      diagnosis: "Dental Caries",
-      services: "Oral Exam & Periapical X-ray",
-      dentist: "Dr. A. Reyes",
-      status: "Completed",
-    },
-    {
-      date: "07-15-2025",
-      diagnosis: "Tooth Extraction",
-      services: "Extraction of Wisdom Tooth",
-      dentist: "Dr. M. Santos",
-      status: "Ongoing",
-    },
-  ];
-
   // Print Report function
   const handlePrintReport = () => {
     const printWindow = window.open('', '_blank');
@@ -335,7 +316,7 @@ function adminaudit() {
 
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
           {/* Search Bar */}
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-between items-center mb-4">
             <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
               <input
                 type="text"
@@ -345,21 +326,13 @@ function adminaudit() {
                 className="flex-1 outline-none text-sm text-gray-700"
               />
               <i className="fa fa-search text-[#00458B]"></i>
-                                                </div>
-                                            <div className="col-sm-8">
-                                                    <br />
-                                                    <br />
-                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={handlePrintReport}>Generate Report</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <div className="col-sm-2">
             </div>
+            <button
+              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full ml-4"
+              onClick={handlePrintReport}
+            >
+              Generate Report
+            </button>
           </div>
 
           {/* Table */}

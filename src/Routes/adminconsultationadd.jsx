@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link, useParams } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, AlertCircle } from "lucide-react";
 
 const AdminConsultationAdd = () => {
   const location = useLocation();
   const patient = location.state?.patient;
   const navigate = useNavigate();
-  const { id } = useParams();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
@@ -19,7 +18,111 @@ const AdminConsultationAdd = () => {
   const [preferredTime, setPreferredTime] = useState("");
   const [dentists, setDentists] = useState([]);
 
+  // Disable dates and time slots
+  const [bookedSlots, setBookedSlots] = useState({});
+  const [fullyBookedDates, setFullyBookedDates] = useState([]);
+
+  const timeSlots = [
+    "8:00AM", "9:00AM", "10:00AM", "11:00AM", "12:00PM",
+    "1:00PM", "2:00PM", "3:00PM", "4:00PM", "5:00PM",
+  ];
+
+  useEffect(() => {
+    if (dentist) {
+      fetchAppointments();
+    }
+  }, [dentist]);
+
+const fetchAppointments = async () => {
+  try {
+    const response = await axios.get("http://localhost:3000/auth/appointments/all");
+    const appointments = response.data;
+
+    // Filter for active appointments for selected dentist
+    const activeAppointments = appointments.filter(apt => {
+      // Normalize date format (handle both Date objects and strings)
+      const aptDate = typeof apt.pref_date === 'string' 
+        ? apt.pref_date.split('T')[0]  // Handle ISO format
+        : apt.pref_date;
+
+      return apt.appointment_status !== 'cancelled' &&
+             apt.appointment_status !== 'done' &&
+             apt.attending_dentist === dentist;
+    });
+
+    const slotsByDate = {};
+    activeAppointments.forEach(apt => {
+      // Normalize the date to YYYY-MM-DD format
+      let date = apt.pref_date;
+      if (typeof date === 'string' && date.includes('T')) {
+        date = date.split('T')[0];
+      }
+      
+      if (!slotsByDate[date]) slotsByDate[date] = [];
+      slotsByDate[date].push(apt.pref_time);
+    });
+
+    // Find dates where ALL time slots are booked
+    const fullyBooked = Object.keys(slotsByDate).filter(date =>
+      slotsByDate[date].length >= timeSlots.length
+    );
+
+    setBookedSlots(slotsByDate);
+    setFullyBookedDates(fullyBooked);
+  } catch (err) {
+    console.error("Error fetching appointments:", err);
+  }
+};
+
+const getAvailableTimeSlots = () => {
+  if (!dateOfVisit) return [];
+  
+  const bookedTimesForDate = bookedSlots[dateOfVisit] || [];
+  
+  // DEBUG: Log to see what's happening
+  console.log("Selected date:", dateOfVisit);
+  console.log("Booked slots object:", bookedSlots);
+  console.log("Booked times for selected date:", bookedTimesForDate);
+  console.log("Available time slots:", timeSlots.filter(slot => !bookedTimesForDate.includes(slot)));
+  
+  return timeSlots.filter(slot => !bookedTimesForDate.includes(slot));
+};
+  const isDateFullyBooked = (date) => {
+    return fullyBookedDates.includes(date);
+  };
+
+  const handleDateChange = (e) => {
+    const selectedDate = e.target.value;
+
+    if (isDateFullyBooked(selectedDate)) {
+      alert("⚠️ This date is fully booked. Please choose another date.");
+      return;
+    }
+
+    setDateOfVisit(selectedDate);
+    setPreferredTime("");
+  };
+
   const handleSaveConsultation = async () => {
+    if (!dateOfVisit || !dentist || !procedureType || !preferredTime) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    // Double-check date isn't fully booked
+    if (isDateFullyBooked(dateOfVisit)) {
+      alert("Selected date is no longer available. Please choose another date.");
+      return;
+    }
+
+    // Check if selected time is still available
+    const availableSlots = getAvailableTimeSlots();
+    if (!availableSlots.includes(preferredTime)) {
+      alert("Selected time slot is no longer available. Please choose another time.");
+      setPreferredTime("");
+      return;
+    }
+
     try {
       const payload = {
         procedure_type: procedureType,
@@ -27,7 +130,6 @@ const AdminConsultationAdd = () => {
         pref_time: preferredTime,
         attending_dentist: dentist,
         appointment_status: "pending",
-
         user_name: patient?.user_name,
         p_blood_type: patient?.blood_type,
         p_fname: patient?.fname,
@@ -46,11 +148,11 @@ const AdminConsultationAdd = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      alert("Consultation created successfully!");
+      alert("✅ Consultation created successfully!");
       navigate("/adminpatients");
     } catch (err) {
       console.error("Error saving consultation:", err);
-      alert("Failed to create consultation");
+      alert("❌ Failed to create consultation");
     }
   };
 
@@ -97,7 +199,6 @@ const AdminConsultationAdd = () => {
             <BarChart3 size={18} /> Dashboard
           </Link>
 
-          {/* Ledger dropdown */}
           <button
             onClick={() => setIsLedgerOpen(!isLedgerOpen)}
             className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -109,19 +210,19 @@ const AdminConsultationAdd = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="hover:bg-white hover:text-[#00458B] p-1 rounded">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="hover:bg-white hover:text-[#00458B] p-1 rounded">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-white hover:text-[#00458B] p-1 rounded">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="hover:bg-white hover:text-[#00458B] p-1 rounded">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="hover:bg-white hover:text-[#00458B] p-1 rounded">
                 Trial Balance
               </Link>
             </div>
@@ -160,7 +261,7 @@ const AdminConsultationAdd = () => {
         </nav>
       </aside>
 
-      {/* Sidebar (mobile with toggle) */}
+      {/* Sidebar (mobile) */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
           <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
@@ -191,7 +292,6 @@ const AdminConsultationAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -204,55 +304,31 @@ const AdminConsultationAdd = () => {
             Create New Consultation
           </h1>
 
+          {/* Dentist Selection Alert */}
+          {!dentist && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <AlertCircle className="text-blue-600 mt-0.5" size={20} />
+              <p className="text-sm text-blue-800">
+                Please select an attending dentist first to view available dates and times.
+              </p>
+            </div>
+          )}
+
           {/* Consultation Form */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Left Side */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                  Date of Visit
-                </label>
-                <input
-                  type="date"
-                  value={dateOfVisit}
-                  onChange={(e) => setDateOfVisit(e.target.value)}
-                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-4"
-                  min={new Date().toISOString().split("T")[0]} // today or future dates only
-                />
-
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Preferred Time
-              </label>
-              <select
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-4"
-                value={preferredTime}
-                onChange={(e) => setPreferredTime(e.target.value)}
-              >
-                <option value="">Select a time</option>
-                {[
-                  "8:00AM",
-                  "9:00AM",
-                  "10:00AM",
-                  "11:00AM",
-                  "12:00PM",
-                  "1:00PM",
-                  "2:00PM",
-                  "3:00PM",
-                  "4:00PM",
-                  "5:00PM",
-                ].map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
-              </select>
-
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Attending Dentist
+                Attending Dentist *
               </label>
               <select
                 value={dentist}
-                onChange={(e) => setDentist(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                onChange={(e) => {
+                  setDentist(e.target.value);
+                  setDateOfVisit("");
+                  setPreferredTime("");
+                }}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-4"
               >
                 <option value="">Select Dentist</option>
                 {dentists.map((d) => (
@@ -261,11 +337,63 @@ const AdminConsultationAdd = () => {
                   </option>
                 ))}
               </select>
+
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Date of Visit *
+              </label>
+              <input
+                type="date"
+                value={dateOfVisit}
+                onChange={handleDateChange}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-2"
+                min={new Date().toISOString().split("T")[0]}
+                disabled={!dentist}
+              />
+              
+              {/* Show fully booked dates warning */}
+              {dentist && fullyBookedDates.length > 0 && (
+                <p className="text-xs text-orange-600 mb-4">
+                  ⚠️ Note: Some dates are fully booked and cannot be selected
+                </p>
+              )}
+
+              <label className="block text-[#00458b] font-semibold mb-1 mt-4">
+                Preferred Time *
+              </label>
+              <select
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-2"
+                value={preferredTime}
+                onChange={(e) => setPreferredTime(e.target.value)}
+                disabled={!dateOfVisit}
+              >
+                <option value="">Select a time</option>
+                {getAvailableTimeSlots().map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+
+              {/* Show helpful messages */}
+              {dateOfVisit && getAvailableTimeSlots().length === 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+                  <AlertCircle className="text-red-600 mt-0.5" size={16} />
+                  <p className="text-sm text-red-700">
+                    No available time slots for this date. Please select another date.
+                  </p>
+                </div>
+              )}
+
+              {dateOfVisit && getAvailableTimeSlots().length > 0 && (
+                <p className="text-xs text-green-600">
+                  ✓ {getAvailableTimeSlots().length} time slot(s) available
+                </p>
+              )}
             </div>
 
             {/* Right Side */}
             <div>
-              <p className="text-xl font-bold text-[#00458B] mb-4">Services</p>
+              <p className="text-xl font-bold text-[#00458B] mb-4">Services *</p>
               <div className="grid grid-cols-2 gap-4">
                 {procedureTypes.map((type, index) => (
                   <label
@@ -296,7 +424,7 @@ const AdminConsultationAdd = () => {
                         />
                       </svg>
                     </span>
-                    <span className="text-blue-800 tracking-wide">
+                    <span className="text-blue-800 tracking-wide text-sm">
                       {type}
                     </span>
                   </label>
@@ -308,8 +436,9 @@ const AdminConsultationAdd = () => {
           {/* Save Button */}
           <div className="flex justify-end mt-6">
             <button
-              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d] disabled:bg-gray-400 disabled:cursor-not-allowed transition"
               onClick={handleSaveConsultation}
+              disabled={!dateOfVisit || !dentist || !procedureType || !preferredTime || getAvailableTimeSlots().length === 0}
             >
               Save Consultation
             </button>
