@@ -98,19 +98,24 @@ const Register = () => {
           />
         </div>
 
-        {/* Contact No */}
-        <div className="mb-4 text-left">
-          <label className="block text-[#00458b] font-semibold mb-1">Contact Number</label>
-          <input
-            type="number"
-            value={registerData.contact_no || ""}
-            onChange={(e) =>
-              setRegisterData({ ...registerData, contact_no: e.target.value })
-            }
-            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-[#00c3b8]"
-            required
-          />
-        </div>
+      {/* Contact No */}
+      <div className="mb-4 text-left">
+        <label className="block text-[#00458b] font-semibold mb-1">
+          Contact Number
+        </label>
+        <input
+          type="tel"
+          value={registerData.contact_no || ""}
+          onChange={(e) =>
+            setRegisterData({ ...registerData, contact_no: e.target.value })
+          }
+          className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-[#00c3b8]"
+          pattern="\d{11}" // only allows exactly 11 digits
+          maxLength={11}   // prevents typing more than 11 digits
+          required
+          placeholder="Enter 11-digit number"
+        />
+      </div>
 
         {/* Agreement Checkbox */}
         <div className="flex items-center text-left mb-4">

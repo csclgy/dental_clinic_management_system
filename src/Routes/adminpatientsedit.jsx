@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom"; // 👈 useParams here
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { BarChart3, Users, Calendar, Package, PlusCircle, FileText, ClipboardList, Eye } from "lucide-react";
 
 const AdminPatientsEdit = () => {
-  const { id } = useParams(); // 👈 get user id from URL
+  const { id } = useParams();
   const navigate = useNavigate();
-  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
   const [patient, setPatient] = useState({
     fname: "",
@@ -15,12 +15,15 @@ const AdminPatientsEdit = () => {
     date_birth: "",
     home_address: "",
     city: "",
+    province: "",
     email: "",
     contact_no: "",
   });
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -46,16 +49,17 @@ const AdminPatientsEdit = () => {
 
         const data = await res.json();
         setPatient({
-        fname: data.patient.fname,
-        mname: data.patient.mname,
-        lname: data.patient.lname,
-        gender: data.patient.gender,
-        age: data.patient.age,
-        date_birth: data.patient.date_birth,
-        home_address: data.patient.home_address,
-        city: data.patient.city,
-        email: data.patient.email,
-        contact_no: data.patient.contact_no,
+          fname: data.patient.fname,
+          mname: data.patient.mname,
+          lname: data.patient.lname,
+          gender: data.patient.gender,
+          age: data.patient.age,
+          date_birth: data.patient.date_birth,
+          home_address: data.patient.home_address,
+          city: data.patient.city,
+          province: data.patient.province,
+          email: data.patient.email,
+          contact_no: data.patient.contact_no,
         });
         setLoading(false);
       } catch (err) {
@@ -77,14 +81,14 @@ const AdminPatientsEdit = () => {
     }
 
     try {
-    const res = await fetch(`http://localhost:3000/auth/updatepatientinfo/${id}`, {
-    method: "PUT",
-    headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(patient), // ✅ use patient, not user
-    });
+      const res = await fetch(`http://localhost:3000/auth/updatepatientinfo/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(patient),
+      });
 
       if (!res.ok) {
         throw new Error("Failed to update profile");
@@ -92,7 +96,7 @@ const AdminPatientsEdit = () => {
 
       const data = await res.json();
       alert(data.message);
-      navigate("/adminpatients"); // 👈 go back after saving
+      navigate("/adminpatients");
     } catch (err) {
       console.error("Error updating profile:", err);
       alert("Could not update profile. Please try again.");
@@ -100,276 +104,198 @@ const AdminPatientsEdit = () => {
   };
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            <div
-                className="col-sm-3 p-5 rounded-lg shadow-lg"
-                style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
-                >
-                {/* Dashboard */}
-                <Link to="/">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-tachometer" aria-hidden="true"></i> Dashboard
-                    </button>
-                </Link>
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <nav className="flex flex-col gap-2">
+          <Link
+            to="/admindashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <BarChart3 size={18} /> Dashboard
+          </Link>
 
-                {/* Ledger with Dropdown */}
-                <button
-                    onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                    className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                >
-                    <span>
-                    <i className="fa fa-book" aria-hidden="true"></i> Ledger
-                    </span>
-                    <i
-                    className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`}
-                    aria-hidden="true"
-                    ></i>
-                </button>
-
-                {isLedgerOpen && (
-                    <div className="ml-8 text-sm">
-                    <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Chart of Accounts
-                        </p>
-                    </Link>
-                    <Link to="/adminjournal">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Journal Entries
-                        </p>
-                    </Link>
-                    <Link to="/admingeneral">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        General Ledger
-                        </p>
-                    </Link>
-                    <Link to="/admintrial">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Trial Balance
-                        </p>
-                    </Link>
-                    </div>
-                )}
-
-                {/* Users */}
-                <Link to="/adminusers">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-users" aria-hidden="true"></i> Users
-                    </button>
-                </Link>
-
-                {/* Inventory */}
-                <Link to="/admininventory">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-archive" aria-hidden="true"></i> Inventory
-                    </button>
-                </Link>
-
-                {/* Patients */}
-                <Link to="/adminpatients">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00c3b8" }}
-                    >
-                    <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
-                    </button>
-                </Link>
-
-                {/* Schedule */}
-                <Link to="/adminschedule">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
-                    </button>
-                </Link>
-
-                {/* Audit Trail */}
-                <Link to="/adminaudit">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
-                    </button>
-                </Link>
-                </div>
-                <div className="col-sm-8">
-                    <div className="row">
-                        <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
-                            <div className="row">
-                                <div className="col-sm-10">
-                                    <h1 className="text-2xl font-bold">Patients Record</h1>
-                                </div>
-                                <div className="col-sm-2">
-                                </div>
-                            </div>
-                        </div>
-                        <p style={{color:"transparent"}}>...</p>
-                        <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                            <div className="row">
-                                    <h1 className="text-xl font-bold" style={{ color: "#00458B" }}>Edit Profile</h1>
-                                    <div className="col-sm-3">
-
-                                    </div>
-                                    <div className="col-sm-6">
-                                        <br />
-                                        <br />
-                                        <div className="row">
-                                            <div className="col-sm-6">
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">First Name</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={patient.fname}
-                                                        onChange={(e) => setPatient({ ...patient, fname: e.target.value })} 
-                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                                </div>
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Middle Name</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={patient.mname}
-                                                        onChange={(e) => setPatient({ ...patient, mname: e.target.value })} 
-                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                                </div>
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Last Name</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={patient.lname}
-                                                        onChange={(e) => setPatient({ ...patient, lname: e.target.value })} 
-                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                                </div>
-                                            </div>
-                                            <div className="col-sm-6">
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Gender</label>
-                                                    <select  
-                                                        value={patient.gender}
-                                                        onChange={(e) => setPatient({ ...patient, gender: e.target.value })} 
-                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" >
-                                                        <option value="male">Male</option>
-                                                        <option value="female">Female</option>
-                                                    </select>
-                                                </div>
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Age</label>
-                                                    <input 
-                                                        type="text" 
-                                                        value={patient.age}
-                                                        onChange={(e) => setPatient({ ...patient, age: e.target.value })} 
-                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                                </div>
-                                                <div class="mb-4 text-left">
-                                                    <label class="block text-[#00458b] font-semibold mb-1">Date of Birth</label>
-                                                    <input 
-                                                        type="date" 
-                                                        value={patient.date_birth}
-                                                        onChange={(e) => setPatient({ ...patient, date_birth: e.target.value })} 
-                                                        class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Home Address</label>
-                                            <input 
-                                                type="text" 
-                                                value={patient.home_address}
-                                                onChange={(e) => setPatient({ ...patient, home_address: e.target.value })} 
-                                                class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                        </div>
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">City</label>
-                                            <input 
-                                                type="text" 
-                                                value={patient.city}
-                                                onChange={(e) => setPatient({ ...patient, city: e.target.value })} 
-                                                class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                        </div>
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Email Address</label>
-                                            <input 
-                                                type="email" 
-                                                value={patient.email}
-                                                onChange={(e) => setPatient({ ...patient, email: e.target.value })} 
-                                                class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                        </div>
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Contact Number</label>
-                                            <input 
-                                                type="number" 
-                                                value={patient.contact_no}
-                                                onChange={(e) => setPatient({ ...patient, contact_no: e.target.value })} 
-                                                class="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-                                        </div>
-                                        <div class="mb-4 text-left">
-                                            <label class="block text-[#00458b] font-semibold mb-1">Blood Type</label>
-                                            <select
-                                                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                                            >
-                                                <option value="">-- Select Blood Type --</option>
-                                                <option value="O">O</option>
-                                                <option value="O+">O+</option>
-                                                <option value="O-">O-</option>
-                                                <option value="A">A</option>
-                                                <option value="A+">A+</option>
-                                                <option value="A-">A-</option>
-                                                <option value="B">B</option>
-                                                <option value="B+">B+</option>
-                                                <option value="B-">B-</option>
-                                                <option value="AB">AB</option>
-                                                <option value="AB+">AB+</option>
-                                                <option value="AB-">AB-</option>
-                                                <option value="Unknown">Unknown</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div className="col-sm-3">
-
-                                    </div>
-                                    <div className="col-sm-12">
-                                        <br />
-                                        <br /> 
-                                        <div className="row">
-                                            <div className="col-sm-6">
-                                            </div>
-                                        <div className="col-sm-6">
-                                            <div className="row">
-                                                <div className="col-sm-6">
-                                                    <button class="bg-[#FFFFFF] text-[#00c3b8] font-semibold w-full border border-[#00458b] px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatients")}>Back</button>
-                                                </div>
-                                            <div className="col-sm-6">
-                                                <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" 
-                                                    onClick={handleSave} 
-                                                >
-                                                    Save
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            </div>
-                        </div>
-                    </div>
-                    </div>
-            <div className="col-sm-2"> 
+          {/* Ledger with dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+                Chart of Accounts
+              </Link>
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+                Journal Entries
+              </Link>
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+                General Ledger
+              </Link>
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+                Trial Balance
+              </Link>
             </div>
+          )}
+
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 bg-[white] text-[#00458B] p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
+        </nav>
+      </aside>
+
+      {/* Sidebar (mobile with toggle) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            {/* Same nav as desktop */}
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <Users size={18} /> Users
+              </Link>
+              {/* ... add other links here */}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 p-8">
+
+        <div className="bg-white p-8 rounded-lg shadow-md border border-[#01D5C4]">
+          <h2 className="text-xl font-bold text-[#00458B] mb-6">Edit Profile</h2>
+
+          {/* Form */}
+          <div className="grid grid-cols-2 gap-6">
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">First Name</label>
+              <input type="text" value={patient.fname} onChange={(e) => setPatient({ ...patient, fname: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+            </div>
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">Middle Name</label>
+              <input type="text" value={patient.mname} onChange={(e) => setPatient({ ...patient, mname: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+            </div>
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">Last Name</label>
+              <input type="text" value={patient.lname} onChange={(e) => setPatient({ ...patient, lname: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+            </div>
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">Gender</label>
+              <select value={patient.gender} onChange={(e) => setPatient({ ...patient, gender: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">Date of Birth</label>
+              <input
+                type="date"
+                value={patient.date_birth}
+                onChange={(e) => setPatient({ ...patient, date_birth: e.target.value })}
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                max={new Date().toISOString().split("T")[0]} // only allow past dates
+              />
+            </div>
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">Age</label>
+              <input type="text" value={patient.age} onChange={(e) => setPatient({ ...patient, age: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <label className="block text-[#00458b] font-semibold mb-1">Home Address</label>
+            <input type="text" value={patient.home_address} onChange={(e) => setPatient({ ...patient, home_address: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+          </div>
+
+          <div className="mt-6">
+            <label className="block text-[#00458b] font-semibold mb-1">City</label>
+            <input type="text" value={patient.city} onChange={(e) => setPatient({ ...patient, city: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+          </div>
+
+          <div className="mt-6">
+            <label className="block text-[#00458b] font-semibold mb-1">Province</label>
+            <input type="text" value={patient.province} onChange={(e) => setPatient({ ...patient, province: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+          </div>
+
+          <div className="mt-6">
+            <label className="block text-[#00458b] font-semibold mb-1">Email Address</label>
+            <input type="email" value={patient.email} onChange={(e) => setPatient({ ...patient, email: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+          </div>
+
+          <div className="mt-6">
+            <label className="block text-[#00458b] font-semibold mb-1">Contact Number</label>
+            <input
+              type="text"
+              value={patient.contact_no}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Only allow digits and max length 11
+                if (/^\d{0,11}$/.test(val)) {
+                  setPatient({ ...patient, contact_no: val });
+                }
+              }}
+              placeholder="Enter 11-digit number"
+              className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+              required
+              pattern="\d{11}"
+              title="Contact number must be exactly 11 digits"
+            />
+          </div>
+
+          <div className="flex justify-end gap-4 mt-8">
+            <button className="bg-white text-[#00c3b8] border border-[#00458b] px-6 py-2 rounded-full" onClick={() => navigate("/adminpatients")}>Back</button>
+            <button className="bg-[#00c3b8] text-white px-6 py-2 rounded-full" onClick={handleSave}>Save</button>
           </div>
         </div>
       </div>

@@ -1,0 +1,300 @@
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { BarChart3, Menu, X, Package, AlertTriangle, Clock } from "lucide-react";
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
+
+function InventoryDashboard() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [inventory, setInventory] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch inventory data from backend
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const token = localStorage.getItem("token"); // staff login token
+        const res = await fetch("http://localhost:3000/auth/inventory", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!res.ok) throw new Error("Failed to fetch inventory");
+        const data = await res.json();
+        setInventory(data);
+      } catch (err) {
+        console.error("Error fetching inventory:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
+
+  const totalItems = inventory.length;
+
+  const totalQuantity = inventory.reduce(
+    (sum, item) => sum + Number(item.inv_quantity || 0),
+    0
+  );
+
+  // Low stock: quantity <= 10
+  const lowStock = inventory.filter((item) => Number(item.inv_quantity) <= 50).length;
+
+  // Expiring Soon: within 30 days
+  const expiringSoon = inventory.filter((item) => {
+    if (!item.inv_exp_date) return false;
+    const expDate = new Date(item.inv_exp_date);
+    const today = new Date();
+    const diffDays = (expDate - today) / (1000 * 60 * 60 * 24);
+    return diffDays > 0 && diffDays <= 30;
+  }).length;
+
+  // ======= CHARTS =======
+
+  // Chart 1: Inventory Status (Low vs In Stock)
+  const lowCount = inventory.filter((item) => Number(item.inv_quantity) <= 50).length;
+  const inStockCount = inventory.filter((item) => Number(item.inv_quantity) > 10).length;
+
+  const statusData = [
+    { status: "Low Stock", count: lowCount },
+    { status: "In Stock", count: inStockCount },
+  ];
+
+  // Chart 2: Top 5 items by quantity
+  const topItemsData = [...inventory]
+    .sort((a, b) => b.inv_quantity - a.inv_quantity)
+    .slice(0, 5)
+    .map((item) => ({
+      name: item.inv_item_name,
+      quantity: item.inv_quantity,
+    }));
+
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
+        <h2 className="text-xl font-bold mb-8">Inventory Staff</h2>
+        <nav className="flex flex-col gap-2">
+          <Link
+            to="/inventorydashboard"
+            className="flex items-center gap-2 bg-[#01D5C4] text-white p-2 rounded-lg"
+          >
+            <BarChart3 size={18} /> Dashboard
+          </Link>
+          <Link
+            to="/inventory"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+          >
+            <Package size={18} /> Inventory
+          </Link>
+        </nav>
+      </aside>
+
+      {/* Sidebar (mobile with toggle) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Inventory Staff</h2>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              <Link
+                to="/inventory"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <Package size={18} /> Inventory
+              </Link>
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-8">
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
+        >
+          <Menu size={24} /> Menu
+        </button>
+
+        <h1 className="text-2xl font-bold text-[#00458B] mb-6">
+          Inventory Dashboard
+        </h1>
+
+        {loading ? (
+          <p>Loading inventory data...</p>
+        ) : (
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-[#01D5C4]">
+                <Package className="text-[#00458B]" size={32} />
+                <div>
+                  <h2 className="text-lg font-semibold">Total Items</h2>
+                  <p className="text-2xl font-bold">{totalItems}</p>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-[#01D5C4]">
+                <BarChart3 className="text-[#00458B]" size={32} />
+                <div>
+                  <h2 className="text-lg font-semibold">Total Quantity</h2>
+                  <p className="text-2xl font-bold">{totalQuantity}</p>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-red-500">
+                <AlertTriangle className="text-red-500" size={32} />
+                <div>
+                  <h2 className="text-lg font-semibold">Low Stock</h2>
+                  <p className="text-2xl font-bold">{lowStock}</p>
+                </div>
+              </div>
+              <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-yellow-500">
+                <Clock className="text-yellow-500" size={32} />
+                <div>
+                  <h2 className="text-lg font-semibold">Expiring Soon</h2>
+                  <p className="text-2xl font-bold">{expiringSoon}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {/* Status Distribution */}
+              <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#00458B]">
+                  <BarChart3 size={20} /> Inventory Status
+                </h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={statusData}>
+                    <XAxis dataKey="status" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="count" fill="#01D5C4" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* Top 5 Items by Quantity */}
+              <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#00458B]">
+                  <Package size={20} /> Top 5 Items by Quantity
+                </h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={topItemsData}>
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="quantity" fill="#00458B" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Expiring Soon */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 mb-8">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-yellow-600">
+                <Clock size={20} /> Expiring Soon Items (within 30 days)
+              </h2>
+              {expiringSoon > 0 ? (
+                <table className="w-full border-collapse border border-gray-200">
+                  <thead>
+                    <tr className="bg-gray-100 text-[#00458B]">
+                      <th className="px-4 py-2 text-left">Item Name</th>
+                      <th className="px-4 py-2 text-center">Quantity</th>
+                      <th className="px-4 py-2 text-center">Expiration Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inventory
+                      .filter((item) => {
+                        if (!item.inv_exp_date) return false;
+                        const expDate = new Date(item.inv_exp_date);
+                        const today = new Date();
+                        const diffDays = (expDate - today) / (1000 * 60 * 60 * 24);
+                        return diffDays > 0 && diffDays <= 30;
+                      })
+                      .map((item) => (
+                        <tr key={item.inv_id} className="border-b border-gray-200">
+                          <td className="px-4 py-2">{item.inv_item_name}</td>
+                          <td className="px-4 py-2 text-center">{item.inv_quantity}</td>
+                          <td className="px-4 py-2 text-center">
+                            {new Date(item.inv_exp_date).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-gray-500">No expiring items soon.</p>
+              )}
+            </div>
+
+            {/* Low Stock Table */}
+            <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+              <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-red-600">
+                <AlertTriangle size={20} /> Low Stock Items 
+              </h2>
+
+              {inventory.filter((item) => Number(item.inv_quantity) <= 50).length > 0 ? (
+                <table className="w-full border-collapse border border-gray-200">
+                  <thead>
+                    <tr className="bg-gray-100 text-[#00458B]">
+                      <th className="px-4 py-2 text-left">Item Name</th>
+                      <th className="px-4 py-2 text-center">Quantity</th>
+                      <th className="px-4 py-2 text-center">Status</th>
+                      <th className="px-4 py-2 text-center">Expiration Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {inventory
+                      .filter((item) => Number(item.inv_quantity) <= 50)
+                      .map((item) => (
+                        <tr key={item.inv_id} className="border-b border-gray-200">
+                          <td className="px-4 py-2">{item.inv_item_name}</td>
+                          <td className="px-4 py-2 text-center">{item.inv_quantity}</td>
+                          <td className="px-4 py-2 text-center text-red-600 font-bold">
+                            Low
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            {item.inv_exp_date
+                              ? new Date(item.inv_exp_date).toLocaleDateString()
+                              : "N/A"}
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p className="text-gray-500">No low stock items.</p>
+              )}
+            </div>
+          </>
+        )}
+      </main>
+    </div>
+  );
+}
+
+export default InventoryDashboard;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link, useParams } from "react-router-dom";
 import axios from "axios";
 import {
   BarChart3,
@@ -7,21 +7,22 @@ import {
   Calendar,
   Menu,
   X,
-  Package,
 } from "lucide-react";
 
-const AdminCoaAdd = () => {
+const AdminCoaViewEdit = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
+  const { id } = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
-  const [accountName, setAccountName] = useState("");
-  const [accountType, setAccountType] = useState("Asset");
+  const [sub, setAccount] = useState({
+    account_name: "",
+  });
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Scroll to section if needed
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -33,25 +34,33 @@ const AdminCoaAdd = () => {
     }
   }, [location]);
 
+  // Fetch account by ID
+  useEffect(() => {
+    const fetchSubAccounts = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/subacc/${id}`);
+        setAccount(res.data);
+      } catch (err) {
+        console.error("Error fetching subaccounts:", err);
+      }
+    };
+    if (id) {
+      fetchSubAccounts();
+    }
+  }, [id]);
+
+  // Save handler
   const handleSave = async () => {
     setErrorMessage("");
     setSuccessMessage("");
 
-    if (!accountName) {
-      setErrorMessage("Account Name is required");
-      return;
-    }
-
     try {
-      const response = await axios.post("http://localhost:3000/auth/coa", {
-        account_name: accountName,
-        account_type: accountType,
+      const response = await axios.put(`http://localhost:3000/auth/sub/${id}`, {
+        account_name: sub.account_name,
       });
 
-      setSuccessMessage(response.data.message || "Account saved successfully!");
-      setAccountName("");
-      setAccountType("Asset");
-      setTimeout(() => navigate("/admincoa"), 1500);
+      setSuccessMessage(response.data.message || "Account updated successfully!");
+      setTimeout(() => navigate(-1), 1500);
     } catch (err) {
       console.error(err);
       setErrorMessage(err.response?.data?.message || "Something went wrong");
@@ -71,7 +80,7 @@ const AdminCoaAdd = () => {
             <BarChart3 size={18} /> Dashboard
           </Link>
 
-          {/* Ledger with dropdown */}
+          {/* Ledger dropdown */}
           <button
             onClick={() => setIsLedgerOpen(!isLedgerOpen)}
             className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
@@ -175,38 +184,22 @@ const AdminCoaAdd = () => {
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add New Account
+            Edit Sub-Account
           </h1>
 
           <div className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account Name
+                Sub-Account Name
               </label>
               <input
                 type="text"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
+                value={sub.account_name}
+                onChange={(e) =>
+                  setAccount({ ...sub, account_name: e.target.value })
+                }
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account Type
-              </label>
-              <select
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="Asset">Asset</option>
-                <option value="Revenue">Revenue</option>
-                <option value="Liability">Liability</option>
-                <option value="Equity">Equity</option>
-                <option value="Income">Income</option>
-                <option value="Expense">Expense</option>
-              </select>
             </div>
 
             {errorMessage && (
@@ -220,7 +213,7 @@ const AdminCoaAdd = () => {
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/admincoa")}
+                onClick={() => navigate(-1)}
               >
                 Back to List
               </button>
@@ -240,4 +233,4 @@ const AdminCoaAdd = () => {
   );
 };
 
-export default AdminCoaAdd;
+export default AdminCoaViewEdit;

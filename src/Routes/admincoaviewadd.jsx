@@ -1,27 +1,33 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link, useParams } from "react-router-dom";
 import axios from "axios";
-import {
-  BarChart3,
-  Users,
-  Calendar,
-  Menu,
-  X,
-  Package,
-} from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
-const AdminCoaAdd = () => {
+const AdminCoaViewAdd = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
+  const { id } = useParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
+  // State
   const [accountName, setAccountName] = useState("");
-  const [accountType, setAccountType] = useState("Asset");
+  const [subaccounts, setSubaccounts] = useState([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  // Fetch subaccounts
+  const fetchSubaccounts = async () => {
+    try {
+      const res = await axios.get(`http://localhost:3000/auth/coa/${id}/subaccounts`);
+      setSubaccounts(res.data);
+    } catch (err) {
+      console.error("Error fetching subaccounts:", err);
+      setErrorMessage("Failed to load subaccounts.");
+    }
+  };
+
+  // Scroll to section if needed + fetch data
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -31,8 +37,10 @@ const AdminCoaAdd = () => {
         }, 100);
       }
     }
-  }, [location]);
+    if (id) fetchSubaccounts();
+  }, [location, id]);
 
+  // Save handler
   const handleSave = async () => {
     setErrorMessage("");
     setSuccessMessage("");
@@ -43,18 +51,17 @@ const AdminCoaAdd = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:3000/auth/coa", {
-        account_name: accountName,
-        account_type: accountType,
-      });
+      const response = await axios.post(
+        `http://localhost:3000/auth/coa/${id}/subaccounts`,
+        { account_name: accountName }
+      );
 
       setSuccessMessage(response.data.message || "Account saved successfully!");
       setAccountName("");
-      setAccountType("Asset");
-      setTimeout(() => navigate("/admincoa"), 1500);
+      setTimeout(() => navigate(-1), 1500);
     } catch (err) {
       console.error(err);
-      setErrorMessage(err.response?.data?.message || "Something went wrong");
+      setErrorMessage(err.response?.data?.error || "Something went wrong");
     }
   };
 
@@ -71,7 +78,7 @@ const AdminCoaAdd = () => {
             <BarChart3 size={18} /> Dashboard
           </Link>
 
-          {/* Ledger with dropdown */}
+          {/* Ledger dropdown */}
           <button
             onClick={() => setIsLedgerOpen(!isLedgerOpen)}
             className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
@@ -89,7 +96,10 @@ const AdminCoaAdd = () => {
               <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/adminsubsidiaryreceivable"
+                className="hover:bg-[white] hover:text-[#00458B]"
+              >
                 Subsidiary
               </Link>
               <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
@@ -175,13 +185,13 @@ const AdminCoaAdd = () => {
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add New Account
+            Add New Sub-Account
           </h1>
 
           <div className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account Name
+                Sub-Account Name
               </label>
               <input
                 type="text"
@@ -189,24 +199,6 @@ const AdminCoaAdd = () => {
                 onChange={(e) => setAccountName(e.target.value)}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account Type
-              </label>
-              <select
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="Asset">Asset</option>
-                <option value="Revenue">Revenue</option>
-                <option value="Liability">Liability</option>
-                <option value="Equity">Equity</option>
-                <option value="Income">Income</option>
-                <option value="Expense">Expense</option>
-              </select>
             </div>
 
             {errorMessage && (
@@ -220,7 +212,7 @@ const AdminCoaAdd = () => {
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/admincoa")}
+                onClick={() => navigate(-1)}
               >
                 Back to List
               </button>
@@ -240,4 +232,4 @@ const AdminCoaAdd = () => {
   );
 };
 
-export default AdminCoaAdd;
+export default AdminCoaViewAdd;

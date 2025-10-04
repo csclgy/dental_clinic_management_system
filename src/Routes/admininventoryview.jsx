@@ -1,62 +1,39 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import axios from "axios";
-import {
-  BarChart3,
-  Users,
-  Calendar,
-  Menu,
-  X,
-  Package,
-} from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
-const AdminCoaAdd = () => {
-  const location = useLocation();
+const AdminInventoryView = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
 
+  const [item, setItem] = useState(null);   // for single item
+  const [pendingItems, setPendingItems] = useState([]); // but you never declared this
+  const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
-  const [accountName, setAccountName] = useState("");
-  const [accountType, setAccountType] = useState("Asset");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
-
   useEffect(() => {
-    if (location.state?.scrollTo) {
-      const element = document.getElementById(location.state.scrollTo);
-      if (element) {
-        setTimeout(() => {
-          element.scrollIntoView({ behavior: "smooth" });
-        }, 100);
+    const fetchItem = async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:3000/auth/viewitem/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        console.log("API Response:", res.data);
+        setItem(res.data);
+      } catch (err) {
+        console.error("Error fetching item:", err);
+      } finally {
+        setLoading(false);
       }
-    }
-  }, [location]);
-
-  const handleSave = async () => {
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    if (!accountName) {
-      setErrorMessage("Account Name is required");
-      return;
-    }
-
-    try {
-      const response = await axios.post("http://localhost:3000/auth/coa", {
-        account_name: accountName,
-        account_type: accountType,
-      });
-
-      setSuccessMessage(response.data.message || "Account saved successfully!");
-      setAccountName("");
-      setAccountType("Asset");
-      setTimeout(() => navigate("/admincoa"), 1500);
-    } catch (err) {
-      console.error(err);
-      setErrorMessage(err.response?.data?.message || "Something went wrong");
-    }
-  };
+    };
+    fetchItem();
+  }, [id]);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -109,7 +86,7 @@ const AdminCoaAdd = () => {
           </Link>
           <Link
             to="/admininventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 bg-[white] text-[#00458B] p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
             <i className="fa fa-archive"></i> Inventory
           </Link>
@@ -145,6 +122,7 @@ const AdminCoaAdd = () => {
               <X size={24} />
             </button>
             <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            {/* Same nav as desktop */}
             <nav className="flex flex-col gap-2">
               <Link
                 to="/admindashboard"
@@ -158,6 +136,7 @@ const AdminCoaAdd = () => {
               >
                 <Users size={18} /> Users
               </Link>
+              {/* ... add other links here */}
             </nav>
           </aside>
         </div>
@@ -165,7 +144,6 @@ const AdminCoaAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -174,70 +152,84 @@ const AdminCoaAdd = () => {
         </button>
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
-          <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add New Account
-          </h1>
-
-          <div className="space-y-6">
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account Name
-              </label>
-              <input
-                type="text"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
+        {item && (
+        <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Item Details */}
+            <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="text-lg font-bold text-[#00458B] mb-4">Item Details</h3>
+                <dl className="space-y-2">
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Item:</dt>
+                    <dd>{item.inv_item_name}</dd>
+                </div>
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Type:</dt>
+                    <dd>{item.inv_item_type}</dd>
+                </div>
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Quantity:</dt>
+                    <dd>{item.inv_quantity}</dd>
+                </div>
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Price per Item:</dt>
+                    <dd>₱{item.inv_price_per_item}</dd>
+                </div>
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Status:</dt>
+                    <dd>{item.inv_status}</dd>
+                </div>
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Item Status:</dt>
+                    <dd>{item.inv_item_status}</dd>
+                </div>
+                </dl>
             </div>
 
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account Type
-              </label>
-              <select
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="Asset">Asset</option>
-                <option value="Revenue">Revenue</option>
-                <option value="Liability">Liability</option>
-                <option value="Equity">Equity</option>
-                <option value="Income">Income</option>
-                <option value="Expense">Expense</option>
-              </select>
+            {/* Supplier Info */}
+            <div className="bg-gray-50 p-4 rounded-lg border">
+                <h3 className="text-lg font-bold text-[#00458B] mb-4">Supplier Info</h3>
+                <dl className="space-y-2">
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Name:</dt>
+                    <dd>{item.supplier_name}</dd>
+                </div>
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Contact Person:</dt>
+                    <dd>{item.contact_person}</dd>
+                </div>
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Contact No:</dt>
+                    <dd>{item.contact_no}</dd>
+                </div>
+                <div className="flex justify-between">
+                    <dt className="font-semibold">Description:</dt>
+                    <dd>{item.supplier_description}</dd>
+                </div>
+                </dl>
+            </div>
             </div>
 
-            {errorMessage && (
-              <p className="text-red-500 font-medium">{errorMessage}</p>
-            )}
-            {successMessage && (
-              <p className="text-green-600 font-medium">{successMessage}</p>
-            )}
-
-            <div className="flex justify-end gap-4 mt-6">
-              <button
-                type="button"
-                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/admincoa")}
-              >
-                Back to List
-              </button>
-
-              <button
-                type="button"
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
-                onClick={handleSave}
-              >
-                Save
-              </button>
+            {/* Buttons */}
+            <div className="flex justify-end gap-4 mt-8">
+            <button
+                onClick={() => navigate("/admininventory")}
+                className="bg-gray-200 text-[#00458B] px-6 py-2 rounded-lg"
+            >
+                Back
+            </button>
+            <Link to={`/admininventoryedit/${item.inv_id}`}>
+                <button className="bg-[#00c3b8] text-white px-6 py-2 rounded-lg hover:bg-[#00a99d]">
+                Edit
+                </button>
+            </Link>
             </div>
-          </div>
+        </>
+        )}
         </div>
       </main>
     </div>
   );
 };
 
-export default AdminCoaAdd;
+export default AdminInventoryView;

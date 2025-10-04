@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link, useParams } from "react-router-dom";
 import axios from "axios";
+import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
 const AdminConsultationAdd = () => {
   const location = useLocation();
   const patient = location.state?.patient;
   const navigate = useNavigate();
-  const { id } = useParams(); // patient_id or appoint_id if passed in route
+  const { id } = useParams();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
   // Form states
   const [dateOfVisit, setDateOfVisit] = useState("");
@@ -15,23 +19,17 @@ const AdminConsultationAdd = () => {
   const [preferredTime, setPreferredTime] = useState("");
   const [dentists, setDentists] = useState([]);
 
-  // Patient data
-  const [fname, setFname] = useState(patient?.fname || "");
-  const [lname, setLname] = useState(patient?.lname || "");
-  const [email, setEmail] = useState(patient?.email || "");
-
   const handleSaveConsultation = async () => {
     try {
       const payload = {
         procedure_type: procedureType,
         pref_date: dateOfVisit,
-        pref_time: "",
+        pref_time: preferredTime,
         attending_dentist: dentist,
         appointment_status: "pending",
 
-        // patient info
-        user_name: patient?.user_name,     
-        p_blood_type: patient?.blood_type, 
+        user_name: patient?.user_name,
+        p_blood_type: patient?.blood_type,
         p_fname: patient?.fname,
         p_mname: patient?.mname,
         p_lname: patient?.lname,
@@ -41,19 +39,13 @@ const AdminConsultationAdd = () => {
         p_home_address: patient?.home_address,
         p_email: patient?.email,
         p_contact_no: patient?.contact_no,
-        pref_time: preferredTime,
       };
 
-      console.log("Payload being sent:", payload);
-
       const token = localStorage.getItem("token");
-      const res = await axios.post(
-        "http://localhost:3000/auth/createconsultation",
-        payload,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.post("http://localhost:3000/auth/createconsultation", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      console.log("Consultation created:", res.data);
       alert("Consultation created successfully!");
       navigate("/adminpatients");
     } catch (err) {
@@ -78,259 +70,252 @@ const AdminConsultationAdd = () => {
   ];
 
   useEffect(() => {
-  const fetchDentists = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:3000/auth/dentists", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setDentists(res.data);
-    } catch (err) {
-      console.error("Error fetching dentists:", err);
-    }
-  };
-  fetchDentists();
-}, []);
+    const fetchDentists = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:3000/auth/dentists", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDentists(res.data);
+      } catch (err) {
+        console.error("Error fetching dentists:", err);
+      }
+    };
+    fetchDentists();
+  }, []);
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            {/* Sidebar */}
-            <div
-              className="col-sm-3 p-5 rounded-lg shadow-lg"
-              style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
-            >
-              {/* Dashboard */}
-              <Link to="/">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-tachometer" aria-hidden="true"></i>{" "}
-                  Dashboard
-                </button>
-              </Link>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <nav className="flex flex-col gap-2">
+          <Link
+            to="/admindashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <BarChart3 size={18} /> Dashboard
+          </Link>
 
-              {/* Users */}
-              <Link to="/adminusers">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-users" aria-hidden="true"></i> Users
-                </button>
+          {/* Ledger dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+                Chart of Accounts
               </Link>
-
-              {/* Inventory */}
-              <Link to="/admininventory">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-archive" aria-hidden="true"></i> Inventory
-                </button>
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+                Journal Entries
               </Link>
-
-              {/* Patients */}
-              <Link to="/adminpatients">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00c3b8" }}
-                >
-                  <i className="fa fa-user-plus" aria-hidden="true"></i>{" "}
-                  Patients
-                </button>
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
               </Link>
-
-              {/* Schedule */}
-              <Link to="/adminschedule">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-calendar" aria-hidden="true"></i>{" "}
-                  Schedules
-                </button>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+                General Ledger
               </Link>
-
-              {/* Audit Trail */}
-              <Link to="/adminaudit">
-                <button
-                  className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                  style={{ color: "#00458B" }}
-                >
-                  <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
-                </button>
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+                Trial Balance
               </Link>
             </div>
+          )}
 
-            {/* Main Content */}
-            <div className="col-sm-8">
-              <div className="row">
-                <div
-                  className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg"
-                  style={{ color: "white" }}
-                >
-                  <div className="row">
-                    <div className="col-sm-10">
-                      <h1 className="text-2xl font-bold">Patients Record</h1>
-                    </div>
-                  </div>
-                </div>
-                <p style={{ color: "transparent" }}>...</p>
-                <div
-                  className="col-sm-12 p-10 rounded-lg shadow-lg"
-                  style={{ border: "solid", borderColor: "#01D5C4" }}
-                >
-                  <div className="row">
-                    <div className="col-sm-12">
-                      <h1
-                        className="text-2xl font-bold"
-                        style={{ color: "#00458B" }}
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
+        </nav>
+      </aside>
+
+      {/* Sidebar (mobile with toggle) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <Users size={18} /> Users
+              </Link>
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-8">
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
+        >
+          <Menu size={24} /> Menu
+        </button>
+
+        <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
+          <h1 className="text-2xl font-bold text-[#00458B] mb-6">
+            Create New Consultation
+          </h1>
+
+          {/* Consultation Form */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Left Side */}
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                  Date of Visit
+                </label>
+                <input
+                  type="date"
+                  value={dateOfVisit}
+                  onChange={(e) => setDateOfVisit(e.target.value)}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-4"
+                  min={new Date().toISOString().split("T")[0]} // today or future dates only
+                />
+
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Preferred Time
+              </label>
+              <select
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-4"
+                value={preferredTime}
+                onChange={(e) => setPreferredTime(e.target.value)}
+              >
+                <option value="">Select a time</option>
+                {[
+                  "8:00AM",
+                  "9:00AM",
+                  "10:00AM",
+                  "11:00AM",
+                  "12:00PM",
+                  "1:00PM",
+                  "2:00PM",
+                  "3:00PM",
+                  "4:00PM",
+                  "5:00PM",
+                ].map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Attending Dentist
+              </label>
+              <select
+                value={dentist}
+                onChange={(e) => setDentist(e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              >
+                <option value="">Select Dentist</option>
+                {dentists.map((d) => (
+                  <option key={d.user_id} value={`${d.fname} ${d.lname}`}>
+                    Dr. {d.fname} {d.lname}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Right Side */}
+            <div>
+              <p className="text-xl font-bold text-[#00458B] mb-4">Services</p>
+              <div className="grid grid-cols-2 gap-4">
+                {procedureTypes.map((type, index) => (
+                  <label
+                    key={index}
+                    className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition"
+                  >
+                    <input
+                      type="radio"
+                      className="hidden peer"
+                      id={`procedure-${index}`}
+                      name="procedure_type"
+                      value={type}
+                      checked={procedureType === type}
+                      onChange={() => setProcedureType(type)}
+                    />
+                    <span className="w-5 h-5 border-2 border-blue-300 rounded-sm flex items-center justify-center peer-checked:bg-blue-700 transition">
+                      <svg
+                        className="w-3 h-3 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
                       >
-                        Create New Consultation
-                      </h1>
-                    </div>
-                  </div>
-
-                  <hr />
-
-                  {/* Consultation Form */}
-                  <div className="col-sm-12">
-                    <br />
-                    <div className="row">
-                      <div className="col-sm-6">
-                        {/* Date + Dentist */}
-                        <div className="mb-4 text-left">
-                          <label className="block text-[#00458b] font-semibold mb-1">
-                            Date of Visit
-                          </label>
-                          <input
-                            type="date"
-                            value={dateOfVisit}
-                            onChange={(e) => setDateOfVisit(e.target.value)}
-                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                          />
-                        </div>
-
-                        {/* Preferred Time */}
-                        <div className="mb-4 text-left">
-                        <label className="block text-[#00458b] font-semibold mb-1">
-                            Preferred Time
-                        </label>
-                        <select
-                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                            value={preferredTime}
-                            onChange={(e) => setPreferredTime(e.target.value)}
-                        >
-                            <option value="">Select a time</option>
-                            {[
-                            "8:00AM",
-                            "9:00AM",
-                            "10:00AM",
-                            "11:00AM",
-                            "12:00PM",
-                            "1:00PM",
-                            "2:00PM",
-                            "3:00PM",
-                            "4:00PM",
-                            "5:00PM",
-                            ].map((time) => (
-                            <option key={time} value={time}>
-                                {time}
-                            </option>
-                            ))}
-                        </select>
-                        </div>
-
-                        <div className="mb-4 text-left">
-                          <label className="block font-semibold text-[#00458b] mb-1">
-                            Attending Dentist
-                          </label>
-                          <select
-                            value={dentist}
-                            onChange={(e) => setDentist(e.target.value)}
-                            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                          >
-                            <option value="">Select Dentist</option>
-                            {dentists.map((d) => (
-                              <option key={d.user_id} value={`${d.fname} ${d.lname}`}>
-                                Dr. {d.fname} {d.lname}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="col-sm-6">
-                        <p className="text-2xl font-bold" style={{ color: "#00458B" }}>
-                          Services
-                        </p>
-                        <br />
-                        <form className="grid grid-cols-2 gap-x-12 gap-y-4">
-                          {procedureTypes.map((type, index) => (
-                            <label
-                              key={index}
-                              className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-gray-100 transition"
-                            >
-                              <input
-                                type="radio"
-                                className="hidden peer"
-                                id={`procedure-${index}`}
-                                name="procedure_type"
-                                value={type}
-                                checked={procedureType === type}
-                                onChange={() => setProcedureType(type)}
-                              />
-                              <span className="w-5 h-5 border-2 border-blue-300 rounded-sm flex items-center justify-center peer-checked:bg-blue-700 transition">
-                                <svg
-                                  className="w-3 h-3 text-white"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M5 13l4 4L19 7"
-                                  />
-                                </svg>
-                              </span>
-                              <span className="text-blue-800 tracking-wide">
-                                {type}
-                              </span>
-                            </label>
-                          ))}
-                        </form>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Save Button */}
-                  <div className="col-sm-12 mt-6">
-                    <div className="row">
-                      <div className="col-sm-6"></div>
-                      <div className="col-sm-6">
-                        <button
-                          className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4"
-                          onClick={handleSaveConsultation}
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </span>
+                    <span className="text-blue-800 tracking-wide">
+                      {type}
+                    </span>
+                  </label>
+                ))}
               </div>
             </div>
+          </div>
 
-            <div className="col-sm-2"></div>
+          {/* Save Button */}
+          <div className="flex justify-end mt-6">
+            <button
+              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+              onClick={handleSaveConsultation}
+            >
+              Save Consultation
+            </button>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

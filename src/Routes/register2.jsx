@@ -158,6 +158,8 @@ const Register2 = () => {
                 value={registerData.date_birth || ""}
                 onChange={(e) => handleDateChange(e.target.value)}
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-[#00c3b8]"
+                max={new Date().toISOString().split("T")[0]} // prevents today & future dates
+                required
               />
             </div>
 

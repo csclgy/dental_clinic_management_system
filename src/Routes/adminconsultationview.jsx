@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
+import {
+  BarChart3,
+  Users,
+  Calendar,
+  X,
+} from "lucide-react";
 
 const Adminconsultationview = () => {
   const { appointId } = useParams();
@@ -8,35 +14,37 @@ const Adminconsultationview = () => {
   const navigate = useNavigate();
 
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   const [patient, setPatient] = useState(null);
   const [consultation, setConsultation] = useState(null);
   const [chargedItems, setChargedItems] = useState([]);
   const [error, setError] = useState("");
 
-  const [loading, setLoading] = useState(false); // ✅ add this
+  const [loading, setLoading] = useState(false);
   const [appointments, setAppointments] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [dentists, setDentists] = useState([]);
-
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const [cancelInfo, setCancelInfo] = useState(null);
 
-
-useEffect(() => {
+  useEffect(() => {
     const fetchConsultation = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`http://localhost:3000/auth/displayconsultation/${appointId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
+        const res = await fetch(
+          `http://localhost:3000/auth/displayconsultation/${appointId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         if (!res.ok) throw new Error("Failed to fetch consultation");
 
         const data = await res.json();
-        console.log("API response:", data);  
         setConsultation(data.consultation);
         setChargedItems(data.chargedItems || []);
         setSelectedTeeth(data.selectedTeeth || []);
@@ -51,22 +59,21 @@ useEffect(() => {
     fetchConsultation();
   }, [appointId]);
 
-    useEffect(() => {
-  const fetchDentists = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:3000/auth/dentists", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setDentists(res.data);
-    } catch (err) {
-      console.error("Error fetching dentists:", err);
-    }
-  };
-  fetchDentists();
-}, []);
+  useEffect(() => {
+    const fetchDentists = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:3000/auth/dentists", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDentists(res.data);
+      } catch (err) {
+        console.error("Error fetching dentists:", err);
+      }
+    };
+    fetchDentists();
+  }, []);
 
-  // Scroll effect
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -340,143 +347,121 @@ useEffect(() => {
   if (!consultation) return <p>Loading consultation...</p>;
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            <div
-                className="col-sm-3 p-5 rounded-lg shadow-lg"
-                style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
-                >
-                {/* Dashboard */}
-                <Link to="/">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-tachometer" aria-hidden="true"></i> Dashboard
-                    </button>
-                </Link>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <nav className="flex flex-col gap-2">
+          <Link
+            to="/admindashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <BarChart3 size={18} /> Dashboard
+          </Link>
 
-                {/* Ledger with Dropdown */}
-                <button
-                    onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                    className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                >
-                    <span>
-                    <i className="fa fa-book" aria-hidden="true"></i> Ledger
-                    </span>
-                    <i
-                    className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`}
-                    aria-hidden="true"
-                    ></i>
-                </button>
+          {/* Ledger dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+                Chart of Accounts
+              </Link>
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+                Journal Entries
+              </Link>
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+                General Ledger
+              </Link>
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+                Trial Balance
+              </Link>
+            </div>
+          )}
 
-                {isLedgerOpen && (
-                    <div className="ml-8 text-sm">
-                    <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Chart of Accounts
-                        </p>
-                    </Link>
-                    <Link to="/adminjournal">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Journal Entries
-                        </p>
-                    </Link>
-                    <Link to="/admingeneral">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        General Ledger
-                        </p>
-                    </Link>
-                    <Link to="/admintrial">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Trial Balance
-                        </p>
-                    </Link>
-                    </div>
-                )}
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
+        </nav>
+      </aside>
 
-                {/* Users */}
-                <Link to="/adminusers">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-users" aria-hidden="true"></i> Users
-                    </button>
-                </Link>
-
-                {/* Inventory */}
-                <Link to="/admininventory">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-archive" aria-hidden="true"></i> Inventory
-                    </button>
-                </Link>
-
-                {/* Patients */}
-                <Link to="/adminpatients">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
-                    </button>
-                </Link>
-
-                {/* Schedule */}
-                <Link to="/adminschedule">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
-                    </button>
-                </Link>
-
-                {/* Audit Trail */}
-                <Link to="/adminaudit">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
-                    </button>
-                </Link>
-                </div>
-                <div className="col-sm-8">
-                    <div className="row">
-                        <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
-                            <div className="row">
-                                <div className="col-sm-10">
-                                    <h1 className="text-2xl font-bold">Patients Record</h1>
-                                </div>
-                                <div className="col-sm-2">
-                                </div>
-                            </div>
-                        </div>
-                        <p style={{color:"transparent"}}>...</p>
-                        <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                            <div className="row">
+      {/* Sidebar (mobile) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <Users size={18} /> Users
+              </Link>
+              {/* add the rest of the links like desktop here */}
+            </nav>
+          </aside>
+        </div>
+      )}
+      <div className="flex-1 flex flex-col">
+                <main className="p-6 overflow-y-auto space-y-6">
+                  <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
                                 <div className="col-sm-12">
                                     <div className="row">
                                         <div className="col-sm-9">
                                             <h1 className="text-2xl font-bold" style={{color:"#00458B"}}>Patients Information</h1>
                                         </div>
-                                        <div className="col-sm-3">
-                                                <button className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" 
-                                                    onClick={() => navigate(`/adminpatientsedit/${patient.user_id}`)}
-                                                >
-                                                    Edit Profile
-                                                </button>
-                                        </div>
                                     </div>
                                 </div>
-
+                                <br></br>
                                 <hr></hr>
 
                                 <div className="col-sm-12">
@@ -505,9 +490,6 @@ useEffect(() => {
                                         <p className="font-bold">Blood Type:</p><p>{consultation.p_blood_type}</p>
                                     </div>
                                 </div>
-                                    <br />
-                                    <br />
-                                    <br />
                                 </div>
 
                                <br />
@@ -517,7 +499,7 @@ useEffect(() => {
                                     <br />
                                     <div className="row">
                                         <div className="col-sm-6" style={{color:"#00458B"}}>
-                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date}</p>
+                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date} | {consultation.pref_time}</p>
                                             <br />
                                             <p className="font-bold">Attending Dentist:</p><p>{consultation.attending_dentist}</p>
                                             <br />
@@ -605,7 +587,7 @@ useEffect(() => {
 
                                         {consultation.appointment_status !== "incomplete" && consultation.appointment_status !== "done"  && consultation.appointment_status !== "cancelled" ? (
                                           <button
-                                            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full"
+                                            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
                                             onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
                                           >
                                             Edit Billing
@@ -620,6 +602,20 @@ useEffect(() => {
                                             overflowY: "auto",    // 🔹 enables vertical scrolling
                                           }}
                                         >
+                                          <div className="col-sm-12 mb-2">
+                                            <div className="row">
+                                              <div className="col-sm-4">
+                                                <p className="font-bold">OR Number:</p><p>{consultation.or_num} </p>
+                                              </div>
+                                              <div className="col-sm-4">
+                                                <p className="font-bold mb-2">Payment Method:</p> <p>{consultation.payment_method} </p>
+                                              </div>
+                                              <div className="col-sm-4">
+                                                <p className="font-bold mb-2">Payment Status:</p> <p>{consultation.payment_status} </p>
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <hr className="mb-2"></hr>
                                           <p className="font-bold mb-2">Charged Service</p>
                                           <p>
                                             {consultation.procedure_type} - ₱{consultation.total_service_charged.toFixed(2)}
@@ -708,8 +704,7 @@ useEffect(() => {
                                         <br></br>
                                       </div>
                                     </div>
-                            </div>
-                            <br></br>
+                                                                <br></br>
                             <br></br>
                             <div className="col-sm-12">
                                 <div className="row">
@@ -740,16 +735,11 @@ useEffect(() => {
                                             </div>
                                         </div>
                                 </div>
+                                </div>
+                                </div>
+                                    </main>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            <div className="col-sm-2">
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 };
 

@@ -3,22 +3,24 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
-const AdminJournalAdd = () => {
+const AdminSubsidiaryPayableAdd = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [account, setAccount] = useState([]);
-  const [sub, setSub] = useState([]);
+  const [nameSuggestions, setNameSuggestions] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
 
   const [formData, setFormData] = useState({
     date: "",
     description: "",
+    invoice_no: "",
     account: "",
-    subaccount: "",
+    accountName: "",
+    account1: "",
     type: "debit",
     amount: "",
-    comment: "",
   });
 
   useEffect(() => {
@@ -31,34 +33,51 @@ const AdminJournalAdd = () => {
       }
     }
 
-    const fetchAccount = async () => {
+    const fetchAccountPayable = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/coa1`);
-        setAccount(res.data);
+        const res = await axios.get(`http://localhost:3000/auth/accountPayable`);
+        if (res.data.length > 0) {
+          const { account_id, account_name } = res.data[0];
+          setFormData((prev) => ({
+            ...prev,
+            account: account_id,
+            accountName: account_name,
+          }));
+        }
       } catch (err) {
-        console.error("Error fetching account:", err);
+        console.error("Error fetching Account Payable:", err);
       }
     };
-    fetchAccount();
+
+    const fetchInventory = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/accountInventory`);
+        if (res.data.length > 0) {
+          setAccount(res.data);
+        }
+      } catch (err) {
+        console.error("Error fetching Inventory Accounts:", err);
+      }
+    };
+
+    fetchAccountPayable();
+    fetchInventory();
   }, [location]);
 
-  useEffect(() => {
-    if (formData.account) {
-      const fetchSubAccounts = async () => {
-        try {
-          const res = await axios.get(
-            `http://localhost:3000/auth/subaccs/${formData.account}`
-          );
-          setSub(res.data);
-        } catch (err) {
-          console.error("Error fetching subaccounts:", err);
-        }
-      };
-      fetchSubAccounts();
-    } else {
-      setSub([]);
+  const fetchSuggestions = async (query) => {
+    if (!query) {
+      setNameSuggestions([]);
+      return;
     }
-  }, [formData.account]);
+    try {
+      const res = await axios.get(
+        `http://localhost:3000/auth/supplier/search?name=${query}`
+      );
+      setNameSuggestions(res.data);
+    } catch (err) {
+      console.error("Error fetching name suggestions:", err);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -72,7 +91,8 @@ const AdminJournalAdd = () => {
       !formData.date ||
       !formData.description ||
       !formData.account ||
-      !formData.amount
+      !formData.amount ||
+      !formData.account1
     ) {
       alert("Please fill in all required fields.");
       return;
@@ -82,20 +102,20 @@ const AdminJournalAdd = () => {
       const debit = formData.type === "debit" ? Number(formData.amount) : 0;
       const credit = formData.type === "credit" ? Number(formData.amount) : 0;
 
-      await axios.post("http://localhost:3000/auth/journal", {
+      await axios.post("http://localhost:3000/auth/subsidiary1", {
         date: formData.date,
-        description: formData.description,
+        name: formData.description,
         account_id: formData.account,
-        subaccount_id: formData.subaccount,
+        expense_id: formData.account1,
+        invoice_no: formData.invoice_no,
         debit,
         credit,
-        comment: formData.comment,
       });
 
-      alert("Journal entry saved successfully!");
-      navigate("/adminjournal");
+      alert("Subsidiary entry saved successfully!");
+      navigate("/adminsubsidiaryPayable");
     } catch (err) {
-      console.error(err);
+      console.error("Error saving entry:", err);
       alert(err.response?.data?.message || "Something went wrong");
     }
   };
@@ -217,74 +237,77 @@ const AdminJournalAdd = () => {
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add Journal Entry
+            Add Subsidiary Payable Entry
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Date
-              </label>
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
+            {/* Date & Invoice */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Date
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Invoice Number
+                </label>
+                <input
+                  type="text"
+                  name="invoice_no"
+                  value={formData.invoice_no}
+                  onChange={handleChange}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                />
+              </div>
             </div>
 
+            {/* Name + Suggestions */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account
-              </label>
-              <select
-                name="account"
-                value={formData.account}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="">-- Select Account --</option>
-                {account.map((acc) => (
-                  <option key={acc.account_id} value={acc.account_id}>
-                    {acc.account_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Sub Account
-              </label>
-              <select
-                name="subaccount"
-                value={formData.subaccount}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="">-- Select Subaccount --</option>
-                {sub.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.account_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Description
+                Name
               </label>
               <input
                 type="text"
                 name="description"
                 value={formData.description}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  fetchSuggestions(e.target.value);
+                }}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                autoComplete="off"
               />
+              {nameSuggestions.length > 0 && (
+                <ul className="absolute z-10 bg-white border border-gray-300 rounded mt-1">
+                  {nameSuggestions.map((supplier) => (
+                    <li
+                      key={supplier.supplier_id}
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          description: supplier.supplier_name,
+                        }));
+                        setSelectedPatientId(supplier.supplier_id);
+                        setNameSuggestions([]);
+                      }}
+                    >
+                      {supplier.supplier_name}
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
 
+            {/* Debit/Credit & Amount */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
@@ -314,24 +337,45 @@ const AdminJournalAdd = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Comment
-              </label>
-              <input
-                type="text"
-                name="comment"
-                value={formData.comment}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
+            {/* Account Section */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Account
+                </label>
+                <input
+                  type="text"
+                  value={formData.accountName || ""}
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Expense Account
+                </label>
+                <select
+                  name="account1"
+                  value={formData.account1}
+                  onChange={handleChange}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                >
+                  <option value="">-- Select Account --</option>
+                  {account.map((acc) => (
+                    <option key={acc.account_id} value={acc.account_id}>
+                      {acc.account_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
 
+            {/* Buttons */}
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/adminjournal")}
+                onClick={() => navigate("/adminsubsidiaryPayable")}
               >
                 Back
               </button>
@@ -349,4 +393,4 @@ const AdminJournalAdd = () => {
   );
 };
 
-export default AdminJournalAdd;
+export default AdminSubsidiaryPayableAdd;

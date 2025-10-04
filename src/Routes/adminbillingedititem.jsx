@@ -123,22 +123,27 @@ const handleUpdate = async (e) => {
                 {isLedgerOpen && (
                     <div className="ml-8 text-sm">
                     <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Chart of Accounts
                         </p>
                     </Link>
                     <Link to="/adminjournal">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Journal Entries
                         </p>
                     </Link>
+                    <Link to="/adminsubsidiaryreceivable">
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        Subsidiary
+                        </p>
+                    </Link>
                     <Link to="/admingeneral">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         General Ledger
                         </p>
                     </Link>
                     <Link to="/admintrial">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
+                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Trial Balance
                         </p>
                     </Link>

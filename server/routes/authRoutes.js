@@ -35,8 +35,8 @@ router.post('/register', async (req, res) => {
     const hashedPassword = await bcrypt.hash(user_password, 10);
     await db.query(
       `INSERT INTO users 
-      (user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type) 
-      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      (user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type, user_status) 
+      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "active")`,
       [user_name, hashedPassword, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type]
     );
 
@@ -84,7 +84,7 @@ router.get('/me', async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const db = await connectToDatabase();
-    const [rows] = await db.query("SELECT user_id, user_name, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num FROM users WHERE user_id = ?", [decoded.user_id]);
+    const [rows] = await db.query("SELECT user_id, user_name, role, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num FROM users WHERE user_id = ?", [decoded.user_id]);
     if (rows.length === 0) return res.status(404).json({ message: "User not found" });
 
     return res.json(rows[0]);
@@ -294,6 +294,33 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
       }
     }
 
+    // --- NEW: Insert notification for user ---
+    await db.query(
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
+       VALUES (?, ?, ?, NOW())`,
+      [
+        req.user.user_id, // use logged-in user ID from token
+        "Appointment Submitted",
+        `Your appointment for ${procedure_type} on ${pref_date} at ${pref_time} has been submitted and is under review.`,
+      ]
+    );
+
+    const [staffRows] = await db.query(
+    `SELECT user_id FROM users WHERE role IN ('admin', 'receptionist')`
+    );
+
+    for (const staff of staffRows) {
+      await db.query(
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
+        VALUES (?, ?, ?, NOW())`,
+        [
+          staff.user_id,
+          "New Appointment Submitted",
+          `Patient ${p_fname} ${p_lname} submitted an appointment for ${procedure_type} on ${pref_date} at ${pref_time}.`,
+        ]
+      );
+    }
+
     return res.status(201).json({ message: "Appointment created successfully!" });
   } catch (err) {
     console.error("Create appointment error:", err);
@@ -391,7 +418,7 @@ router.get("/viewmyconsultation/:appointId", async (req, res) => {
 //################################ USERS MANAGEMENT ################################
 // for adminuseradd.jsx (ADD NEW USER)
 router.post('/adduser', async (req, res) => {
-  const { user_name, user_password, role, email, contact_no, fname, mname, lname } = req.body;
+  const { user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age } = req.body;
 
   if (!user_name || !email ||!user_password) {
     return res.status(400).json({ message: "Username and password are required" });
@@ -405,9 +432,9 @@ router.post('/adduser', async (req, res) => {
     const hashedPassword = await bcrypt.hash(user_password, 10);
     await db.query(
       `INSERT INTO users 
-      (user_name, user_password, role, email, contact_no, fname, mname, lname) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user_name, hashedPassword, role, email, contact_no, fname, mname, lname]
+      (user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age, user_status) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "active")`,
+      [user_name, hashedPassword, role, email, contact_no, fname, mname, lname, date_birth, gender, age]
     );
 
     return res.status(201).json({ message: "User created successfully" });
@@ -440,6 +467,10 @@ router.put("/updateuserinfo/:id", async (req, res) => {
       fname,
       mname,
       lname,
+      date_birth,
+      gender,
+      age,
+      user_status,
       currentPassword,
       newPassword
     } = req.body;
@@ -481,13 +512,17 @@ router.put("/updateuserinfo/:id", async (req, res) => {
           contact_no = ?, 
           fname = ?, 
           mname = ?, 
-          lname = ?
+          lname = ?,
+          date_birth = ?,
+          gender = ?,
+          age = ?,
+          user_status = ?
       WHERE user_id = ?
     `;
 
     const params = hashedPassword
-      ? [user_name, hashedPassword, role, email, contact_no, fname, mname, lname, userId]
-      : [user_name, role, email, contact_no, fname, mname, lname, userId];
+      ? [user_name, hashedPassword, role, email, contact_no, fname, mname, lname, date_birth, gender, age, user_status, userId]
+      : [user_name, role, email, contact_no, fname, mname, lname, date_birth, gender, age, user_status, userId];
 
     await db.query(query, params);
 
@@ -514,7 +549,7 @@ router.get('/displayuserinfo/:id', async (req, res) => {
     const userId = req.params.id;
     const db = await connectToDatabase();
     const [rows] = await db.query(
-      "SELECT user_id, user_name, role, email, contact_no, fname, mname, lname FROM users WHERE user_id = ?",
+      "SELECT user_id, user_name, role, email, contact_no, fname, mname, lname, date_birth, gender, age FROM users WHERE user_id = ?",
       [userId]
     );
 
@@ -542,7 +577,7 @@ router.get('/displayusers', async (req, res) => {
 
     const db = await connectToDatabase();
     const [rows] = await db.query(
-      "SELECT user_id, user_name, role, email, contact_no, fname, mname, lname FROM users"
+      "SELECT * FROM users"
     );
 
     return res.json(rows); // returns an array of users
@@ -684,7 +719,7 @@ router.get('/displaypatient/:id', async (req, res) => {
     // Fetch patient info
     const [userRows] = await db.query(
       `SELECT user_id, user_name, email, contact_no, fname, mname, lname, 
-              date_birth, gender, age, religion, nationality, home_address, city, blood_type 
+              date_birth, gender, age, religion, nationality, home_address, city, province, blood_type 
        FROM users WHERE user_id = ? AND role = 'patient'`,
       [id]
     );
@@ -986,6 +1021,7 @@ router.post(
         ci_quantity,
         ci_amount,
         payment_method,   // optional
+        or_num,   // optional
         payment_status,   // optional
         total_service_charged // optional
       } = req.body;
@@ -1051,6 +1087,11 @@ router.post(
       if (gcashProof) {
         updateQuery += `, downpayment_proof = ?`;
         updateParams.push(gcashProof);
+      }
+
+      if (or_num != null) {
+        updateQuery += `, or_num = ?`;
+        updateParams.push(or_num);
       }
 
       updateQuery += ` WHERE appoint_id = ?`;
@@ -1120,15 +1161,16 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
       age,
       home_address,
       city,
+      province,
     } = req.body;
 
     const db = await connectToDatabase();
     await db.query(
       `UPDATE users 
        SET email = ?, contact_no = ?, fname = ?, mname = ?, lname = ?, 
-           date_birth = ?, gender = ?, age = ?, home_address = ?, city = ? 
+           date_birth = ?, gender = ?, age = ?, home_address = ?, city = ?, province = ? 
        WHERE user_id = ? AND role = 'patient'`,
-      [email, contact_no, fname, mname, lname, date_birth, gender, age, home_address, city, id]
+      [email, contact_no, fname, mname, lname, date_birth, gender, age, home_address, city, province, id]
     );
 
     return res.json({ message: "Patient profile updated successfully" });
@@ -1185,6 +1227,20 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
          SET i.inv_quantity = i.inv_quantity - c.ci_quantity
          WHERE c.appoint_id = ? AND c.ci_status = 'charged'`,
         [appointId]
+      );
+
+       // ✅ Send notification to patient
+      await db.query(
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
+         SELECT u.user_id, ?, ?, NOW()
+         FROM appointment a
+         JOIN users u ON u.user_name = a.user_name
+         WHERE a.appoint_id = ?`,
+        [
+          "Appointment Completed",
+          `Your appointment (ID: ${appointId}) has been completed. Please check your records for details.`,
+          appointId,
+        ]
       );
     }
 
@@ -1257,6 +1313,20 @@ router.post(
         );
       }
 
+      // Insert notification for the user
+      await db.query(
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
+        SELECT u.user_id, ?, ?, NOW()
+        FROM appointment a
+        JOIN users u ON u.user_name = a.user_name
+        WHERE a.appoint_id = ?`,
+        [
+          "Appointment Cancelled",
+          `Your appointment (ID: ${appointId}) has been ${newStatus}. Reason: ${cc_reason}${cc_notes ? `, Note: ${cc_notes}` : ""}.`,
+          appointId,
+        ]
+      );
+
       res.json({
         message:
           cc_reason === "Refund request"
@@ -1294,6 +1364,20 @@ router.post("/processRefund/:appointId", upload.single("refund_photo"), async (r
       [appointId]
     );
 
+    // Send notification to patient
+    await db.query(
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
+       SELECT u.user_id, ?, ?, NOW()
+       FROM appointment a
+       JOIN users u ON u.user_name = a.user_name
+       WHERE a.appoint_id = ?`,
+      [
+        "Appointment Cancelled by The Clinic",
+        `Your appointment (ID: ${appointId}) has been cancelled by the clinic. Note: ${cc_notes || "No additional note."}`,
+        appointId,
+      ]
+    );
+
     res.json({ message: "Refund processed and appointment cancelled." });
   } catch (error) {
     console.error("Refund process error:", error);
@@ -1317,7 +1401,7 @@ router.get("/dentists", async (req, res) => {
 //################################ INVENTORY MANAGEMENT ################################
 // for admininventoryadd.jsx (ADD NEW ITEM)
 router.post('/additem', async (req, res) => {
-  const { inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date } = req.body;
+  const { inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, supplier_id } = req.body;
 
   if (!inv_item_name || !inv_quantity || !inv_item_type) {
     return res.status(400).json({ message: "Item Name, Quantity, and Item Type are required" });
@@ -1344,10 +1428,27 @@ router.post('/additem', async (req, res) => {
 
     await db.query(
       `INSERT INTO inventory 
-      (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status, inv_item_status) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
-      [inv_item_type, inv_item_name, inv_price_per_item, inv_quantity || null, inv_ml || null, inv_exp_date || null, status]
+      (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status, inv_item_status, supplier_id) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
+      [inv_item_type, inv_item_name, inv_price_per_item, inv_quantity || null, inv_ml || null, inv_exp_date || null, status, supplier_id]
     );
+
+     // --- Send notification to all admins ---
+    const [adminRows] = await db.query(
+      `SELECT user_id FROM users WHERE role = 'admin'`
+    );
+
+    for (const admin of adminRows) {
+      await db.query(
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
+         VALUES (?, ?, ?, NOW())`,
+        [
+          admin.user_id,
+          "New Inventory Item Added",
+          `A new inventory item "${inv_item_name}" has been added by staff and is pending approval.`,
+        ]
+      );
+    }
 
     return res.status(201).json({ message: "Item created successfully" });
   } catch (err) {
@@ -1462,6 +1563,41 @@ router.get("/displayitem/:id", async (req, res) => {
   }
 });
 
+router.get("/viewitem/:id", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT 
+        i.inv_id,
+        i.inv_item_name,
+        i.inv_item_type,
+        i.inv_quantity,
+        i.inv_price_per_item,
+        i.inv_ml,
+        i.inv_exp_date,
+        i.inv_status,
+        i.inv_item_status,
+        i.supplier_id,
+        s.supplier_name,
+        s.contact_person,
+        s.contact_no,
+        s.description AS supplier_description
+      FROM inventory i
+      LEFT JOIN supplier s ON i.supplier_id = s.supplier_id
+      WHERE i.inv_id = ?
+    `, [req.params.id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Item not found" });
+    }
+
+    return res.json(rows[0]);
+  } catch (err) {
+    console.error("Fetch display item error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // for admininventory.jsx (DISPLAY ALL ITEMS IN TABLE)
 router.get('/inventory', async (req, res) => {
   try {
@@ -1474,15 +1610,20 @@ router.get('/inventory', async (req, res) => {
   }
 });
 
-// for admininventorypending
-router.get('/pendingitems', async (req, res) => {
+// get pending items with supplier name
+router.get("/pendingitems", async (req, res) => {
   try {
     const db = await connectToDatabase();
-    const [rows] = await db.query(`SELECT * FROM inventory WHERE inv_item_status = 'pending' `);
-    res.json(rows);
+    const [rows] = await db.query(`
+      SELECT i.*, s.supplier_name
+      FROM inventory i
+      LEFT JOIN supplier s ON i.supplier_id = s.supplier_id
+      WHERE i.inv_item_status = 'pending'
+    `);
+    return res.json(rows);
   } catch (err) {
-    console.error("Fetch inventory error:", err);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Fetch pending items error:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -1534,33 +1675,133 @@ router.put("/inactiveitem/:id", async (req, res) => {
   }
 });
 
-
-//################################ LEDGER MANAGEMENT ################################
-
-//********************* CHARTS OF ACCOUNT ********************* 
-// Add a new Chart of Account
-router.post("/coa", async (req, res) => {
-  const { account_name, account_type } = req.body;
-
-  if (!account_name || !account_type) {
-    return res.status(400).json({ message: "All fields required" });
-  }
-
+//get supplier
+router.get("/suppliers", async (req, res) => {
   try {
     const db = await connectToDatabase();
-    await db.query(
-      "INSERT INTO chartofaccounts (account_name, account_type) VALUES (?, ?)",
-      [account_name, account_type]
-    );
-
-    return res.status(201).json({ message: "Account saved successfully!" });
+    const [rows] = await db.query("SELECT * FROM supplier ORDER BY supplier_name ASC");
+    return res.json(rows); // Send back as JSON array
   } catch (err) {
-    console.error("COA insert error:", err);
+    console.error("Fetch COA error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
 
-//get Chart of Accounts
+//add new supplier
+router.post("/newsupplier", async (req, res) => {
+  const { supplier_name, contact_person,contact_no,description } = req.body;
+  const db = await connectToDatabase();
+
+  if (!supplier_name) {
+    return res.status(400).json({ error: "Subaccount name is required" });
+  }
+  //if subacount already exists
+  try {
+    const [existing] = await db.query(
+      "SELECT * FROM supplier WHERE supplier_name = ?",
+      [supplier_name]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ error: "This Supplier already exists" });
+    }
+
+    // insert
+    const [result] = await db.query(
+      "INSERT INTO supplier (supplier_name, contact_person, contact_no, description) VALUES (?, ?, ?, ?)",
+      [supplier_name, contact_person,contact_no,description ]
+    );
+
+    return res.status(201).json({
+      message: "Supplier added successfully",
+      subaccountId: result.insertId,
+    });
+  } catch (err) {
+    console.error("❌ MySQL Error inserting subaccount:", {
+      code: err.code,
+      sqlMessage: err.sqlMessage,
+      sql: err.sql,
+    });
+    return res.status(500).json({
+      error: "Database error",
+      details: err.sqlMessage,
+    });
+  }
+});
+
+// Get supplier by ID
+router.get("/supplier/:id", async (req, res) => {
+  const { id } = req.params;
+  const db = await connectToDatabase();
+
+  try {
+    const [rows] = await db.query("SELECT * FROM supplier WHERE supplier_id = ?", [id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Supplier not found" });
+    }
+
+    return res.json(rows[0]);
+  } catch (err) {
+    console.error("❌ MySQL Error fetching supplier:", err);
+    return res.status(500).json({
+      error: "Database error",
+      details: err.sqlMessage,
+    });
+  }
+});
+
+// Update supplier by ID
+router.put("/supplier/:id", async (req, res) => {
+  const { id } = req.params;
+  const { supplier_name, contact_person, contact_no, description } = req.body;
+  const db = await connectToDatabase();
+
+  if (!supplier_name || !contact_person || !contact_no || !description) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  try {
+    // Check if supplier exists
+    const [existing] = await db.query("SELECT * FROM supplier WHERE supplier_id = ?", [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ error: "Supplier not found" });
+    }
+
+    // Update supplier
+    await db.query(
+      "UPDATE supplier SET supplier_name = ?, contact_person = ?, contact_no = ?, description = ? WHERE supplier_id = ?",
+      [supplier_name, contact_person, contact_no, description, id]
+    );
+
+    return res.json({ message: "Supplier updated successfully" });
+  } catch (err) {
+    console.error("❌ MySQL Error updating supplier:", err);
+    return res.status(500).json({
+      error: "Database error",
+      details: err.sqlMessage,
+    });
+  }
+});
+
+// delete supplier
+router.delete("/suppliers/:id", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const { id } = req.params;
+    await db.query("DELETE FROM supplier WHERE supplier_id = ?", [id]);
+    return res.json({ message: "Supplier deleted successfully" });
+  } catch (err) {
+    console.error("Delete supplier error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//################################ LEDGER MANAGEMENT ################################
+
+
+//********************* CHARTS OF ACCOUNT ********************* 
+//get Chart of Accounts ->admincoa
 router.get("/coa", async (req, res) => {
   try {
     const db = await connectToDatabase();
@@ -1572,24 +1813,18 @@ router.get("/coa", async (req, res) => {
   }
 });
 
-//delete chart of accounts
-router.delete("/coa/:id", async (req, res) => {
+// get accounts if active
+router.get("/coa1", async (req, res) => {
   try {
-    const { id } = req.params;
     const db = await connectToDatabase();
-
-    const [result] = await db.query("DELETE FROM chartofaccounts WHERE account_id = ?", [id]);
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: "Account not found" });
-    }
-
-    return res.json({ message: "Account deleted successfully" });
+    const [rows] = await db.query("SELECT * FROM chartofaccounts  WHERE status = 'active' ORDER BY account_name ASC");
+    return res.json(rows); // Send back as JSON array
   } catch (err) {
-    console.error("Delete COA error:", err);
+    console.error("Fetch COA error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 // Get a single account by ID
 router.get("/coa/:id", async (req, res) => {
@@ -1613,18 +1848,40 @@ router.get("/coa/:id", async (req, res) => {
   }
 });
 
+// Add a new Chart of Account ->admincoaadd
+router.post("/coa", async (req, res) => {
+  const { account_name, account_type } = req.body;
+
+  if (!account_name || !account_type) {
+    return res.status(400).json({ message: "All fields required" });
+  }
+
+  try {
+    const db = await connectToDatabase();
+    await db.query(
+      "INSERT INTO chartofaccounts (account_name, account_type, status) VALUES (?, ?, ?)",
+      [account_name, account_type, 'Active']
+    );
+
+    return res.status(201).json({ message: "Account saved successfully!" });
+  } catch (err) {
+    console.error("COA insert error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // Update account by ID
 router.put("/coa/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { account_name, account_type } = req.body;
+    const { account_name, account_type, status } = req.body;
 
     const db = await connectToDatabase();
 
     // Update record
     const [result] = await db.query(
-      "UPDATE chartofaccounts SET account_name = ?, account_type = ? WHERE account_id = ?",
-      [account_name, account_type, id]
+      "UPDATE chartofaccounts SET account_name = ?, account_type = ? , status = ?  WHERE account_id = ?",
+      [account_name, account_type, status, id]
     );
 
     if (result.affectedRows === 0) {
@@ -1639,39 +1896,1075 @@ router.put("/coa/:id", async (req, res) => {
 });
 
 
-//********************* JOURNAL ENTRIES ********************* 
- // Add a new journal enrty
-router.post("/journal", async (req, res) => {
-  const { date, description, accounts, debit, credit, comment } = req.body;
+//delete chart of accounts
+router.delete("/coa/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
 
-  // Validation
-  if (!date || !description || !accounts || (!debit && !credit)) {
+    const [result] = await db.query("DELETE FROM chartofaccounts WHERE account_id = ?", [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    return res.json({ message: "Account deleted successfully" });
+  } catch (err) {
+    console.error("Delete COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+//========== SUB ACCOUNTS ==========
+
+//get subaccount by sub id ->
+router.get("/subacc/:id", async (req, res) => { 
+  try { 
+    const { id } = req.params; 
+    const db = await connectToDatabase();
+    const [result] = await db.query
+    ( "SELECT * FROM subaccount WHERE id = ?", 
+      [id] ); 
+      
+      if (result.length === 0) 
+        { return res.status(404).json({ message: "Account not found" }); 
+      } 
+      res.json(result[0]);
+     } catch (err) { 
+      console.error("Fetch COA error:", err);
+       return res.status(500).json({ message: "Internal server error" }); } });
+
+  //add new sub account ->admincoaviewadd
+router.post("/coa/:id/subaccounts", async (req, res) => {
+  const { id } = req.params; 
+  const { account_name } = req.body;
+  const db = await connectToDatabase();
+
+  if (!account_name) {
+    return res.status(400).json({ error: "Subaccount name is required" });
+  }
+  //if subacount already exists
+  try {
+    const [existing] = await db.query(
+      "SELECT * FROM subaccount WHERE account_id = ? AND account_name = ?",
+      [id, account_name]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ error: "Subaccount name already exists" });
+    }
+
+    // insert
+    const [result] = await db.query(
+      "INSERT INTO subaccount (account_id, account_name) VALUES (?, ?)",
+      [id, account_name]
+    );
+
+    return res.status(201).json({
+      message: "Subaccount added successfully",
+      subaccountId: result.insertId,
+    });
+  } catch (err) {
+    console.error("❌ MySQL Error inserting subaccount:", {
+      code: err.code,
+      sqlMessage: err.sqlMessage,
+      sql: err.sql,
+    });
+    return res.status(500).json({
+      error: "Database error",
+      details: err.sqlMessage,
+    });
+  }
+});
+
+  // get subaccounts by account_id -> admincoaview.jsx
+router.get("/coa/:id/subaccounts", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [rows] = await db.query(
+      "SELECT * FROM subaccount WHERE account_id = ?",
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "No subaccounts found" });
+    }
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching subaccounts:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+// edit subaccount ->admincoaviewedit
+ router.put("/sub/:id", async (req, res) => {
+  const { id } = req.params;
+  const { account_name } = req.body;
+
+  try {
+    const db = await connectToDatabase();
+
+    const [existing] = await db.query(
+      "SELECT * FROM subaccount WHERE account_name = ? AND id != ?",
+      [account_name, id]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: "Account name already exists" });
+    }
+
+
+    await db.query(
+      "UPDATE subaccount SET account_name = ? WHERE id = ?",
+      [account_name, id]
+    );
+
+    res.json({ message: "Account updated successfully!" });
+  } catch (err) {
+    console.error("Update error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// get all subaccount based on account id -> adminjournaladd.jsx
+router.get("/subaccs/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const db = await connectToDatabase();
+
+    const [rows] = await db.query(
+      "SELECT id, account_name FROM subaccount WHERE account_id = ? ORDER BY account_name ASC",
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.json([]); // return empty array if no subaccounts
+    }
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Fetch Subaccounts error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}); 
+      
+//=================================== JOURNAL ENTRY & GENERAL LEDGER ====================================
+
+// get journal entry (for adminjournal)
+router.get("/journal1", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT 
+  j.date, 
+  j.description, 
+  CASE 
+    WHEN sa.id IS NULL OR sa.id = 0 
+      THEN ca.account_name
+    ELSE CONCAT(ca.account_name, ' : ', sa.account_name)
+  END AS Account,
+  j.debit,
+  j.credit,
+  j.comment
+FROM journalentry j
+LEFT JOIN subaccount sa ON j.id = sa.id
+LEFT JOIN chartofaccounts ca 
+       ON (sa.account_id = ca.account_id OR j.account_id = ca.account_id);
+    `);
+
+    return res.json(rows);
+  } catch (err) {
+    console.error("Fetch journal entries error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// Add a new journal entry + insert general ledfer
+router.post("/journal", async (req, res) => {
+  const { date, description, account_id, subaccount_id, debit, credit, comment } = req.body;
+
+  const debitAmount = parseFloat(debit) || 0;
+  const creditAmount = parseFloat(credit) || 0;
+
+  if (!date || !description || !account_id || (!debit && !credit)) {
     return res.status(400).json({ message: "All required fields must be filled" });
   }
 
   try {
     const db = await connectToDatabase();
-    await db.query(
-      "INSERT INTO journalentry (`date`, description, accounts, debit, credit, comment) VALUES (?,?,?,?,?,?)",
-      [date, description, accounts, debit || 0, credit || 0, comment || ""]
+
+    // 1️⃣ Insert into journalentry
+    const [journalResult] = await db.query(
+      "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id) VALUES (?,?,?,?,?,?,?)",
+      [date, description, account_id, debitAmount, creditAmount, comment || "n/a", subaccount_id]
     );
 
-    return res.status(201).json({ message: "Journal entry saved successfully!" });
+    const entryId = journalResult.insertId;
+
+    // 2️⃣ Get account type
+    const [accountRows] = await db.query(
+      "SELECT account_type FROM chartofaccounts WHERE account_id = ?",
+      [account_id]
+    );
+
+    if (accountRows.length === 0) {
+      return res.status(400).json({ message: "Account not found" });
+    }
+
+    const accountType = accountRows[0].account_type;
+
+    // 3️⃣ Get last balance for this account
+    const [lastBalanceRows] = await db.query(
+      "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
+      [account_id]
+    );
+
+    let lastBalance = lastBalanceRows.length ? parseFloat(lastBalanceRows[0].balance) : 0;
+
+    // 4️⃣ Compute new balance
+    let newBalance;
+    if (accountType === "Asset" || accountType === "Expense") {
+      newBalance = lastBalance + debitAmount - creditAmount;
+    } else { // Liability, Equity, Revenue
+      newBalance = lastBalance + creditAmount - debitAmount;
+    }
+
+    // 5️⃣ Insert into general_ledger
+    await db.query(
+      "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date) VALUES (?,?,?,?,?,?,?)",
+      [entryId, account_id, description, debitAmount, creditAmount, newBalance, date]
+    );
+
+    return res.status(201).json({ message: "Journal entry and general ledger updated successfully!" });
+
   } catch (err) {
     console.error("Journal insert error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
-
-// get journal entry(foradminjournal)
-router.get("/journal1", async (req, res) => {
+//get general ledger f
+router.get("/auth/general_ledger", async (req, res) => {
   try {
     const db = await connectToDatabase();
-    const [rows] = await db.query("SELECT * FROM journalentry ORDER BY date DESC");
-    return res.json(rows); 
+    const [rows] = await db.query(`
+      SELECT g.date, c.account_name AS account, g.description, g.debit, g.credit, g.balance
+      FROM general_ledger g
+      JOIN chartofaccounts c ON g.account_id = c.account_id
+      ORDER BY g.date, g.ledger_id
+    `);
+    return res.json(rows);
   } catch (err) {
-    console.error("Fetch journal entries error:", err);
+    console.error("Fetch General Ledger error:", err);
     return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//get general ledger filter
+router.get("/general_ledger1", async (req, res) => {
+  const { account_id } = req.query; 
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(
+      `
+      SELECT g.date, c.account_name AS account, c.account_type, 
+             g.description, g.debit, g.credit, g.balance
+      FROM general_ledger g
+      JOIN chartofaccounts c ON g.account_id = c.account_id
+      WHERE g.account_id = ?
+      ORDER BY g.date, g.ledger_id
+      `,
+      [account_id]
+    );
+    return res.json(rows);
+  } catch (err) {
+    console.error("Fetch General Ledger error:", err);
+    return res.status(500).json({ message: err.message });
+  }
+});
+
+// Get only  Payable
+router.get("/accountPayable", async (req, res) => {
+  try {
+      const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT account_id, account_name
+      FROM chartofaccounts
+      WHERE  account_name = 'Account Payable'
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("DB error:", err); // 👈 full error object
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get only Receivable
+router.get("/accountReceivable", async (req, res) => {
+  try {
+      const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT account_id, account_name
+      FROM chartofaccounts
+      WHERE account_name = 'Account Receivable'
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("DB error:", err); // 👈 full error object
+    res.status(500).json({ error: err.message });
+  }
+});
+
+//Get Inventory
+router.get("/accountInventory", async (req, res) => {
+  try {
+      const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT account_id, account_name
+      FROM chartofaccounts
+      WHERE account_name = 'Dental Supplies' or account_name = 'Dental Equipment' 
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error("DB error:", err); // 👈 full error object
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Search patients by  name
+    router.get('/patients/search', async (req, res) => {
+      try {
+        const { name } = req.query;
+
+        if (!name) {
+          return res.status(400).json({ error: 'Name query parameter is required' });
+        }
+
+        const db = await connectToDatabase();
+        const [rows] = await db.query(
+          `SELECT user_id, fname, mname, lname,
+                  CONCAT(fname, ' ', mname, ' ', lname) AS full_name
+          FROM users 
+          WHERE LOWER(role) = 'patient'
+            AND CONCAT(fname, ' ', mname, ' ', lname) LIKE ?
+          LIMIT 10`,
+          [`%${name}%`]
+        );
+
+        res.json(rows);
+      } catch (err) {
+        console.error('❌ Error searching patients:', err.message);
+        res.status(500).json({ error: err.message });
+      }
+    });
+
+//get supplier
+router.get('/supplier/search', async (req, res) => {
+  const { name } = req.query;
+  if (!name) return res.status(400).json({ error: 'Name query parameter is required' });
+
+  const db = await connectToDatabase();
+  const [rows] = await db.query(
+    `SELECT supplier_id, supplier_name
+     FROM supplier
+     WHERE supplier_name LIKE ?`,
+    [`%${name}%`]
+  );
+  res.json(rows);
+});
+
+
+
+/// Insert into subsidiary+general+journal for account receivable
+router.post("/subsidiary", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const {
+      date,
+      name,
+      invoice_no,
+      debit,
+      credit,
+      account_id,
+    } = req.body;
+
+    // Validate required fields
+    if (!date || !name || !invoice_no || !account_id) {
+      return res.status(400).json({
+        error: "Missing required fields: date, name, invoice_no, account_id",
+      });
+    }
+
+    // Split name
+    const nameParts = name.trim().split(/\s+/);
+    if (nameParts.length < 2) {
+      return res.status(400).json({ error: "Please provide full name (first and last)" });
+    }
+
+    const fname = nameParts[0];
+    const lname = nameParts[nameParts.length - 1];
+
+    // Find the user_id from users table
+    const [userRows] = await db.query(
+      `SELECT user_id FROM users 
+       WHERE LOWER(fname) = LOWER(?) 
+         AND LOWER(lname) = LOWER(?) 
+         AND LOWER(role) = 'patient'
+       LIMIT 1`,
+      [fname, lname]
+    );
+
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: "Patient not found with the given name" });
+    }
+
+    const patient_id = userRows[0].user_id;
+
+    // Parse debit/credit
+    const debitVal = parseFloat(debit) || 0;
+    const creditVal = parseFloat(credit) || 0;
+
+    if (debitVal > 0 && creditVal > 0) {
+      return res.status(400).json({
+        error: "Only one of debit or credit should be provided.",
+      });
+    }
+
+    // --- SUBSIDIARY LEDGER ---
+
+    // Get last balance for this patient + account in subsidiary ledger
+    const [subsidiaryRows] = await db.query(
+      `SELECT balance
+       FROM subsidiary
+       WHERE account_id = ? AND patient_id = ?
+       ORDER BY sub_id DESC
+       LIMIT 1`,
+      [account_id, patient_id]
+    );
+
+    const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
+    const newSubsidiaryBalance = lastSubsidiaryBalance + debitVal - creditVal;
+
+    // Insert into subsidiary ledger
+    const [subsidiaryResult] = await db.query(
+      `INSERT INTO subsidiary 
+       (date, name, invoice_no, debit, credit, balance, account_id, patient_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, name, invoice_no, debitVal, creditVal, newSubsidiaryBalance, account_id, patient_id]
+    );
+
+    // --- JOURNAL ENTRY ---
+
+    const description = name;
+
+    // Insert main journal entry (for the provided account)
+    const [journalResult] = await db.query(
+      `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, account_id, debitVal, creditVal, 'n/a']
+    );
+
+    // --- GENERAL LEDGER ---
+
+    // Get last balance for this account in general ledger
+    const [ledgerRows] = await db.query(
+      `SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY date DESC, ledger_id DESC LIMIT 1`,
+      [account_id]
+    );
+
+    const lastLedgerBalance = ledgerRows.length > 0 ? parseFloat(ledgerRows[0].balance) || 0 : 0;
+    const newLedgerBalance = lastLedgerBalance + debitVal - creditVal;
+
+    // Insert into general ledger
+    const [ledgerResult] = await db.query(
+      `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
+    );
+
+    // --- PARTNER ACCOUNT: Service Income ---
+      let partnerAccountName = null;
+
+      if (debitVal > 0) {
+        // AR is debited -> partner is Sales Revenue (credited)
+        partnerAccountName = 'Service Income';
+      } else if (creditVal > 0) {
+        // AR is credited -> partner is Cash (debited)
+        partnerAccountName = 'Cash';
+      }
+
+      if (!partnerAccountName) {
+        return res.status(400).json({ error: "Either debit or credit must be provided." });
+      }
+
+      // Find partner account_id dynamically
+      const [partnerRows] = await db.query(
+        `SELECT account_id FROM chartofaccounts 
+        WHERE LOWER(account_name) = LOWER(?) 
+        LIMIT 1`,
+        [partnerAccountName]
+      );
+
+      if (partnerRows.length === 0) {
+        return res.status(500).json({ error: `${partnerAccountName} account not found in chart of accounts` });
+      }
+
+      const partnerAccountId = partnerRows[0].account_id;
+
+      // Partner debit/credit is the reverse of AR entry
+      const partnerDebit = creditVal;  
+      const partnerCredit = debitVal;  
+
+      // Insert partner journal entry
+      const [partnerJournalResult] = await db.query(
+        `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [date, description, partnerAccountId, partnerDebit, partnerCredit, 'Partner entry']
+      );
+
+      // Get last balance for partner account in general ledger
+      const [partnerLedgerRows] = await db.query(
+        `SELECT balance FROM general_ledger 
+        WHERE account_id = ? 
+        ORDER BY date DESC, ledger_id DESC 
+        LIMIT 1`,
+        [partnerAccountId]
+      );
+
+      const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
+      const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
+
+      // Insert partner entry into general ledger
+      await db.query(
+        `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId]
+      );
+
+    res.status(201).json({
+      message: "Subsidiary, journal entry, general ledger, and partner entries inserted successfully.",
+      subsidiaryId: subsidiaryResult.insertId,
+      journalEntryId: journalResult.insertId,
+      generalLedgerId: ledgerResult.insertId,
+      partnerJournalEntryId: partnerJournalResult.insertId,
+      patient_id,
+      newSubsidiaryBalance,
+      newLedgerBalance,
+      newPartnerLedgerBalance,
+    });
+
+  } catch (err) {
+    console.error("❌ Error inserting records:", err);
+    res.status(500).json({ error: "Internal server error: " + err.message });
+  }
+});
+
+
+/// Insert into subsidiary+general+journal for account payable
+    router.post("/subsidiary1", async (req, res) => {
+      try {
+        const db = await connectToDatabase();
+        const {
+          date,
+          name,         
+          invoice_no,
+          debit,
+          credit,
+          account_id,
+          expense_id,
+        } = req.body;
+
+          // Validate required fields
+          if (!date || !name || !invoice_no || !account_id) {
+            return res.status(400).json({
+              error: "Missing required fields: date, name, invoice_no, account_id",
+            });
+          }
+
+          // Split name
+          const nameParts = name;
+
+          // Find the user_id from suppliertable
+          const [userRows] = await db.query(
+            `SELECT supplier_id FROM supplier
+            WHERE supplier_name = ?
+            LIMIT 1`,
+            [nameParts]
+          );
+
+          if (userRows.length === 0) {
+            return res.status(404).json({ error: "Supplier not found with the given name" });
+          }
+
+        const supplier_id = userRows[0].supplier_id;
+
+        //find expense_id
+
+        const expense = expense_id;
+
+         const [expenseRows] = await db.query(
+            `SELECT account_name FROM chartofaccounts
+            WHERE account_id = ?
+            LIMIT 1`,
+            [expense]
+          );
+
+          if (expenseRows.length === 0) {
+            return res.status(404).json({ error: "account not found with the given name" });
+          }
+
+        const expensename = expenseRows[0].account_name;
+
+        // Parse debit/credit
+        const debitVal = parseFloat(debit) || 0;
+        const creditVal = parseFloat(credit) || 0;
+
+        if (debitVal > 0 && creditVal > 0) {
+          return res.status(400).json({
+            error: "Only one of debit or credit should be provided.",
+          });
+        }
+
+        // --- SUBSIDIARY LEDGER ---
+
+        // Get last balance for this supplier + account in subsidiary ledger
+        const [subsidiaryRows] = await db.query(
+          `SELECT balance
+          FROM subsidiary
+          WHERE account_id = ? AND patient_id = ?
+          ORDER BY sub_id DESC
+          LIMIT 1`,
+          [account_id, supplier_id]
+        );
+
+        const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
+        const newSubsidiaryBalance = lastSubsidiaryBalance - debitVal + creditVal;
+
+        // Insert into subsidiary ledger
+        const [subsidiaryResult] = await db.query(
+          `INSERT INTO subsidiary 
+            (date, name, invoice_no, debit, credit, balance, account_id, patient_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [date, `${name} - ${expensename}`, invoice_no, debitVal, creditVal, newSubsidiaryBalance, account_id, supplier_id, expensename]
+        );
+
+        // --- JOURNAL ENTRY ---
+
+        const description = name;
+
+    const [journalResult] = await db.query(
+      `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [date, description, account_id, debitVal, creditVal, expensename]
+    );
+        // --- GENERAL LEDGER ---
+
+        // Get last balance for this account in general ledger
+        const [ledgerRows] = await db.query(
+          `SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY date DESC, ledger_id DESC LIMIT 1`,
+          [account_id]
+        );
+
+        const lastLedgerBalance = ledgerRows.length > 0 ? parseFloat(ledgerRows[0].balance) || 0 : 0;
+        const newLedgerBalance = lastLedgerBalance - debitVal + creditVal;
+
+        // Insert into general ledger
+        const [ledgerResult] = await db.query(
+          `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [date, `${description} - ${expensename}`, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
+        );
+
+        //PARTNER ACCOUNT: Cash & Inventory==========
+
+        let partnerAccountName = null;
+        if (debitVal > 0) {
+
+        // AR is debited -> partner is Sales Revenue (credited)
+        partnerAccountName = 'Cash';
+      } else if (creditVal > 0) {
+        // AR is credited -> partner is Cash (debited)
+        partnerAccountName = expensename;
+      }
+
+      if (!partnerAccountName) {
+        return res.status(400).json({ error: "Either debit or credit must be provided." });
+      }
+
+      // Find partner account_id dynamically
+      const [partnerRows] = await db.query(
+        `SELECT account_id FROM chartofaccounts 
+        WHERE LOWER(account_name) = LOWER(?) 
+        LIMIT 1`,
+        [partnerAccountName]
+      );
+
+      if (partnerRows.length === 0) {
+      return res.status(500).json({ error: `${partnerAccountName} account not found in chart of accounts` });
+      }
+
+      const partnerAccountId = partnerRows[0].account_id;
+
+      // Partner debit/credit is the reverse of AR entry
+      const partnerDebit = creditVal;  
+      const partnerCredit = debitVal;  
+
+        // Insert partner journal entry
+      const [partnerJournalResult] = await db.query(
+        `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
+        VALUES (?, ?, ?, ?, ?, ?)`,
+        [date, description, partnerAccountId, partnerDebit, partnerCredit, expensename]
+      );
+
+       // Get last balance for partner account in general ledger
+      const [partnerLedgerRows] = await db.query(
+        `SELECT balance FROM general_ledger 
+        WHERE account_id = ? 
+        ORDER BY date DESC, ledger_id DESC 
+        LIMIT 1`,
+        [partnerAccountId]
+      );
+
+      const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
+      const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
+
+      // Insert partner entry into general ledger
+      await db.query(
+        `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId]
+      );
+
+        res.status(201).json({
+          message: "Subsidiary, journal entry, and general ledger records inserted successfully.",
+          subsidiaryId: subsidiaryResult.insertId,
+          journalEntryId: journalResult.insertId,
+          generalLedgerId: ledgerResult.insertId,
+          supplier_id,
+          newSubsidiaryBalance,
+          newLedgerBalance,
+        });
+
+      } catch (err) {
+        console.error("❌ Error inserting records:", err);
+        res.status(500).json({ error: "Internal server error: " + err.message });
+      }
+    });
+
+
+router.get("/subsidiary", async (req, res) => {
+  try {
+    const { account_id } = req.query;  // use req.query, not req.body for GET
+
+    if (!account_id) {
+      return res.status(400).json({ error: "Missing account_id query parameter" });
+    }
+
+    const db = await connectToDatabase();
+
+    const [rows] = await db.query(
+      `SELECT date, name, invoice_no, debit, credit, balance
+       FROM subsidiary
+       WHERE account_id = ?`,
+      [account_id]  // pass as array
+    );
+
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching subsidiary ledger:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+
+//get general_ledger
+    router.get("/general", async (req, res) => {
+      try {
+        const db = await connectToDatabase();
+        const [rows] =  await db.query(`
+            SELECT g.date, c.account_name AS account, c.account_type, g.debit, g.credit, g.balance
+      FROM general_ledger g
+      JOIN chartofaccounts c ON g.account_id = c.account_id
+      ORDER BY g.date, g.ledger_id
+        `);
+        return res.json(rows); // Send back as JSON array
+      } catch (err) {
+      console.error("Insert Error:", err); // full error object
+      res.status(500).json({ error: err.message, details: err });
+    }
+    });
+
+router.get("/trial", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT
+        gl.account_id,
+        coa.account_name,
+        COALESCE(SUM(gl.debit), 0) AS total_debit,
+        COALESCE(SUM(gl.credit), 0) AS total_credit,
+        (COALESCE(SUM(gl.credit), 0) - COALESCE(SUM(gl.debit), 0)) AS net_credit_minus_debit
+      FROM general_ledger gl
+      JOIN chartofaccounts coa ON coa.account_id = gl.account_id
+      GROUP BY gl.account_id, coa.account_name
+      ORDER BY coa.account_name
+    `);
+
+    let totalDebit = 0;
+    let totalCredit = 0;
+
+    const data = rows.map((r) => {
+      const net = Number(r.net_credit_minus_debit) || 0;
+
+      let debit = 0;
+      let credit = 0;
+
+      if (net >= 0) {
+        credit = net;
+      } else {
+        debit = -net;
+      }
+
+      totalDebit += debit;
+      totalCredit += credit;
+
+      return {
+        account_id: r.account_id,
+        account_name: r.account_name,
+        debit,
+        credit
+      };
+    });
+
+    res.json({ data, totalDebit, totalCredit });
+  } catch (error) {
+    console.error("Trial Balance Route Error:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+});
+;
+
+//Add consultation journal entry (auto insert Cash & Service Revenue dynamically)
+
+//   router.post("/journalconsultation", async (req, res) => {
+//   console.log("✅ journalconsultation route hit!");
+//   try {
+//     const { date, description, amount, comment } = req.body;
+
+//     if (!date || !description || !amount) {
+//       return res.status(400).json({ message: "Missing required fields" });
+//     }
+
+//     const db = await connectToDatabase();
+
+//     // Fetch Cash account ID
+//     const [cashRows] = await db.query(
+//       `SELECT account_id FROM chartofaccounts WHERE account_name = 'Cash' LIMIT 1`
+//     );
+
+//     // Fetch Service Income account ID
+//     const [incomeRows] = await db.query(
+//       `SELECT account_id FROM chartofaccounts WHERE account_name = 'Service Income' LIMIT 1`
+//     );
+
+//     if (!cashRows.length || !incomeRows.length) {
+//       return res.status(400).json({ message: "Required accounts not found" });
+//     }
+
+//     const cashId = cashRows[0].account_id;
+//     const incomeId = incomeRows[0].account_id;
+
+//     // Insert Cash (Debit)
+//     await db.query(
+//       `INSERT INTO journalentry (date, account_id, description, debit, credit, comment)
+//        VALUES (?, ?, ?, ?, 0, ?)`,
+//       [date, cashId, description, amount, comment]
+//     );
+
+//     // Insert Service Income (Credit)
+//     await db.query(
+//       `INSERT INTO journalentry (date, account_id, description, debit, credit, comment)
+//        VALUES (?, ?, ?, 0, ?, ?)`,
+//       [date, incomeId, description, amount, comment]
+//     );
+
+//     res.json({ message: "Journal entry recorded successfully" });
+//   } catch (err) {
+//     console.error("Error inserting journal entry:", err);
+//     res.status(500).json({ message: "Server error", error: err.message });
+//   }
+// });
+
+
+// // upload excel to journal entry
+// router.post("/journal/upload", upload.single("file"), async (req, res) => {
+//   try {
+//     const workbook = xlsx.readFile(req.file.path);
+//     const sheet = workbook.Sheets[workbook.SheetNames[0]];
+//     const rows = xlsx.utils.sheet_to_json(sheet);
+
+//     for (let row of rows) {
+//       const accountField = row["Account"]?.trim();
+//       let accountId = null;
+
+//       if (accountField.includes("-")) {
+//         // "Main - Sub"
+//         const [mainName, subName] = accountField.split("-").map(s => s.trim());
+
+//         const [mainAccount] = await db.query(
+//           "SELECT id FROM chartofaccounts WHERE account_name = ?",
+//           [mainName]
+//         );
+
+//         if (mainAccount.length > 0) {
+//           const [subAccount] = await db.query(
+//             "SELECT id FROM subaccount WHERE account_id = ? AND account_name = ?",
+//             [mainAccount[0].id, subName]
+//           );
+
+//           if (subAccount.length > 0) {
+//             accountId = subAccount[0].id;
+//           } else {
+//             console.warn(`⚠️ Subaccount '${subName}' not found under '${mainName}'`);
+//           }
+//         } else {
+//           console.warn(`⚠️ Main account '${mainName}' not found`);
+//         }
+//       } else {
+//         // only main account
+//         const [mainAccount] = await db.query(
+//           "SELECT id FROM chartofaccounts WHERE account_name = ?",
+//           [accountField]
+//         );
+//         if (mainAccount.length > 0) {
+//           accountId = mainAccount[0].id;
+//         } else {
+//           console.warn(`⚠️ Account '${accountField}' not found`);
+//         }
+//       }
+
+//       if (!accountId) {
+//         console.error(`❌ Could not resolve account: ${accountField}`);
+//         continue; // skip this row
+//       }
+
+//       // ✅ Insert into journalentry
+//       await db.query(
+//         `INSERT INTO journalentry 
+//          (date, description, account_id, debit, credit, comment) 
+//          VALUES (?, ?, ?, ?, ?, ?)`,
+//         [
+//           row["Date"],
+//           row["Description"],
+//           accountId,
+//           row["Debit"] || 0,
+//           row["Credit"] || 0,
+//           row["Comment"] || null
+//         ]
+//       );
+//     }
+
+//     res.json({ success: true, message: "Journal entries uploaded successfully." });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).json({ error: "Upload failed. Please check your file format." });
+//   }
+// });
+
+// ADMIN DASHBOARDS
+// Count Appointments
+router.get("/appointments/count", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query("SELECT COUNT(*) AS count FROM appointment");
+    res.json(rows[0].count);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch appointments count" });
+  }
+});
+
+// Count Patients
+router.get("/patients/count", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query("SELECT COUNT(*) AS count FROM users WHERE role = 'patient'");
+    res.json(rows[0].count);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch patients count" });
+  }
+});
+
+// routes/dashboard.js
+router.get("/patients/demographics", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query(`
+      SELECT 
+        CASE 
+          WHEN age < 18 THEN 'Children'
+          WHEN age BETWEEN 18 AND 59 THEN 'Adults'
+          ELSE 'Seniors'
+        END as category,
+        COUNT(*) as value
+      FROM users
+      GROUP BY category;
+    `);
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch demographics" });
+  }
+});
+
+//NOTIFICATIONS
+router.get("/notificaitions", authenticateToken, async (req, res) => {
+  const userId = req.user.user_id; // comes from JWT
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(
+      "SELECT * FROM notifications WHERE user_id = ? ORDER BY ntf_created_at DESC",
+      [userId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching notifications:", err);
+    res.status(500).json({ error: "Failed to fetch notifications" });
+  }
+});
+
+// Staff sends follow-up notification
+router.post("/followup/:appointId", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const { appointId } = req.params;
+    const { message } = req.body;
+
+    // Get patient user_id from appointment
+    const [rows] = await db.query(
+      "SELECT u.user_id FROM appointment a JOIN users u ON a.user_name = u.user_name WHERE a.appoint_id = ?",
+      [appointId]
+    );
+
+    if (!rows.length) return res.status(404).json({ message: "Appointment or patient not found" });
+
+    const user_id = rows[0].user_id;
+
+    // Insert notification
+    await db.query(
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
+       VALUES (?, ?, ?, NOW())`,
+      [user_id, "Appointment Follow-up", message]
+    );
+
+    res.json({ message: "Follow-up notification sent successfully!" });
+  } catch (err) {
+    console.error("Follow-up error:", err);
+    res.status(500).json({ message: "Failed to send follow-up notification" });
   }
 });
 

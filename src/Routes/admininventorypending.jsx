@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
+import { BarChart3, Users, Calendar, Menu, X, PlusCircle } from "lucide-react";
 
-const admininventory = () => {
+const AdminInventoryPending = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [items, setItems] = useState([]); // inventory state
+  const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Scroll behavior
   useEffect(() => {
@@ -21,21 +23,21 @@ const admininventory = () => {
     }
   }, [location]);
 
-  // Fetch inventory items on load
+  // Fetch pending inventory items
   useEffect(() => {
     const fetchItems = async () => {
       try {
-        const token = localStorage.getItem("token"); // include token if needed
+        const token = localStorage.getItem("token");
         const res = await fetch("http://localhost:3000/auth/pendingitems", {
           headers: {
-            "Authorization": `Bearer ${token}`
-          }
+            Authorization: `Bearer ${token}`,
+          },
         });
-        if (!res.ok) throw new Error("Failed to fetch inventory");
+        if (!res.ok) throw new Error("Failed to fetch pending items");
         const data = await res.json();
         setItems(data);
       } catch (err) {
-        console.error("Error fetching inventory:", err);
+        console.error("Error fetching pending items:", err);
       } finally {
         setLoading(false);
       }
@@ -43,301 +45,313 @@ const admininventory = () => {
     fetchItems();
   }, []);
 
-const handleDelete = async (id) => {
-  if (!window.confirm("Are you sure you want to delete this Item?")) return;
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to reject this Item?")) return;
 
-  const token = localStorage.getItem("token");
-  try {
-    const res = await fetch(`http://localhost:3000/auth/deleteitem/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`http://localhost:3000/auth/deleteitem/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || "Failed to delete Item");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to delete Item");
+      }
+
+      setItems((prevItems) => prevItems.filter((item) => item.inv_id !== id));
+      alert("Item rejected successfully");
+    } catch (err) {
+      console.error("Error deleting item:", err);
+      alert(err.message || "Could not reject Item");
     }
+  };
 
-    // Update state to remove deleted item
-    setItems((prevItems) => prevItems.filter((item) => item.inv_id !== id));
+  const handleApprove = async (id) => {
+    const token = localStorage.getItem("token");
+    try {
+      const res = await fetch(`http://localhost:3000/auth/approveitem/${id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-    alert("Item deleted successfully");
-  } catch (err) {
-    console.error("Error deleting item:", err);
-    alert(err.message || "Could not delete Item");
-  }
-};
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to approve item");
+      }
 
-const handleApprove = async (id) => {
-  const token = localStorage.getItem("token");
-  try {
-    const res = await fetch(`http://localhost:3000/auth/approveitem/${id}`, {
-      method: "PUT",
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+      setItems((prevItems) =>
+        prevItems.map((item) =>
+          item.inv_id === id ? { ...item, inv_item_status: "approved" } : item
+        )
+      );
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || "Failed to approve item");
+      alert("Item approved successfully");
+    } catch (err) {
+      console.error("Error approving item:", err);
+      alert(err.message || "Could not approve item");
     }
+  };
 
-    // Update state to remove approved item from pending list
-    setItems((prevItems) =>
-      prevItems.map((item) =>
-        item.inv_id === id ? { ...item, inv_item_status: "approved" } : item
-      )
+  // Filter only "pending" + search
+  const filteredItems = items.filter((item) => {
+    const matchesStatus = item.inv_item_status === "pending";
+    const matchesSearch = Object.values(item).some((val) =>
+      val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    alert("Item approved successfully");
-  } catch (err) {
-    console.error("Error approving item:", err);
-    alert(err.message || "Could not approve item");
-  }
-};
-
-
-// Show only "pending" items, and also apply search filter
-const filteredItems = items.filter((item) => {
-  const matchesStatus = item.inv_item_status === "pending";
-  const matchesSearch = Object.values(item).some((val) =>
-    val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  return matchesStatus && matchesSearch;
-});
+    return matchesStatus && matchesSearch;
+  });
 
   return (
-    <div>
-      <div className="p-4">
-        <div className="container-fluid">
-          <div className="row">
-            <div
-                className="col-sm-3 p-5 rounded-lg shadow-lg"
-                style={{ margin: "1%", border: "solid", borderColor: "#01D5C4" }}
-                >
-                {/* Dashboard */}
-                <Link to="/">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-tachometer" aria-hidden="true"></i> Dashboard
-                    </button>
-                </Link>
+    <div className="flex min-h-screen bg-gray-100">
+      {/* Sidebar (desktop) */}
+      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <nav className="flex flex-col gap-2">
+          <Link
+            to="/admindashboard"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <BarChart3 size={18} /> Dashboard
+          </Link>
 
-                {/* Ledger with Dropdown */}
-                <button
-                    onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                    className="w-full text-left px-4 py-2 flex justify-between items-center hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                >
-                    <span>
-                    <i className="fa fa-book" aria-hidden="true"></i> Ledger
-                    </span>
-                    <i
-                    className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`}
-                    aria-hidden="true"
-                    ></i>
-                </button>
-
-                {isLedgerOpen && (
-                    <div className="ml-8 text-sm">
-                    <Link to="/admincoa">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Chart of Accounts
-                        </p>
-                    </Link>
-                    <Link to="/adminjournal">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Journal Entries
-                        </p>
-                    </Link>
-                    <Link to="/admingeneral">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        General Ledger
-                        </p>
-                    </Link>
-                    <Link to="/admintrial">
-                        <p className="py-1 hover:underline" style={{ color: "#00458B" }}>
-                        Trial Balance
-                        </p>
-                    </Link>
-                    </div>
-                )}
-
-                {/* Users */}
-                <Link to="/adminusers">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-users" aria-hidden="true"></i> Users
-                    </button>
-                </Link>
-
-                {/* Inventory */}
-                <Link to="/admininventory">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00c3b8" }}
-                    >
-                    <i className="fa fa-archive" aria-hidden="true"></i> Inventory
-                    </button>
-                </Link>
-
-                {/* Patients */}
-                <Link to="/adminpatients">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-user-plus" aria-hidden="true"></i> Patients
-                    </button>
-                </Link>
-
-                {/* Schedule */}
-                <Link to="/adminschedule">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
-                    </button>
-                </Link>
-
-                {/* Audit Trail */}
-                <Link to="/adminaudit">
-                    <button
-                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
-                    style={{ color: "#00458B" }}
-                    >
-                    <i className="fa fa-eye" aria-hidden="true"></i> Audit Trail
-                    </button>
-                </Link>
-                </div>
-                <div className="col-sm-7">
-                    <div className="row">
-                        <div className="col-sm-12 bg-[#00458B] p-10 rounded-lg shadow-lg" style={{color:"white"}}>
-                            <div className="row">
-                                <div className="col-sm-6">
-                                    <h1 className="text-2xl font-bold">Inventory Management</h1>
-                                    <h1 className="text-1xl font-bold">(Pending Items)</h1>
-                                </div>
-                                <div className="col-sm-3">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventoryadd")}>+ Add New Item</button>
-                                </div>
-                                <div className="col-sm-3">
-                                        <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/admininventory")}>Approved Items</button>
-                                </div>
-                            </div>
-                        </div>
-                        <p style={{color:"transparent"}}>...</p>
-                        <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                            <div className="row">
-                                <div className="col-sm-12">
-                                {/* Table */}
-                                <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
-                                    {/* Search bar */}
-                                    <div className="flex justify-between items-center">
-                                    <div></div>
-                                    <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
-                                        <input
-                                        type="text"
-                                        placeholder="Search"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="flex-1 outline-none text-sm text-gray-700"
-                                        />
-                                        <i className="fa fa-search text-[#00458B]"></i>
-                                    </div>
-                                    </div>
-                                </div>
-
-                                <div className="overflow-x-auto">
-                                    <table className="w-full border-collapse border border-gray-200">
-                                    <thead>
-                                        <tr className="bg-white text-[#00458B] border-b border-gray-200">
-                                        <th className="px-4 py-2 text-center">Item Name</th>
-                                        <th className="px-4 py-2 text-center">Status</th>
-                                        <th className="px-4 py-2 text-center">Quantity</th>
-                                        <th className="px-4 py-2 text-center"></th>
-                                        <th className="px-4 py-2 text-center"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {loading ? (
-                                        <tr>
-                                            <td colSpan="5" className="text-center py-4 text-gray-500">
-                                            Loading...
-                                            </td>
-                                        </tr>
-                                        ) : filteredItems.length > 0 ? (
-                                        filteredItems.map((item) => (
-                                            <tr key={item.inv_id} className="border-b border-gray-200 text-center">
-                                            <td className="px-4 py-2 text-blue-700">{item.inv_item_name}</td>
-                                            <td className="px-4 py-2">{item.inv_status}</td>
-                                            <td className="px-4 py-2">{item.inv_quantity}</td>
-                                            <td className="px-4 py-2">
-                                                <button 
-                                                    onClick={() => handleApprove(item.inv_id)}
-                                                    className="bg-[#04AA6D] text-white w-full border border-[#00458b] px-4 py-1 rounded-full">
-                                                    Approve
-                                                </button>
-                                            </td>
-                                            <td className="px-4 py-2">
-                                                <button 
-                                                    onClick={() => handleDelete(item.inv_id)}
-                                                    className="bg-[#f44336] text-white px-4 py-1 rounded-full">
-                                                    Reject
-                                                </button>
-                                            </td>
-                                            </tr>
-                                        ))
-                                        ) : (
-                                        <tr>
-                                            <td colSpan="5" className="text-center text-gray-500 py-4">
-                                            No items found
-                                            </td>
-                                        </tr>
-                                        )}
-                                    </tbody>
-                                    </table>
-                                    </div>
-                                  </div>
-                            </div>
-                            <div className="col-sm-12">
-                                <div className="row">
-                                    <div className="col-sm-6">
-                                    </div>
-                                        <div className="col-sm-6">
-                                            <div className="row">
-                                                <div className="col-sm-4">
-
-                                                </div>
-                                            <div className="col-sm-8">
-                                                    <br />
-                                                    <br />
-                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/register2")}>Generate Report</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <div className="col-sm-2">
-                
+          {/* Ledger with dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+                Chart of Accounts
+              </Link>
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+                Journal Entries
+              </Link>
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+                General Ledger
+              </Link>
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+                Trial Balance
+              </Link>
             </div>
+          )}
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
+        </nav>
+      </aside>
+
+      {/* Sidebar (mobile with toggle) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <Users size={18} /> Users
+              </Link>
+              {/* ... add other links */}
+            </nav>
+          </aside>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-8">
+        {/* Mobile menu button */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
+        >
+          <Menu size={24} /> Menu
+        </button>
+
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-[#00458B]">
+              Inventory
+            </h1>
+            <p className="text-gray-600">(Pending Items)</p>
+          </div>
+
+          <div className="flex gap-3">
+            <Link
+              to="/admininventory"
+              className="flex items-center gap-2 bg-[#00c3b8] text-white px-4 py-2 rounded-lg"
+            >
+              Approved Items
+            </Link>
+            <Link
+              to="/admininventoryadd"
+              className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
+            >
+              <PlusCircle size={18} /> Add Item
+            </Link>
+            <Link
+              to="/adminsupplier"
+              className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
+            >
+              <PlusCircle size={18} /> Supplier
+            </Link>
           </div>
         </div>
-      </div>
+
+        {/* Table */}
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+        {/* Search Bar */}
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
+            <input
+              type="text"
+              placeholder="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="flex-1 outline-none text-sm text-gray-700"
+            />
+            <i className="fa fa-search text-[#00458B]"></i>
+          </div>
+        </div>
+          <table className="w-full border-collapse border border-gray-200">
+            <thead>
+              <tr className="bg-gray-100 text-[#00458B]">
+                <th className="px-4 py-2 text-center">Item Name</th>
+                <th className="px-4 py-2 text-center">Category</th>
+                <th className="px-4 py-2 text-center">Quantity</th>
+                <th className="px-4 py-2 text-center">Company Name</th>
+                <th className="px-4 py-2 text-center">Status</th>
+                <th className=" text-center"></th>
+                <th className=" text-center"></th>
+                <th className=" text-center"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="4" className="text-center py-4 text-gray-500">
+                    Loading...
+                  </td>
+                </tr>
+              ) : filteredItems.length > 0 ? (
+                filteredItems.map((item) => (
+                  <tr
+                    key={item.inv_id}
+                    className="border-b border-gray-200 text-center"
+                  >
+                    <td className="px-4 py-2 text-blue-700">
+                      {item.inv_item_name}
+                    </td>
+                    <td className="px-4 py-2">{item.inv_item_type}</td>
+                    <td className="px-4 py-2">{item.inv_quantity}</td>
+                    <td className="px-4 py-2">{item.supplier_name}</td>
+                    <td className="px-4 py-2">{item.inv_item_status}</td>
+                    <td className="">
+                        <button
+                          onClick={() => navigate(`/admininventoryview/${item.inv_id}`)}
+                          className="bg-[#008CBA] text-white px-4 py-2 rounded-lg hover:bg-[#008CBA]"
+                        >
+                          View
+                        </button>
+                    </td>
+                    <td className="px-2 py-2">
+                    
+                      <button
+                        onClick={() => handleApprove(item.inv_id)}
+                        className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
+                      >
+                        Approve
+                      </button>
+                    </td>
+                    <td className="px-1 py-2">
+                      <button
+                        onClick={() => handleDelete(item.inv_id)}
+                        className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                      >
+                        Reject
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    colSpan="4"
+                    className="text-center text-gray-500 py-4"
+                  >
+                    No items found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Report Button */}
+        <div className="flex justify-end mt-6">
+          <button
+            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
+            onClick={() => navigate("/register2")}
+          >
+            Generate Report
+          </button>
+        </div>
+      </main>
     </div>
   );
 };
 
-export default admininventory;
+export default AdminInventoryPending;
