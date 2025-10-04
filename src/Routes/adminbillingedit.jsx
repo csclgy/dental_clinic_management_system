@@ -31,6 +31,15 @@ const Adminbillingedit = () => {
 
   const [gcashProof, setGcashProof] = useState(null);
 
+  const [extraServices, setExtraServices] = useState([]);
+  const [newServiceName, setNewServiceName] = useState("");
+  const [newServiceAmount, setNewServiceAmount] = useState(0);
+
+  const [hmoNumber, setHmoNumber] = useState("");
+  const [pwdDiscount, setPwdDiscount] = useState("");
+
+  const [billingDate, setBillingDate] = useState("");
+
 const fetchBillingData = async () => {
   try {
     const token = localStorage.getItem("token");
@@ -55,6 +64,10 @@ const fetchBillingData = async () => {
       setPaymentOR(appoint.or_num || "");
       setServiceCharge(Number(appoint.total_service_charged || 0));
     }
+    if (appoint.billing_date) {
+    setBillingDate(appoint.billing_date.split("T")[0]); 
+    // assumes backend returns ISO string like "2025-10-04T00:00:00Z"
+  }
   } catch (err) {
     console.error("Error fetching billing data:", err);
   }
@@ -72,7 +85,7 @@ const fetchBillingData = async () => {
     return sum + qty * price;
   }, 0);
 
-  const totalCharged = itemsTotal + Number(serviceCharge || 0);
+  // const totalCharged = itemsTotal + Number(serviceCharge || 0);
 
   // add item
     const handleAddItem = async () => {
@@ -129,40 +142,96 @@ const fetchBillingData = async () => {
     }
   };
 
-  // Save appointment billing (backend will compute total_charged using chargeditems + total_service_charged)
-  const handleSaveBilling = async () => {
-    try {
-      const token = localStorage.getItem("token");
 
-      const formData = new FormData();
-      formData.append("payment_method", paymentMode);
-      formData.append("payment_status", paymentStatus);
-      formData.append("or_num", paymentOR);
-      formData.append("total_service_charged", Number(serviceCharge || 0));
+const handleAddService = async () => {
+  if (!newServiceName || !newServiceAmount) {
+    return alert("Please enter service name and amount.");
+  }
 
-      // only attach file if GCash and proof is selected
-      if (paymentMode === "GCash" && gcashProof) {
-        formData.append("gcash_proof", gcashProof);
-      }
+  try {
+    const token = localStorage.getItem("token");
 
-      await axios.post(
-        `http://localhost:3000/auth/billing/${appointId}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+    // Call backend to save the service
+    const res = await axios.post(
+      `http://localhost:3000/auth/billing/${appointId}`,
+      {
+        ci_item_name: newServiceName,
+        ci_quantity: 1, // services usually count as 1
+        ci_amount: parseFloat(newServiceAmount),
+        ci_type: "service", // explicitly mark it as a service
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-      alert("Billing saved successfully");
-      await fetchBillingData();
-    } catch (err) {
-      console.error("Error saving billing:", err);
-      alert("Failed to save billing");
-    }
+    // Append newly saved service to UI
+    const newService = {
+      ci_id: res.data.ci_id, // backend returns insertId
+      ci_item_name: newServiceName,
+      ci_quantity: 1,
+      ci_amount: parseFloat(newServiceAmount),
+      ci_type: "service",
+    };
+    setChargedItems((prev) => [...prev, newService]);
+
+    // Reset inputs
+    setNewServiceName("");
+    setNewServiceAmount(0);
+
+  } catch (err) {
+    console.error("Error adding service:", err);
+    alert("Failed to add service");
+  }
+};
+
+  const handleDeleteService = (id) => {
+    setExtraServices((prev) => prev.filter((s) => s.id !== id));
   };
+
+  const servicesTotal = extraServices.reduce((sum, s) => sum + Number(s.amount), 0);
+  const totalCharged = itemsTotal + servicesTotal;
+
+const handleSaveBilling = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const formData = new FormData();
+    formData.append("payment_method", paymentMode);
+    formData.append("payment_status", paymentStatus);
+    formData.append("or_num", paymentOR);
+    formData.append("total_service_charged", Number(serviceCharge || 0));
+
+    if (pwdDiscount) {
+      formData.append("pwd_number", pwdDiscount);
+    }
+    if (hmoNumber) {
+      formData.append("hmo_number", hmoNumber);
+    }
+    if (billingDate) {
+      formData.append("billing_date", billingDate); // ✅ FIX
+    }
+
+    if (paymentMode === "GCash" && gcashProof) {
+      formData.append("gcash_proof", gcashProof);
+    }
+
+    await axios.post(
+      `http://localhost:3000/auth/billing/${appointId}`,
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    alert("Billing saved successfully");
+    await fetchBillingData();
+  } catch (err) {
+    console.error("Error saving billing:", err);
+    alert("Failed to save billing");
+  }
+};
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -321,7 +390,7 @@ const fetchBillingData = async () => {
                                 <hr></hr>
                                     <br></br>
                                      {/* Payment Info */}
-                                    <div className="mb-4 grid grid-cols-2 gap-4">
+                                      <div className="mb-4 grid grid-cols-2 gap-4">
                                         <div>
                                           <label className="block font-semibold">OR Number:</label>
                                           <input
@@ -331,33 +400,37 @@ const fetchBillingData = async () => {
                                             onChange={(e) => setPaymentOR(e.target.value)}
                                           />
                                         </div>
-                                      <div>
-                                        <label className="block font-medium">Payment Status</label>
-                                        <select
-                                          className="border p-2 w-full rounded"
-                                          value={paymentStatus}
-                                          onChange={(e) => setPaymentStatus(e.target.value)}
-                                        >
-                                          <option value="">--Select--</option>
-                                          <option value="Unpaid">Unpaid</option>
-                                          <option value="Paid">Fully Paid</option>
-                                          <option value="Partial">Partial</option>
-                                        </select>
-                                      </div>
-                                      <div>
-                                        <label className="block font-medium">Mode of Payment</label>
-                                        <select
-                                          className="border p-2 w-full rounded"
-                                          value={paymentMode}
-                                          onChange={(e) => setPaymentMode(e.target.value)}
-                                        >
-                                          <option value="">--Select--</option>
-                                          <option value="Cash">Cash</option>
-                                          <option value="GCash">GCash</option>
-                                        </select>
-                                      </div>
-                                      <div>
-                                          <label className="block font-semibold">Service Charge</label>
+
+                                        <div>
+                                          <label className="block font-medium">Payment Status</label>
+                                          <select
+                                            className="border p-2 w-full rounded"
+                                            value={paymentStatus}
+                                            onChange={(e) => setPaymentStatus(e.target.value)}
+                                          >
+                                            <option value="">--Select--</option>
+                                            <option value="Unpaid">Unpaid</option>
+                                            <option value="Paid">Fully Paid</option>
+                                            <option value="Partial">Partial</option>
+                                          </select>
+                                        </div>
+
+                                        <div>
+                                          <label className="block font-medium">Mode of Payment</label>
+                                          <select
+                                            className="border p-2 w-full rounded"
+                                            value={paymentMode}
+                                            onChange={(e) => setPaymentMode(e.target.value)}
+                                          >
+                                            <option value="">--Select--</option>
+                                            <option value="Cash">Cash</option>
+                                            <option value="GCash">GCash</option>
+                                            <option value="HMO">HMO</option> {/* fixed value */}
+                                          </select>
+                                        </div>
+
+                                        <div>
+                                          <label className="block font-semibold">Main Service Charge(₱) :</label>
                                           <input
                                             type="number"
                                             className="w-full border rounded px-3 py-2"
@@ -366,18 +439,154 @@ const fetchBillingData = async () => {
                                             min="0"
                                           />
                                         </div>
-                                        {/* Show upload input ONLY if paymentMode === "GCash" */}
+
+                                        {/* ✅ Show upload input ONLY if paymentMode === "GCash" */}
                                         {paymentMode === "GCash" && (
-                                          <div className="mb-4">
+                                          <div className="col-span-2">
                                             <label className="block font-medium">Upload GCash Proof</label>
                                             <input
                                               type="file"
                                               accept="image/*"
-                                              className="border p-2 w-full rounded"
+                                              className="col-sm-6 border p-2 rounded"
                                               onChange={(e) => setGcashProof(e.target.files[0])}
                                             />
                                           </div>
                                         )}
+
+                                        {/* ✅ Show HMO Number ONLY if paymentMode === "HMO" */}
+                                        {paymentMode === "HMO" && (
+                                          <div className="col-span-2">
+                                            <label className="block font-medium">HMO Number</label>
+                                            <input
+                                              type="text"
+                                              className="col-sm-6 border rounded px-3 py-2"
+                                              value={hmoNumber}
+                                              onChange={(e) => setHmoNumber(e.target.value)}
+                                              placeholder="Enter HMO Number"
+                                            />
+                                          </div>
+                                        )}
+
+                                        {/* ✅ Always show PWD Discount field */}
+                                        <div className="col-span-2">
+                                          <label className="block font-medium">PWD #No. (Optional)</label>
+                                          <input
+                                            type="text"
+                                            className="col-sm-6 border rounded px-3 py-2"
+                                            value={pwdDiscount}
+                                            onChange={(e) => setPwdDiscount(e.target.value)}
+                                            placeholder="Enter PWD Number"
+                                          />
+                                        </div>
+                                        <div>
+                                        <label className="block font-semibold">Billing Date</label>
+                                        <input
+                                          type="date"
+                                          className="w-full border rounded px-3 py-2"
+                                          value={billingDate}
+                                          onChange={(e) => setBillingDate(e.target.value)}
+                                        />
+                                      </div>
+                                      </div>
+
+                                    {/* Service Selection */}
+                                    <hr></hr>
+                                    <br></br>
+                                    <p className="text-2xl text-[#00458B] font-bold mb-4">Additional Items & Services</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                      <div className="flex flex-col">
+                                        <label className="mb-1 font-semibold text-sm text-gray-700">Select Service:</label>
+                                        <select
+                                          className="border rounded px-3 py-2"
+                                          value={newServiceName}
+                                          onChange={(e) => setNewServiceName(e.target.value)}
+                                        >
+                                          <option value="">Select a procedure</option>
+                                          <option value="TMJ TREATMENT">TMJ TREATMENT</option>
+                                          {/* <option value="ORTHODONTIC TREATMENT">ORTHODONTIC TREATMENT</option> */}
+                                          <option value="MYOFUNCTIONAL TREATMENT">MYOFUNCTIONAL TREATMENT</option>
+                                          <option value="ROOT CANAL TREATMENT">ROOT CANAL TREATMENT</option>
+                                          <option value="ORAL PROPHYLAXIS">ORAL PROPHYLAXIS</option>
+                                          <option value="TOOTH EXTRACTION">TOOTH EXTRACTION</option>
+                                          <option value="ODONTECTOMY">ODONTECTOMY</option>
+                                          <option value="RESTORATIVE FILLING">RESTORATIVE FILLING</option>
+                                          <option value="FLOURIDE TREATMENT">FLOURIDE TREATMENT</option>
+                                          <option value="DENTURES">DENTURES</option>
+                                          <option value="TEETH WHITENING">TEETH WHITENING</option>
+                                          <option value="DENTAL X-RAY">DENTAL X-RAY</option>
+                                        </select>
+                                      </div>
+
+                                      <div className="flex flex-col">
+                                        <label className="mb-1 font-semibold text-sm text-gray-700">Service Charge:(₱)</label>
+                                        <input
+                                          type="number"
+                                          className="px-3 py-2 border rounded"
+                                          value={newServiceAmount}
+                                          onChange={(e) => setNewServiceAmount(e.target.value)}
+                                          placeholder="Enter amount"
+                                        />
+                                      </div>
+
+                                      <div className="flex flex-col justify-end">
+                                        <button
+                                          onClick={handleAddService}
+                                          className="bg-[#00c3b8] text-white px-4 py-2 rounded"
+                                        >
+                                          + Add Service
+                                        </button>
+                                      </div>
+                                    </div>
+
+                                    {/* Item Selection */}
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+                                      <div className="flex flex-col">
+                                        <label className="mb-1 font-semibold text-sm text-gray-700">Select Item:</label>
+                                        <select
+                                          className="border rounded px-3 py-2"
+                                          value={newInvId}
+                                          onChange={(e) => {
+                                            const id = e.target.value;
+                                            setNewInvId(id);
+                                            const sel = inventory.find((i) => String(i.inv_id) === String(id));
+                                            if (sel) {
+                                              setNewAmount(sel.inv_price_per_item);
+                                              setNewItemName(sel.inv_item_name);
+                                            } else {
+                                              setNewAmount(0);
+                                              setNewItemName("");
+                                            }
+                                          }}
+                                        >
+                                          <option value="">Select Item</option>
+                                          {inventory.map((inv) => (
+                                            <option key={inv.inv_id} value={inv.inv_id}>
+                                              {inv.inv_item_name} (₱{inv.inv_price_per_item}, Stock: {inv.inv_quantity})
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                      <div className="flex flex-col">
+                                        <label className="mb-1 font-semibold text-sm text-gray-700">Item Quantity:</label>
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          className="px-3 py-2 border rounded"
+                                          value={newQuantity}
+                                          onChange={(e) => setNewQuantity(parseInt(e.target.value || "1"))}
+                                          placeholder="Quantity"
+                                        />
+                                      </div>
+
+                                      <div className="flex flex-col justify-end">
+                                        <button
+                                          onClick={handleAddItem}
+                                          className="bg-[#00c3b8] text-white px-4 py-2 rounded"
+                                        >
+                                          + Add Item
+                                        </button>
+                                      </div>
                                     </div>
 
                                     {/* Charged Items Table */}
@@ -442,52 +651,6 @@ const fetchBillingData = async () => {
                               </tr>
                             </tbody>
                          </table>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-                            <select
-                              className="border rounded px-3 py-2"
-                              value={newInvId}
-                              onChange={(e) => {
-                                const id = e.target.value;
-                                setNewInvId(id);
-                                const sel = inventory.find((i) => String(i.inv_id) === String(id));
-                                if (sel) {
-                                  setNewAmount(sel.inv_price_per_item);
-                                  setNewItemName(sel.inv_item_name);
-                                } else {
-                                  setNewAmount(0);
-                                  setNewItemName("");
-                                }
-                              }}
-                            >
-                              <option value="">Select Item</option>
-                              {inventory.map((inv) => (
-                                <option key={inv.inv_id} value={inv.inv_id}>
-                                  {inv.inv_item_name} (₱{inv.inv_price_per_item}, Stock: {inv.inv_quantity})
-                                </option>
-                              ))}
-                            </select>
-
-                            <input
-                              type="number"
-                              min="1"
-                              className="px-3 py-2 border rounded"
-                              value={newQuantity}
-                              onChange={(e) => setNewQuantity(parseInt(e.target.value || "1"))}
-                              placeholder="Quantity"
-                            />
-
-                            <input
-                              type="number"
-                              className="px-3 py-2 border rounded"
-                              value={newAmount}
-                              onChange={(e) => setNewAmount(e.target.value)}
-                              placeholder="Unit Price"
-                            />
-
-                            <button onClick={handleAddItem} className="bg-[#00c3b8] text-white px-4 py-2 rounded">
-                              Add
-                            </button>
-                          </div>
 
                         {/* Action Buttons */}
                         <div className="flex justify-end gap-2">

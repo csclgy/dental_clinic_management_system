@@ -1004,7 +1004,7 @@ const storage = multer.diskStorage({
   }
 });
 
-// Add charged item AND/OR update appointment billing totals + payment info
+// Add charged item/service AND/OR update appointment billing totals + payment info
 router.post(
   "/billing/:appointId",
   authenticateToken,
@@ -1020,10 +1020,14 @@ router.post(
         ci_item_name,
         ci_quantity,
         ci_amount,
+        ci_type, // NEW: "item" or "service"
         payment_method,   // optional
         or_num,   // optional
         payment_status,   // optional
-        total_service_charged // optional
+        total_service_charged, // optional (manual override)
+        pwd_number,       // NEW
+        hmo_number,
+        billing_date 
       } = req.body;
 
       const gcashProof = req.file ? req.file.filename : null;
@@ -1033,9 +1037,9 @@ router.post(
 
       let insertRes = null;
 
-      // 🔹 CASE 1: Insert charged item if item fields are present
-      if (inv_id != null && ci_item_name && ci_quantity != null && ci_amount != null) {
-        const qty = Number(ci_quantity);
+      // 🔹 CASE 1: Insert charged record (item OR service)
+      if (ci_item_name && ci_amount != null) {
+        const qty = Number(ci_quantity ?? 1);
         const amt = Number(ci_amount);
 
         if (Number.isNaN(qty) || Number.isNaN(amt)) {
@@ -1043,9 +1047,10 @@ router.post(
         }
 
         [insertRes] = await db.query(
-          `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id, ci_status)
-          VALUES (?, ?, ?, ?, ?, 'pending')`,
-          [inv_id, ci_item_name, qty, amt, appointId]
+          `INSERT INTO chargeditem 
+            (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id, ci_status, ci_type)
+          VALUES (?, ?, ?, ?, ?, 'pending', ?)`,
+          [inv_id || null, ci_item_name, qty, amt, appointId, ci_type || (inv_id ? "item" : "service")]
         );
       }
 
@@ -1088,10 +1093,23 @@ router.post(
         updateQuery += `, downpayment_proof = ?`;
         updateParams.push(gcashProof);
       }
-
       if (or_num != null) {
         updateQuery += `, or_num = ?`;
         updateParams.push(or_num);
+      }
+
+      if (pwd_number != null) {
+        updateQuery += `, pwd_number = ?`;
+        updateParams.push(pwd_number);
+      }
+      if (hmo_number != null) {
+        updateQuery += `, hmo_number = ?`;
+        updateParams.push(hmo_number);
+      }
+
+      if (billing_date != null) {
+        updateQuery += `, billing_date = ?`;
+        updateParams.push(billing_date);
       }
 
       updateQuery += ` WHERE appoint_id = ?`;
@@ -1104,14 +1122,15 @@ router.post(
 
       // Fetch updated appointment
       const [updatedAppRows] = await db.query(
-        `SELECT payment_method, payment_status, total_service_charged, total_charged, appointment_status, downpayment_proof
-         FROM appointment
-         WHERE appoint_id = ?`,
+        `SELECT payment_method, payment_status, total_service_charged, total_charged, 
+                appointment_status, downpayment_proof, pwd_number, hmo_number, billing_date
+        FROM appointment
+        WHERE appoint_id = ?`,
         [appointId]
       );
 
       res.status(insertRes ? 201 : 200).json({
-        message: insertRes ? "Charged item added + billing updated" : "Billing updated",
+        message: insertRes ? "Charge added + billing updated" : "Billing updated",
         ci_id: insertRes?.insertId ?? null,
         appoint_id: appointId,
         items_total: itemsTotal,
@@ -1120,7 +1139,10 @@ router.post(
         payment_method: updatedAppRows[0]?.payment_method ?? null,
         payment_status: updatedAppRows[0]?.payment_status ?? null,
         downpayment_proof: updatedAppRows[0]?.downpayment_proof ?? null,
-        appointment_status: updatedAppRows[0]?.appointment_status ?? "done"
+        appointment_status: updatedAppRows[0]?.appointment_status ?? "done",
+        pwd_number: updatedAppRows[0]?.pwd_number ?? null,
+        hmo_number: updatedAppRows[0]?.hmo_number ?? null,
+        billing_date: updatedAppRows[0]?.billing_date ?? null
       });
 
     } catch (err) {

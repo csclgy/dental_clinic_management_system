@@ -344,26 +344,45 @@ const Adminconsultationview = () => {
                                             overflowY: "auto",    // 🔹 enables vertical scrolling
                                           }}
                                         >
-                                          <div className="col-sm-12 mb-2">
-                                            <div className="row">
-                                              <div className="col-sm-4">
-                                                <p className="font-bold">OR Number:</p><p>{consultation.or_num} </p>
-                                              </div>
-                                              <div className="col-sm-4">
-                                                <p className="font-bold mb-2">Payment Method:</p> <p>{consultation.payment_method} </p>
-                                              </div>
-                                              <div className="col-sm-4">
-                                                <p className="font-bold mb-2">Payment Status:</p> <p>{consultation.payment_status} </p>
-                                              </div>
+                                        <div className="col-sm-12 mb-2">
+                                          <p className="font-bold text-xl mb-2">Payment Details</p>
+                                          <div className="row">
+                                            <div className="col-sm-6">
+                                              <p className="font-bold">OR Number:</p>
+                                              <p>{consultation.or_num || "N/A"}</p>
+                                              <br />
+                                            </div>
+                                            <div className="col-sm-6">
+                                              <p className="font-bold">Payment Status:</p>
+                                              <p>{consultation.payment_status || "N/A"}</p>
+                                            </div>
+                                            <div className="col-sm-6">
+                                              <p className="font-bold">Payment Method:</p>
+                                              <p>{consultation.payment_method || "N/A"}</p>
+                                              <br />
+                                            </div>
+                                            <div className="col-sm-6">
+                                              <p className="font-bold">HMO No.:</p>
+                                              <p>{consultation.hmo_number || "N/A"}</p>
+                                            </div>
+                                            <div className="col-sm-6">
+                                              <p className="font-bold">Charged Date:</p>
+                                              <p>{consultation.billing_date || "N/A"}</p>
+                                            </div>
+                                            <div className="col-sm-6">
+                                              <p className="font-bold">PWD No.:</p>
+                                              <p>{consultation.pwd_number || "N/A"}</p>
                                             </div>
                                           </div>
+                                        </div>
+
                                           <hr className="mb-2"></hr>
-                                          <p className="font-bold mb-2">Charged Service</p>
+                                          <p className="font-bold mb-2">Charged Service:</p>
                                           <p>
                                             {consultation.procedure_type} - ₱{consultation.total_service_charged.toFixed(2)}
                                           </p>
                                           <hr className="my-2" />
-                                          <p className="font-bold mb-2">Charged Items</p>
+                                          <p className="font-bold mb-2">Charged Items:</p>
                                           {chargedItems.length > 0 ? (
                                             chargedItems.map((item, idx) => (
                                               <p key={idx}>
@@ -450,11 +469,11 @@ const Adminconsultationview = () => {
                             <br></br>
                             <div className="col-sm-12">
                                 <div className="row">
-                                    <div className="col-sm-6">
+                                    <div className="col-sm-8">
                                     </div>
-                                        <div className="col-sm-6">
+                                        <div className="col-sm-4">
                                             <div className="row">
-                                              <div className="col-sm-6">
+                                              <div className="col-sm-12">
                                                 <button
                                                   disabled={consultation.appointment_status !== "done"}
                                                   className={`px-6 py-2 rounded-full font-semibold w-full mb-4 border ${
@@ -471,9 +490,6 @@ const Adminconsultationview = () => {
                                                   Print
                                                 </button>
                                               </div>
-                                                <div className="col-sm-6">
-                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={() => navigate("/adminpatients")}>Back to List</button>
-                                                </div>
                                             </div>
                                         </div>
                                 </div>
