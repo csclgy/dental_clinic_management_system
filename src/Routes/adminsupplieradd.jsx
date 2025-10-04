@@ -89,19 +89,19 @@ const AdminSupplierAdd = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -130,6 +130,12 @@ const AdminSupplierAdd = () => {
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
           </Link>
           <Link
             to="/adminaudit"

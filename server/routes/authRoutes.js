@@ -294,12 +294,12 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
       }
     }
 
-    // --- NEW: Insert notification for user ---
+    // --- NEW: Insert notification with expiry ---
     await db.query(
-      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
-       VALUES (?, ?, ?, NOW())`,
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
+      VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))`,
       [
-        req.user.user_id, // use logged-in user ID from token
+        req.user.user_id, 
         "Appointment Submitted",
         `Your appointment for ${procedure_type} on ${pref_date} at ${pref_time} has been submitted and is under review.`,
       ]
@@ -311,8 +311,8 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
 
     for (const staff of staffRows) {
       await db.query(
-        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
-        VALUES (?, ?, ?, NOW())`,
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
+        VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))`,
         [
           staff.user_id,
           "New Appointment Submitted",
@@ -894,7 +894,9 @@ router.get("/billing/:appointId", authenticateToken, async (req, res) => {
         payment_method,
         payment_status,
         total_service_charged,
-        total_charged
+        total_charged,
+        p_fname,
+        p_lname
       FROM appointment
       WHERE appoint_id = ?`,
       [appointId]
@@ -1184,16 +1186,63 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
       home_address,
       city,
       province,
+      user_name,
+      user_password,
+      user_status,
     } = req.body;
 
     const db = await connectToDatabase();
-    await db.query(
-      `UPDATE users 
-       SET email = ?, contact_no = ?, fname = ?, mname = ?, lname = ?, 
-           date_birth = ?, gender = ?, age = ?, home_address = ?, city = ?, province = ? 
-       WHERE user_id = ? AND role = 'patient'`,
-      [email, contact_no, fname, mname, lname, date_birth, gender, age, home_address, city, province, id]
-    );
+
+    // Build the fields dynamically so password update is optional
+    let fields = [
+      "email = ?",
+      "contact_no = ?",
+      "fname = ?",
+      "mname = ?",
+      "lname = ?",
+      "date_birth = ?",
+      "gender = ?",
+      "age = ?",
+      "home_address = ?",
+      "city = ?",
+      "province = ?",
+      "user_name = ?",
+      "user_status = ?",
+    ];
+
+    let values = [
+      email,
+      contact_no,
+      fname,
+      mname,
+      lname,
+      date_birth,
+      gender,
+      age,
+      home_address,
+      city,
+      province,
+      user_name,
+      user_status,
+    ];
+
+    // If password is provided, hash and update it
+    if (user_password && user_password.trim() !== "") {
+      const bcrypt = require("bcrypt");
+      const hashedPassword = await bcrypt.hash(user_password, 10);
+      fields.push("user_password = ?");
+      values.push(hashedPassword);
+    }
+
+    values.push(id);
+
+    const sql = `
+      UPDATE users 
+      SET ${fields.join(", ")} 
+      WHERE user_id = ? AND role = 'patient'
+    `;
+
+    await db.query(sql, values);
 
     return res.json({ message: "Patient profile updated successfully" });
   } catch (err) {
@@ -1201,6 +1250,7 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 // Mark consultation as DONE or INCOMPLETE + save selected teeth
 router.put("/completeconsultation/:appointId", async (req, res) => {
@@ -1253,11 +1303,11 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
 
        // ✅ Send notification to patient
       await db.query(
-        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
-         SELECT u.user_id, ?, ?, NOW()
-         FROM appointment a
-         JOIN users u ON u.user_name = a.user_name
-         WHERE a.appoint_id = ?`,
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
+        SELECT u.user_id, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY)
+        FROM appointment a
+        JOIN users u ON u.user_name = a.user_name
+        WHERE a.appoint_id = ?`,
         [
           "Appointment Completed",
           `Your appointment (ID: ${appointId}) has been completed. Please check your records for details.`,
@@ -1337,8 +1387,8 @@ router.post(
 
       // Insert notification for the user
       await db.query(
-        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
-        SELECT u.user_id, ?, ?, NOW()
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
+        SELECT u.user_id, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY)
         FROM appointment a
         JOIN users u ON u.user_name = a.user_name
         WHERE a.appoint_id = ?`,
@@ -1388,8 +1438,8 @@ router.post("/processRefund/:appointId", upload.single("refund_photo"), async (r
 
     // Send notification to patient
     await db.query(
-      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
-       SELECT u.user_id, ?, ?, NOW()
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
+       SELECT u.user_id, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY)
        FROM appointment a
        JOIN users u ON u.user_name = a.user_name
        WHERE a.appoint_id = ?`,
@@ -1462,8 +1512,8 @@ router.post('/additem', async (req, res) => {
 
     for (const admin of adminRows) {
       await db.query(
-        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
-         VALUES (?, ?, ?, NOW())`,
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
+        VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))`,
         [
           admin.user_id,
           "New Inventory Item Added",
@@ -2896,6 +2946,24 @@ router.get("/trial", async (req, res) => {
 //   }
 // });
 
+// Add this to your routes file
+router.get("/appointments/all", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT appoint_id, user_name, procedure_type, pref_date, pref_time, 
+             attending_dentist, appointment_status
+      FROM appointment
+      ORDER BY pref_date ASC
+    `);
+    
+    return res.json(rows);
+  } catch (err) {
+    console.error("Fetch all appointments error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 // ADMIN DASHBOARDS
 // Count Appointments
 router.get("/appointments/count", async (req, res) => {
@@ -2949,7 +3017,11 @@ router.get("/notificaitions", authenticateToken, async (req, res) => {
   try {
     const db = await connectToDatabase();
     const [rows] = await db.query(
-      "SELECT * FROM notifications WHERE user_id = ? ORDER BY ntf_created_at DESC",
+      `SELECT * 
+       FROM notifications 
+       WHERE user_id = ? 
+         AND ntf_created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+       ORDER BY ntf_created_at DESC`,
       [userId]
     );
     res.json(rows);
@@ -2978,8 +3050,8 @@ router.post("/followup/:appointId", async (req, res) => {
 
     // Insert notification
     await db.query(
-      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at)
-       VALUES (?, ?, ?, NOW())`,
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
+      VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))`,
       [user_id, "Appointment Follow-up", message]
     );
 

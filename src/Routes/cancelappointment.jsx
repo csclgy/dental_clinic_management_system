@@ -153,7 +153,7 @@ const cancelappointment = () => {
                         )}
                         <button
                         onClick={handleSave}
-                        className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full"
+                        className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full"
                         >
                         Submit
                       </button>

@@ -18,6 +18,9 @@ const AdminPatientsEdit = () => {
     province: "",
     email: "",
     contact_no: "",
+    user_name: "",
+    user_password: "",
+    user_status: "",
   });
 
   const [loading, setLoading] = useState(true);
@@ -60,7 +63,11 @@ const AdminPatientsEdit = () => {
           province: data.patient.province,
           email: data.patient.email,
           contact_no: data.patient.contact_no,
+          user_name: data.patient.user_name,
+          user_password: "", // don’t return plain password, maybe leave it empty for update
+          user_status: data.patient.user_status,
         });
+
         setLoading(false);
       } catch (err) {
         console.error("Error fetching user:", err);
@@ -128,19 +135,19 @@ const AdminPatientsEdit = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -169,6 +176,12 @@ const AdminPatientsEdit = () => {
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
           </Link>
           <Link
             to="/adminaudit"
@@ -214,10 +227,54 @@ const AdminPatientsEdit = () => {
       <div className="flex-1 p-8">
 
         <div className="bg-white p-8 rounded-lg shadow-md border border-[#01D5C4]">
-          <h2 className="text-xl font-bold text-[#00458B] mb-6">Edit Profile</h2>
-
+          <h2 className="text-2xl font-bold text-[#00458B] mb-6">Edit Profile</h2>
+          <hr></hr>
+          <br></br>
+          <h2 className="text-1xl font-bold text-[#00458B] mb-6">Login Information:</h2>
           {/* Form */}
           <div className="grid grid-cols-2 gap-6">
+            <div className="mt-2">
+              <label className="block text-[#00458b] font-semibold mb-1">Username</label>
+              <input
+                type="text"
+                value={patient.user_name}
+                onChange={(e) => setPatient({ ...patient, user_name: e.target.value })}
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+              />
+            </div>
+
+              <div className="mt-2">
+                <label className="block text-[#00458b] font-semibold mb-1">Email Address</label>
+                <input 
+                  type="email" 
+                  value={patient.email} 
+                  onChange={(e) => setPatient({ ...patient, email: e.target.value })} 
+                  className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" 
+                />
+              </div>
+
+            <div className="mt-2">
+              <label className="block text-[#00458b] font-semibold mb-1">Password</label>
+              <input
+                type="password"
+                value={patient.user_password}
+                onChange={(e) => setPatient({ ...patient, user_password: e.target.value })}
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+              />
+            </div>
+
+            <div className="mt-2">
+              <label className="block text-[#00458b] font-semibold mb-1">Status</label>
+              <select
+                value={patient.user_status}
+                onChange={(e) => setPatient({ ...patient, user_status: e.target.value })}
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">First Name</label>
               <input type="text" value={patient.fname} onChange={(e) => setPatient({ ...patient, fname: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
@@ -249,28 +306,40 @@ const AdminPatientsEdit = () => {
             </div>
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">Age</label>
-              <input type="text" value={patient.age} onChange={(e) => setPatient({ ...patient, age: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+              <input 
+                type="text" 
+                value={patient.age} 
+                onChange={(e) => setPatient({ ...patient, age: e.target.value })} 
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
             </div>
           </div>
 
           <div className="mt-6">
             <label className="block text-[#00458b] font-semibold mb-1">Home Address</label>
-            <input type="text" value={patient.home_address} onChange={(e) => setPatient({ ...patient, home_address: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+            <input 
+              type="text" 
+              value={patient.home_address} 
+              onChange={(e) => setPatient({ ...patient, home_address: e.target.value })} 
+              className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
           </div>
 
           <div className="mt-6">
             <label className="block text-[#00458b] font-semibold mb-1">City</label>
-            <input type="text" value={patient.city} onChange={(e) => setPatient({ ...patient, city: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+            <input 
+              type="text" 
+              value={patient.city} 
+              onChange={(e) => setPatient({ ...patient, city: e.target.value })} 
+              className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
           </div>
 
           <div className="mt-6">
             <label className="block text-[#00458b] font-semibold mb-1">Province</label>
-            <input type="text" value={patient.province} onChange={(e) => setPatient({ ...patient, province: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
-          </div>
-
-          <div className="mt-6">
-            <label className="block text-[#00458b] font-semibold mb-1">Email Address</label>
-            <input type="email" value={patient.email} onChange={(e) => setPatient({ ...patient, email: e.target.value })} className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
+            <input type="text" 
+              value={patient.province} 
+              onChange={(e) => setPatient({ ...patient, province: e.target.value })} 
+              className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" 
+              placeholder="none"
+            />
           </div>
 
           <div className="mt-6">
@@ -294,8 +363,8 @@ const AdminPatientsEdit = () => {
           </div>
 
           <div className="flex justify-end gap-4 mt-8">
-            <button className="bg-white text-[#00c3b8] border border-[#00458b] px-6 py-2 rounded-full" onClick={() => navigate("/adminpatients")}>Back</button>
-            <button className="bg-[#00c3b8] text-white px-6 py-2 rounded-full" onClick={handleSave}>Save</button>
+            <button className="bg-white text-[#00c3b8] border border-[#00458b] px-6 py-2 rounded-lg" onClick={() => navigate("/adminpatients")}>Back</button>
+            <button className="bg-[#00c3b8] text-white px-6 py-2 rounded-lg" onClick={handleSave}>Save</button>
           </div>
         </div>
       </div>

@@ -134,19 +134,19 @@ const AdminSchedule = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -237,7 +237,7 @@ const AdminSchedule = () => {
           <div>
             <button
               onClick={() => setViewMode("table")}
-              className={`px-4 py-2 rounded-lg mr-2 ${
+              className={`px-4 py-2 font-bold rounded-lg mr-2 ${
                 viewMode === "table"
                   ? "bg-[#00c3b8] text-white"
                   : "bg-gray-200 text-gray-700"
@@ -247,7 +247,7 @@ const AdminSchedule = () => {
             </button>
             <button
               onClick={() => setViewMode("calendar")}
-              className={`px-4 py-2 rounded-lg ${
+              className={`px-4 py-2 rounded-lg font-bold ${
                 viewMode === "calendar"
                   ? "bg-[#00c3b8] text-white"
                   : "bg-gray-200 text-gray-700"
@@ -299,7 +299,6 @@ const AdminSchedule = () => {
                   <th className="px-4 py-2"></th>
                   <th className="px-4 py-2"></th>
                   <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -315,7 +314,7 @@ const AdminSchedule = () => {
                       <td className="px-2 py-3 whitespace-nowrap">
                         <button
                           onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
-                          className="bg-[#008CBA] text-white px-4 py-2 rounded-lg font-semibold"
+                          className="bg-[#008CBA] text-white px-4 py-2 rounded-lg"
                         >
                           View
                         </button>
@@ -330,7 +329,7 @@ const AdminSchedule = () => {
                               record.appointment_status === "cancel with refund request"
                             )
                           }
-                          className={`px-4 py-2 rounded-lg font-semibold ${
+                          className={`px-4 py-2 rounded-lg ${
                             record.appointment_status === "incomplete" ||
                             record.appointment_status === "pending" ||
                             record.appointment_status === "cancel with refund request"
@@ -345,7 +344,7 @@ const AdminSchedule = () => {
                       <button
                         disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending")}
                         onClick={() => handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)}
-                        className={`px-4 py-2 rounded-lg font-semibold ${
+                        className={`px-4 py-2 rounded-lg ${
                           record.appointment_status === "incomplete" || record.appointment_status === "pending"
                             ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"

@@ -80,19 +80,19 @@ const AdminJournal = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="bg-[white] text-[#00458B] flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -121,6 +121,12 @@ const AdminJournal = () => {
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
           </Link>
           <Link
             to="/adminaudit"
@@ -181,10 +187,10 @@ const AdminJournal = () => {
               Generate Report
             </button>
             <button
-              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
+              className="flex items-center gap-2 bg-[#00458B] font-semibold text-white px-4 py-2 rounded-lg"
               onClick={() => navigate("/adminjournaladd")}
             >
-              Add
+              + Add Entry
             </button>
           </div>
         </div>

@@ -17,6 +17,8 @@ const ProfileLogin = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -65,6 +67,15 @@ const ProfileLogin = () => {
     fetchUser();
   }, [navigate]);
 
+    const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+
+    // Fade out before removing
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   const handleSave = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -87,13 +98,17 @@ const ProfileLogin = () => {
       }
 
       const data = await res.json();
-      alert(data.message);
+
+      // ✅ Show success popup
+      showPopup("Password changed successfully.", "success");
+      setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
     } catch (err) {
       console.error("Error updating profile:", err);
-      alert("Could not update profile. Please try again.");
+      // ❌ Show error popup
+      showPopup("New password and confirm password do not match.", "error");
+      setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
     }
   };
-
   if (loading) return <p className="text-center mt-10">Loading...</p>;
 
   return (
@@ -104,24 +119,38 @@ const ProfileLogin = () => {
           <h2 className="text-2xl font-bold text-[#00458B] mb-6">Profile</h2>
           <div className="flex flex-col gap-2">
             <Link to="/profilelogin">
-              <button className="w-full text-left px-4 py-2 rounded-md font-medium bg-[#E6FCF9] text-[#00c3b8] hover:bg-[#d0f8f5]">
+              <button className="w-full text-left px-4 py-2 rounded-lg font-medium bg-[#E6FCF9] text-[#00c3b8] hover:bg-[#d0f8f5]">
                 <i className="fa fa-user-circle-o mr-2" /> Login Information
               </button>
             </Link>
             {user.role === "patient" && (
                 <Link to="/profileinfo">
-                  <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                  <button className="w-full text-left px-4 py-2 rounded-lg font-medium text-[#00458B] hover:bg-blue-100">
                     <i className="fa fa-info-circle mr-2" /> User Information
                   </button>
                 </Link>
               )}
             <Link to="/profilechange">
-              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+              <button className="w-full text-left px-4 py-2 rounded-lg font-medium text-[#00458B] hover:bg-blue-100">
                 <i className="fa fa-lock mr-2" /> Change Password
               </button>
             </Link>
           </div>
         </div>
+
+        {/* ✅ Popup Notification */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="md:col-span-3 space-y-6">
@@ -223,7 +252,6 @@ const ProfileLogin = () => {
                 <input
                   type="email"
                   value={user.email}
-                  readOnly
                   onChange={(e) => setUser({ ...user, email: e.target.value })}
                   className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                 />
@@ -232,7 +260,7 @@ const ProfileLogin = () => {
               {/* Contact Number */}
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Contact Number (Edit)
+                  Contact Number
                 </label>
                 <input
                   type="text"
@@ -270,13 +298,13 @@ const ProfileLogin = () => {
             {/* Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-end mt-6">
               <button
-                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full sm:w-auto"
+                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg w-full sm:w-auto"
                 onClick={() => navigate("/profilechange")}
               >
                 Change Password
               </button>
               <button
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full sm:w-auto"
+                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full sm:w-auto"
                 onClick={handleSave}
               >
                 Save

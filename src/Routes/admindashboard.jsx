@@ -130,6 +130,12 @@ function AdminDashboard() {
             <Calendar size={18} /> Schedules
           </Link>
           <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
+          </Link>
+          <Link
             to="/adminaudit"
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >

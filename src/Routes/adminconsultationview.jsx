@@ -85,6 +85,264 @@ const Adminconsultationview = () => {
     }
   }, [location]);
 
+  const handlePrintReport = () => {
+    if (!consultation) return;
+
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const totalAmount = consultation.total_service_charged + chargedItems.reduce((sum, i) => sum + i.ci_amount, 0);
+
+  printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Patient Consultation Report - ${consultation.p_fname} ${consultation.p_lname}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #333;
+              line-height: 1.6;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 3px solid #00458B;
+              padding-bottom: 20px;
+            }
+            .header h1 {
+              color: #00458B;
+              margin: 0;
+              font-size: 28px;
+            }
+            .clinic-name {
+              color: #00c3b8;
+              font-size: 16px;
+              margin: 5px 0;
+            }
+            .patient-info {
+              background-color: #f8f9ff;
+              padding: 20px;
+              border-radius: 8px;
+              border-left: 4px solid #00c3b8;
+              margin-bottom: 30px;
+            }
+            .patient-name {
+              color: #00458B;
+              font-size: 24px;
+              font-weight: bold;
+              margin-bottom: 10px;
+            }
+            .patient-details {
+              color: #00458B;
+              font-size: 16px;
+            }
+            .section {
+              margin: 25px 0;
+              page-break-inside: avoid;
+            }
+            .section-title {
+              color: #00458B;
+              font-size: 20px;
+              font-weight: bold;
+              border-bottom: 2px solid #00c3b8;
+              padding-bottom: 8px;
+              margin-bottom: 15px;
+            }
+            .info-row {
+              display: flex;
+              margin: 10px 0;
+            }
+            .info-label {
+              font-weight: bold;
+              color: #00458B;
+              width: 180px;
+              flex-shrink: 0;
+            }
+            .info-value {
+              color: #333;
+            }
+            .billing-section {
+              background-color: #f0f8ff;
+              padding: 20px;
+              border-radius: 8px;
+              border: 2px solid #00c3b8;
+              margin: 20px 0;
+            }
+            .billing-item {
+              display: flex;
+              justify-content: space-between;
+              margin: 8px 0;
+              padding: 5px 0;
+            }
+            .billing-total {
+              border-top: 2px solid #00458B;
+              padding-top: 10px;
+              margin-top: 15px;
+              font-weight: bold;
+              font-size: 18px;
+              color: #00458B;
+            }
+            .footer {
+              margin-top: 50px;
+              text-align: center;
+              font-size: 12px;
+              color: #666;
+              border-top: 1px solid #ddd;
+              padding-top: 20px;
+            }
+            .two-column {
+              display: flex;
+              gap: 40px;
+            }
+            .column {
+              flex: 1;
+            }
+            hr {
+              border: none;
+              border-top: 1px solid #ddd;
+              margin: 15px 0;
+            }
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Patient Consultation Report</h1>
+            <p class="clinic-name">Arciaga-Juntilla TMJ Ortho Dental Clinic</p>
+            <p>Report generated on: ${currentDate}</p>
+          </div>
+
+          <div class="patient-info">
+            <div class="patient-name">${consultation.p_fname} ${consultation.p_mname} ${consultation.p_lname}</div>
+            <div class="patient-details">${consultation.p_gender} | ${consultation.p_age} years old | Born: ${new Date(consultation.p_date_birth).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</div>
+          </div>
+
+          <div class="two-column">
+            <div class="column">
+              <div class="section">
+                <div class="section-title">Contact Information</div>
+                <div class="info-row">
+                  <span class="info-label">Address:</span>
+                  <span class="info-value">${consultation.p_home_address}, ${consultation.p_city}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Email:</span>
+                  <span class="info-value">${consultation.p_email}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Contact Number:</span>
+                  <span class="info-value">${consultation.p_contact_no}</span>
+                </div>
+              </div>
+
+              <div class="section">
+                <div class="section-title">Medical Information</div>
+                <div class="info-row">
+                  <span class="info-label">Blood Type:</span>
+                  <span class="info-value">${consultation.p_blood_type}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="column">
+              <div class="section">
+                <div class="section-title">Consultation Details</div>
+                <div class="info-row">
+                  <span class="info-label">Date of Visit:</span>
+                  <span class="info-value">${new Date(consultation.pref_date).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Attending Dentist:</span>
+                  <span class="info-value">${consultation.attending_dentist}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Services:</span>
+                  <span class="info-value">${consultation.procedure_type}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Diagnosis:</span>
+                  <span class="info-value">${consultation.p_diagnosis}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Follow-Up:</span>
+                  <span class="info-value">${new Date(consultation.pref_date).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</span>
+                </div>
+                <div class="info-row">
+                  <span class="info-label">Completed:</span>
+                  <span class="info-value">${consultation.p_date_completed}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">Billing Information</div>
+            <div class="billing-section">
+              <div class="billing-item">
+                <span><strong>Service:</strong> ${consultation.procedure_type}</span>
+                <span>₱${consultation.total_service_charged.toFixed(2)}</span>
+              </div>
+              
+              ${chargedItems.length > 0 ? `
+                <hr>
+                <div style="margin: 15px 0;"><strong>Additional Items:</strong></div>
+                ${chargedItems.map(item => `
+                  <div class="billing-item">
+                    <span>${item.ci_item_name} (x${item.ci_quantity})</span>
+                    <span>₱${item.ci_amount.toFixed(2)}</span>
+                  </div>
+                `).join('')}
+              ` : `
+                <hr>
+                <div style="margin: 15px 0; font-style: italic;">No additional items charged</div>
+              `}
+              
+              <div class="billing-total">
+                <div class="billing-item">
+                  <span>TOTAL AMOUNT:</span>
+                  <span>₱${totalAmount.toFixed(2)}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>This consultation report was automatically generated from the Dental Clinic Management System</p>
+            <p>For any questions or concerns, please contact Arciaga-Juntilla TMJ Ortho Dental Clinic</p>
+          </div>
+
+          <script>
+            window.addEventListener('afterprint', function() {
+              window.close();
+            });
+
+            setTimeout(function() {
+              if (!window.closed) {
+                window.close();
+              }
+            }, 10000);
+          </script>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.focus();
+
+      setTimeout(() => {
+        printWindow.print();
+      }, 250);
+    };
+
   if (error) return <p className="text-red-500">{error}</p>;
   if (!consultation) return <p>Loading consultation...</p>;
 
@@ -113,19 +371,19 @@ const Adminconsultationview = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -154,6 +412,12 @@ const Adminconsultationview = () => {
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
           </Link>
           <Link
             to="/adminaudit"
@@ -465,25 +729,25 @@ const Adminconsultationview = () => {
                                         <br></br>
                                       </div>
                                     </div>
-                                                                <br></br>
+                            <br></br>
                             <br></br>
                             <div className="col-sm-12">
                                 <div className="row">
-                                    <div className="col-sm-8">
+                                    <div className="col-sm-9">
                                     </div>
-                                        <div className="col-sm-4">
+                                        <div className="col-sm-3">
                                             <div className="row">
                                               <div className="col-sm-12">
                                                 <button
                                                   disabled={consultation.appointment_status !== "done"}
-                                                  className={`px-6 py-2 rounded-full font-semibold w-full mb-4 border ${
+                                                  className={`px-6 py-2 rounded-lg font-semibold w-full mb-4 border ${
                                                     consultation.appointment_status === "done"
                                                       ? "bg-white text-[#00c3b8] border-[#00458b] hover:bg-gray-100 cursor-pointer"
                                                       : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
                                                   }`}
                                                   onClick={() => {
                                                     if (consultation.appointment_status === "done") {
-                                                      navigate("/"); // 👉 replace with your actual print page route
+                                                      handlePrintReport();
                                                     }
                                                   }}
                                                 >

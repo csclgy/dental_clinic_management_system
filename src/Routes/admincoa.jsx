@@ -82,19 +82,19 @@ const AdminCoa = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="bg-[white] text-[#00458B] flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -123,6 +123,12 @@ const AdminCoa = () => {
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
           </Link>
           <Link
             to="/adminaudit"
@@ -180,7 +186,7 @@ const AdminCoa = () => {
           <div className="flex gap-3">
             <Link
               to="/admincoaadd"
-              className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
+              className="flex items-center gap-2 bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
             >
               <PlusCircle size={18} /> Add Account
             </Link>
@@ -232,7 +238,7 @@ const AdminCoa = () => {
                       </td>
                       <td className="px-4 py-2 text-center">
                         <Link to={`/admincoaview/${account.account_id}`}>
-                          <button className="bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-lg">
+                          <button className="bg-[#008CBA] text-white px-4 py-2 rounded-lg">
                             View
                           </button>
                         </Link>

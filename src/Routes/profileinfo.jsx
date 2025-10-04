@@ -22,7 +22,8 @@ const ProfileInfo = () => {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
@@ -87,13 +88,24 @@ const ProfileInfo = () => {
         body: JSON.stringify(user),
       });
 
-      if (!res.ok) throw new Error("Failed to update profile");
+      if (!res.ok) {
+        throw new Error("Failed to update profile");
+      }
 
       const data = await res.json();
-      alert(data.message);
+
+      // ✅ Show success popup
+      setPopup({ show: true, message: data.message, type: "success" });
+      setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
     } catch (err) {
       console.error("Error updating profile:", err);
-      alert("Could not update profile. Please try again.");
+      // ❌ Show error popup
+      setPopup({
+        show: true,
+        message: "Could not update profile. Please try again.",
+        type: "error",
+      });
+      setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
     }
   };
 
@@ -136,6 +148,17 @@ const ProfileInfo = () => {
           </div>
         </div>
 
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all duration-500 ${
+              popup.type === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
+
         {/* Main content */}
         <div className="md:col-span-3 space-y-6">
           {/* Header */}
@@ -148,10 +171,10 @@ const ProfileInfo = () => {
             <div className="grid md:grid-cols-2 gap-4">
               {/* Left side */}
               <div>
-                <Input label="First Name" value={user.fname} readOnly />
-                <Input label="Last Name" value={user.lname} readOnly />
-                <Input label="Gender" value={user.gender} readOnly />
-                <Input label="Religion" value={user.religion} readOnly />
+                <Input label="First Name" value={user.fname} />
+                <Input label="Last Name" value={user.lname} />
+                <Input label="Gender" value={user.gender} />
+                <Input label="Religion" value={user.religion} />
                 <Input
                   label="Home Address"
                   value={user.home_address}
@@ -170,7 +193,7 @@ const ProfileInfo = () => {
 
               {/* Right side */}
               <div>
-                <Input label="Middle Name" value={user.mname} readOnly />
+                <Input label="Middle Name" value={user.mname} />
                 <Input label="Date of Birth" value={user.date_birth} readOnly />
                 <Input label="Age" value={user.age} readOnly />
                 <Input label="Nationality" value={user.nationality} readOnly />
@@ -192,7 +215,7 @@ const ProfileInfo = () => {
             {/* Save button */}
             <div className="flex justify-end mt-6">
               <button
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full md:w-auto"
+                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full md:w-auto"
                 onClick={handleSave}
               >
                 Save

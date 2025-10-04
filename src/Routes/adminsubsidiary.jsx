@@ -153,27 +153,27 @@ const handleSubmit = async (e) => {
                 {isLedgerOpen && (
                     <div className="ml-8 text-sm">
                     <Link to="/admincoa">
-                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        <p className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Chart of Accounts
                         </p>
                     </Link>
                     <Link to="/adminjournal">
-                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        <p className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Journal Entries
                         </p>
                     </Link>
                     <Link to="/adminsubsidiaryreceivable">
-                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        <p className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Subsidiary
                         </p>
                     </Link>
                     <Link to="/admingeneral">
-                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        <p className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         General Ledger
                         </p>
                     </Link>
                     <Link to="/admintrial">
-                        <p className="hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
+                        <p className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]" style={{ color: "#00458B" }}>
                         Trial Balance
                         </p>
                     </Link>
@@ -216,6 +216,15 @@ const handleSubmit = async (e) => {
                     className="w-full text-left px-4 py-2 hover:bg-blue-100"
                     style={{ color: "#00458B" }}>
                     <i class="fa fa-calendar" aria-hidden="true"></i> Schedules
+                    </button>
+                </Link>
+
+                {/* Cashier */}
+                <Link to="/admincashier">
+                    <button
+                    className="w-full text-left px-4 py-2 hover:bg-blue-100"
+                    style={{ color: "#00458B" }}>
+                    <i class="fa fa-calendar" aria-hidden="true"></i> Cashier
                     </button>
                 </Link>
 

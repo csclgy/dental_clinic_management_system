@@ -36,6 +36,153 @@ const AdminPatients = () => {
   }, []);
 
   // Scroll if needed
+    // Print Report function
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+  printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Dental Clinic Management System</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #333;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #00458B;
+              padding-bottom: 20px;
+            }
+            .header h1 {
+              color: #00458B;
+              margin: 0;
+            }
+            .report-info {
+              margin-bottom: 20px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 12px;
+              text-align: center;
+            }
+            th {
+              background-color: #00458B;
+              color: white;
+              font-weight: bold;
+            }
+            tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            .footer {
+              margin-top: 30px;
+              text-align: center;
+              font-size: 12px;
+              color: #666;
+            }
+            .summary {
+              margin: 20px 0;
+              padding: 15px;
+              background-color: #f0f8ff;
+              border-left: 4px solid #00c3b8;
+            }
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Patient Management Report</h1>
+            <p>Generated on: ${currentDate}</p>
+          </div>
+          
+          <div class="summary">
+            <strong>Report Summary:</strong><br>
+            Total Items: ${filteredRecords.length}<br>
+            Search Filter: ${searchTerm ? `"${searchTerm}"` : 'None'}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Patient's Full Name</th>
+                <th>Age</th>
+                <th>Gender</th>
+                <th>Contact Number</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredRecords.map(record => `
+                <tr>
+                  <td>${record.lname}, ${record.fname} ${record.mname}</td>
+                  <td>${record.age}</td>
+                  <td>${record.gender}</td>
+                  <td>${record.contact_no}</td>
+                  <td>${record.email}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p>This report was automatically generated for Arciaga-Juntilla TMJ Ortho Dental Clinic. </p>
+          </div>
+
+          <script>
+            window.addEventListener('afterprint', function() {
+              window.close();
+            });
+
+            window.addEventListener('beforeunload', function() {
+            });
+
+            setTimeout(function() {
+              if (!window.closed) {
+                window.close();
+              }
+            }, 10000);
+          </script>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.focus();
+
+      setTimeout(() => {
+        printWindow.print();
+
+        setTimeout(() => {
+          if (!printWindow.closed) {
+            printWindow.addEventListener('focus', () => {
+              setTimeout(() => {
+                if (!printWindow.closed) {
+                  printWindow.close();
+                }
+              }, 1000);
+            });
+          }
+        }, 500);
+      }, 250);
+  };
+
+  // 🔹 Scroll to section if location.state.scrollTo exists
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -77,19 +224,19 @@ const AdminPatients = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -118,6 +265,12 @@ const AdminPatients = () => {
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
           </Link>
           <Link
             to="/adminaudit"
@@ -171,12 +324,22 @@ const AdminPatients = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#00458B]">Patients</h1>
-          <button
-            className="bg-[#00c3b8] text-white px-4 py-2 rounded-lg"
-            onClick={() => navigate("/register2")}
-          >
-            Generate Report
-          </button>
+
+          {/* Button Group */}
+          <div className="flex space-x-3">
+            <button
+              className="bg-[#00c3b8] font-bold text-white px-4 py-2 rounded-lg"
+              onClick={handlePrintReport}
+            >
+              Generate Report
+            </button>
+            <button
+              className="bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
+              onClick={() => navigate("/adminusersaddpatient")}
+            >
+              + Add New Patient
+            </button>
+          </div>
         </div>
 
         {/* Search + Table */}
@@ -208,6 +371,7 @@ const AdminPatients = () => {
                   <th className="px-4 py-2 text-center">Contact No.</th>
                   <th className="px-4 py-2 text-center">Email</th>
                   <th className="px-4 py-2 text-center"></th>
+                  <th className="px-4 py-2 text-center"></th>
                 </tr>
               </thead>
               <tbody>
@@ -223,7 +387,7 @@ const AdminPatients = () => {
                       <td className="px-4 py-2">{record.email}</td>
                       <td className="px-2 py-3 whitespace-nowrap">
                         <Link to={`/adminpatientsview/${record.user_id}`}>
-                          <button className="bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-lg">
+                          <button className="bg-[#008CBA] text-white px-4 py-2 rounded-lg">
                             View
                           </button>
                         </Link>

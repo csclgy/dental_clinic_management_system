@@ -338,12 +338,12 @@ const transviewmed = () => {
                     <div className="col-sm-12">
                       <br></br>
                         <div className="row">
-                            <div className="col-sm-6">
+                            <div className="col-sm-9">
                             </div>
-                            <div className="col-sm-6">
+                            <div className="col-sm-3">
                                 <button
                                 disabled={!consultation || consultation.appointment_status !== "done"}
-                                className={`px-6 py-2 rounded-full font-semibold w-full mb-4 border ${
+                                className={`px-6 py-2 rounded-lg font-semibold w-full mb-4 border ${
                                     consultation && consultation.appointment_status === "done"
                                     ? "bg-[#00458B] text-[white] border-[#00458b] hover:bg-[#00458B]-100 cursor-pointer"
                                     : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"

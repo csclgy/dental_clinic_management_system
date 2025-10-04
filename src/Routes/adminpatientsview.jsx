@@ -100,6 +100,144 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
   if (error) return <p className="text-red-500">{error}</p>;
   if (!patient) return <p>Loading...</p>;
 
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Patient Consultation Report</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            color: #333;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #00458B;
+            padding-bottom: 20px;
+          }
+          .header h1 {
+            color: #00458B;
+            margin: 0;
+          }
+          .patient-info {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-left: 4px solid #00c3b8;
+          }
+          .summary {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-left: 4px solid #00c3b8;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+          }
+          th {
+            background-color: #00458B;
+            color: white;
+            font-weight: bold;
+          }
+          tr:nth-child(even) {
+            background-color: #f9f9f9;
+          }
+          .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+          }
+          @media print {
+            body { margin: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>Patient Consultation Report</h1>
+          <p>Generated on: ${currentDate}</p>
+        </div>
+        
+        <div class="patient-info">
+          <strong>Patient Information:</strong><br>
+          Name: ${patient.fname} ${patient.mname} ${patient.lname}<br>
+          Age: ${patient.age} | Gender: ${patient.gender}<br>
+          Contact: ${patient.contact_no}<br>
+          Email: ${patient.email}
+        </div>
+
+        <div class="summary">
+          <strong>Report Summary:</strong><br>
+          Total Consultations: ${filteredConsultations.length}<br>
+          Status Filter: ${statusFilter || 'All'}<br>
+          Search Filter: ${searchTerm ? `"${searchTerm}"` : 'None'}
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Procedure</th>
+              <th>Dentist</th>
+              <th>Payment Status</th>
+              <th>Total</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredConsultations.map(c => `
+              <tr>
+                <td>${new Date(c.pref_date).toLocaleDateString()}</td>
+                <td>${c.procedure_type}</td>
+                <td>${c.attending_dentist}</td>
+                <td style="text-transform: capitalize;">${c.payment_status}</td>
+                <td>₱${c.total_charged}</td>
+                <td style="text-transform: capitalize;">${c.appointment_status}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+
+        <div class="footer">
+          <p>This report was automatically generated for Arciaga-Juntilla TMJ Ortho Dental Clinic.</p>
+        </div>
+        
+        <script>
+          window.addEventListener('afterprint', function() {
+            window.close();
+          });
+
+          setTimeout(function() {
+            window.print();
+          }, 250);
+        </script>
+      </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+  };
+
   // ✅ Filter + sort consultations
   const filteredConsultations = consultations
     .filter((c) =>
@@ -137,24 +275,24 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
           )}
-
+          
           <Link
             to="/adminusers"
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
@@ -178,6 +316,12 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
           </Link>
           <Link
             to="/adminaudit"
@@ -231,7 +375,7 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
                 Patient Information
               </h2>
               <button
-                className="bg-[#00c3b8] text-white px-4 py-2 rounded-lg font-semibold"
+                className="bg-[#00458B] text-white px-4 py-2 rounded-lg font-semibold"
                 onClick={() => navigate(`/adminpatientsedit/${patient?.user_id}`)}
               >
                 Edit Profile
@@ -244,14 +388,17 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
               {patient.gender} | {patient.age} | {patient.date_birth}
             </p>
 
+            <br></br>
+            <hr></hr>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 text-[#00458B]">
               <div>
                 <h3 className="text-lg font-bold mb-2">
-                  Address & Contact
+                  Address & Contact Information
                 </h3>
                 <p><span className="font-semibold">Address:</span> {patient.home_address}, {patient.city}</p>
                 <p><span className="font-semibold">Email:</span> {patient.email}</p>
                 <p><span className="font-semibold">Contact:</span> {patient.contact_no}</p>
+                <p><span className="font-semibold">Username:</span> {patient.user_name}</p>
               </div>
               <div>
                 <h3 className="text-lg font-bold mb-2">
@@ -269,7 +416,7 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
                 Consultation History
               </h2>
               <button
-                className="bg-[#00c3b8] text-white px-4 py-2 rounded-lg flex items-center font-semibold"
+                className="bg-[#00458B] text-white px-4 py-2 rounded-lg flex items-center font-semibold"
                 onClick={() => navigate("/adminconsultationadd", { state: { patient } })}
               >
                 <PlusCircle className="mr-2" /> New Consultation
@@ -323,9 +470,9 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
                         <td className="px-2 py-2 text-blue-700">{c.pref_date}</td>
                         <td className="px-2 py-2">{c.procedure_type}</td>
                         <td className="px-2 py-2">{c.attending_dentist}</td>
-                        <td className="px-2 py-2">{c.payment_status}</td>
+                        <td className="px-2 py-2 capitalize">{c.payment_status}</td>
                         <td className="px-2 py-2">₱{c.total_charged}</td>
-                        <td className="px-2 py-2">{c.appointment_status}</td>
+                        <td className="px-2 py-2 capitalize">{c.appointment_status}</td>
                         <td className="px-2 py-2">
                           <button
                             onClick={() => navigate(`/adminconsultationview/${c.appoint_id}`)}
@@ -357,7 +504,7 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
                         <button
                           disabled={!(c.appointment_status === "incomplete" || c.appointment_status === "pending")}
                           onClick={() => handleFollowUp(c.appoint_id, patient.fname, patient.lname)}
-                          className={`px-4 py-2 rounded-lg font-semibold ${
+                          className={`px-4 py-2 rounded-lg ${
                             c.appointment_status === "incomplete" || c.appointment_status === "pending"
                               ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
                               : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -390,8 +537,8 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
           {/* Report Button */}
           <div className="flex justify-end">
             <button
-              className="bg-[#00c3b8] text-white px-6 py-2 rounded-full"
-              onClick={() => navigate("/register2")}
+              className="bg-[#00c3b8] text-white px-6 py-2 font-bold rounded-lg"
+              onClick={handlePrintReport}
             >
               Generate Report
             </button>

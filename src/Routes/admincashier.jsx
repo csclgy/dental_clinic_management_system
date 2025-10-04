@@ -233,29 +233,7 @@ const AdminCashier = () => {
 
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#00458B]">Upcoming Appointments</h1>
-          <div>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`px-4 py-2 rounded-lg mr-2 ${
-                viewMode === "table"
-                  ? "bg-[#00c3b8] text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              Table View
-            </button>
-            <button
-              onClick={() => setViewMode("calendar")}
-              className={`px-4 py-2 rounded-lg ${
-                viewMode === "calendar"
-                  ? "bg-[#00c3b8] text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              Calendar View
-            </button>
-          </div>
+          <h1 className="text-2xl font-bold text-[#00458B]">Incomplete Appointments</h1>
         </div>
 
         {/* Content */}
@@ -298,8 +276,6 @@ const AdminCashier = () => {
                   <th className="px-4 py-2">Status</th>
                   <th className="px-4 py-2"></th>
                   <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2"></th>
                 </tr>
               </thead>
               <tbody>
@@ -315,7 +291,7 @@ const AdminCashier = () => {
                       <td className="px-2 py-3 whitespace-nowrap">
                         <button
                           onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
-                          className="bg-[#008CBA] text-white px-4 py-2 rounded-lg font-semibold"
+                          className="bg-[#008CBA] text-white px-4 py-2 rounded-lg"
                         >
                           View
                         </button>
@@ -324,7 +300,7 @@ const AdminCashier = () => {
                         <button
                           onClick={() => navigate(`/adminconsultationcomplete/${record.appoint_id}`)}
                           disabled={record.appointment_status !== "incomplete"}
-                          className={`px-4 py-2 rounded-lg font-semibold ${
+                          className={`px-4 py-2 rounded-lg ${
                             record.appointment_status === "incomplete"
                               ? "bg-green-600 hover:bg-green-700 text-white"
                               : "bg-gray-300 text-gray-500 cursor-not-allowed"

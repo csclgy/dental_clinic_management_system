@@ -40,38 +40,42 @@ const Adminbillingedit = () => {
 
   const [billingDate, setBillingDate] = useState("");
 
-const fetchBillingData = async () => {
-  try {
-    const token = localStorage.getItem("token");
+  const [appointment, setAppointment] = useState(null);
 
-    const [billingRes, invRes] = await Promise.all([
-      axios.get(`http://localhost:3000/auth/billing/${appointId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-      axios.get("http://localhost:3000/auth/inventory", {
-        headers: { Authorization: `Bearer ${token}` },
-      }),
-    ]);
+  const fetchBillingData = async () => {
+    try {
+      const token = localStorage.getItem("token");
 
-    // ✅ correct extraction
-    setChargedItems(billingRes.data.chargedItems || []);
-    setInventory(invRes.data || []);
+      const [billingRes, invRes] = await Promise.all([
+        axios.get(`http://localhost:3000/auth/billing/${appointId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        axios.get("http://localhost:3000/auth/inventory", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
 
-    const appoint = billingRes.data.appointment;
-    if (appoint) {
-      setPaymentMode(appoint.payment_mode || "");
-      setPaymentStatus(appoint.payment_status || "");
-      setPaymentOR(appoint.or_num || "");
-      setServiceCharge(Number(appoint.total_service_charged || 0));
+      // ✅ Use billingRes instead of res
+      setAppointment(billingRes.data.appointment);
+      setChargedItems(billingRes.data.chargedItems || []);
+      setInventory(invRes.data || []);
+
+      const appoint = billingRes.data.appointment;
+      if (appoint) {
+        setPaymentMode(appoint.payment_method || "");   // <- check your backend column name
+        setPaymentStatus(appoint.payment_status || "");
+        setPaymentOR(appoint.or_num || "");
+        setServiceCharge(Number(appoint.total_service_charged || 0));
+      }
+
+      if (appoint?.billing_date) {
+        setBillingDate(appoint.billing_date.split("T")[0]);
+      }
+
+    } catch (err) {
+      console.error("Error fetching billing data:", err);
     }
-    if (appoint.billing_date) {
-    setBillingDate(appoint.billing_date.split("T")[0]); 
-    // assumes backend returns ISO string like "2025-10-04T00:00:00Z"
-  }
-  } catch (err) {
-    console.error("Error fetching billing data:", err);
-  }
-};
+  };
 
   useEffect(() => {
     fetchBillingData();
@@ -233,6 +237,20 @@ const handleSaveBilling = async () => {
   }
 };
 
+const handleDone = () => {
+  // reset inputs before navigating (optional)
+  setPaymentMode("");
+  setPaymentStatus("");
+  setPaymentOR("");
+  setServiceCharge(0);
+  setHmoNumber("");
+  setPwdDiscount("");
+  setBillingDate("");
+
+  navigate(`/adminconsultationview/${appointId}`);
+};
+
+
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -313,6 +331,12 @@ const handleSaveBilling = async () => {
             <Calendar size={18} /> Schedules
           </Link>
           <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
+          </Link>
+          <Link
             to="/adminaudit"
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
@@ -365,6 +389,12 @@ const handleSaveBilling = async () => {
                 <Calendar size={18} /> Schedules
               </Link>
               <Link
+                to="/admincashier"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Cashier
+              </Link>
+              <Link
                 to="/adminaudit"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
@@ -380,8 +410,12 @@ const handleSaveBilling = async () => {
                                 <div className="col-sm-12">
                                     <div className="row">
                                         <div className="col-sm-9">
-                                            <h2 className="text-2xl text-[#00458B] font-bold mb-4">Billing for Appointment #{appointId}</h2>
-                                            <br />
+                                          {appointment && (
+                                            <h2 className="text-2xl text-[#00458B] font-bold mb-4">
+                                              Billing for {appointment.p_fname} {appointment.p_lname}'s Appointment
+                                            </h2>
+                                          )}
+                                          <br />
                                         </div>
                                         <div className="col-sm-3">
                                         </div>
@@ -654,7 +688,7 @@ const handleSaveBilling = async () => {
 
                         {/* Action Buttons */}
                         <div className="flex justify-end gap-2">
-                          <button onClick={() => navigate(`/adminconsultationview/${appointId}`)} className="bg-gray-500 text-white px-6 py-2 rounded-full">
+                            <button onClick={handleDone} className="bg-gray-500 text-white px-6 py-2 rounded-full">
                               Done
                             </button>
 

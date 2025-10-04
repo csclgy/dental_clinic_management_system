@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
 function adminaudit() {
-  const location = useLocation();
+   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
@@ -37,7 +37,151 @@ function adminaudit() {
     }
   }, [location]);
 
-  // Filter search
+  // Print Report function
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+  printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Dental Clinic Management System</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #333;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #00458B;
+              padding-bottom: 20px;
+            }
+            .header h1 {
+              color: #00458B;
+              margin: 0;
+            }
+            .report-info {
+              margin-bottom: 20px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 12px;
+              text-align: center;
+            }
+            th {
+              background-color: #00458B;
+              color: white;
+              font-weight: bold;
+            }
+            tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            .footer {
+              margin-top: 30px;
+              text-align: center;
+              font-size: 12px;
+              color: #666;
+            }
+            .summary {
+              margin: 20px 0;
+              padding: 15px;
+              background-color: #f0f8ff;
+              border-left: 4px solid #00c3b8;
+            }
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Inventory Management Report</h1>
+            <p>Generated on: ${currentDate}</p>
+          </div>
+          
+          <div class="summary">
+            <strong>Report Summary:</strong><br>
+            Total Items: ${filteredRecords.length}<br>
+            Search Filter: ${searchTerm ? `"${searchTerm}"` : 'None'}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredRecords.map(record => `
+                <tr>
+                <!-fix after->
+                  <td>${record.diagnosis}</td>
+                  <td>${record.diagnosis}</td>
+                  <td>${record.diagnosis}</td>
+                  <td>${record.diagnosis}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p>This report was automatically generated for Arciaga-Juntilla TMJ Ortho Dental Clinic. </p>
+          </div>
+        <script>
+            window.addEventListener('afterprint', function() {
+              window.close();
+            });
+
+            window.addEventListener('beforeunload', function() {
+            });
+
+            setTimeout(function() {
+              if (!window.closed) {
+                window.close();
+              }
+            }, 10000);
+          </script>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.focus();
+
+      setTimeout(() => {
+        printWindow.print();
+
+        setTimeout(() => {
+          if (!printWindow.closed) {
+            printWindow.addEventListener('focus', () => {
+              setTimeout(() => {
+                if (!printWindow.closed) {
+                  printWindow.close();
+                }
+              }, 1000);
+            });
+          }
+        }, 500);
+      }, 250);
+  };
+
+  // Filter based on search term (case-insensitive)
   const filteredRecords = records.filter((record) =>
     Object.values(record).some((value) =>
       value.toLowerCase().includes(searchTerm.toLowerCase())
@@ -112,6 +256,12 @@ function adminaudit() {
             <Calendar size={18} /> Schedules
           </Link>
           <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
+          </Link>
+          <Link
             to="/adminaudit"
             className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
@@ -162,12 +312,12 @@ function adminaudit() {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#00458B]">Audit Trail</h1>
 
-          <button
-            onClick={() => navigate("/register2")}
-            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
-          >
-            Generate Report
-          </button>
+           <button
+              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg ml-4"
+              onClick={handlePrintReport}
+            >
+              Generate Report
+            </button>
         </div>
 
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">

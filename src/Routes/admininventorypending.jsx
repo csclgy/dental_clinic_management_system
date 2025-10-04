@@ -131,23 +131,24 @@ const AdminInventoryPending = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
           )}
+          
           <Link
             to="/adminusers"
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -171,6 +172,12 @@ const AdminInventoryPending = () => {
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Cashier
           </Link>
           <Link
             to="/adminaudit"
@@ -232,19 +239,19 @@ const AdminInventoryPending = () => {
           <div className="flex gap-3">
             <Link
               to="/admininventory"
-              className="flex items-center gap-2 bg-[#00c3b8] text-white px-4 py-2 rounded-lg"
+              className="flex items-center font-bold gap-2 bg-[#00c3b8] text-white px-4 py-2 rounded-lg"
             >
               Approved Items
             </Link>
             <Link
               to="/admininventoryadd"
-              className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
+              className="flex items-center font-bold gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
             >
               <PlusCircle size={18} /> Add Item
             </Link>
             <Link
               to="/adminsupplier"
-              className="flex items-center gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
+              className="flex items-center font-bold gap-2 bg-[#00458B] text-white px-4 py-2 rounded-lg"
             >
               <PlusCircle size={18} /> Supplier
             </Link>
@@ -275,7 +282,7 @@ const AdminInventoryPending = () => {
                 <th className="px-4 py-2 text-center">Company Name</th>
                 <th className="px-4 py-2 text-center">Status</th>
                 <th className=" text-center"></th>
-                <th className=" text-center"></th>
+                <th className=" text-center">Actions</th>
                 <th className=" text-center"></th>
               </tr>
             </thead>
