@@ -37,7 +37,170 @@ function adminaudit() {
     }
   }, [location]);
 
+
   // Filter search
+   const records = [
+    {
+      date: "05-30-2025",
+      diagnosis: "Dental Caries",
+      services: "Oral Exam & Periapical X-ray",
+      dentist: "Dr. A. Reyes",
+      status: "Completed",
+    },
+    {
+      date: "07-15-2025",
+      diagnosis: "Tooth Extraction",
+      services: "Extraction of Wisdom Tooth",
+      dentist: "Dr. M. Santos",
+      status: "Ongoing",
+    },
+  ];
+
+  // Print Report function
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+  printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Dental Clinic Management System</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #333;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #00458B;
+              padding-bottom: 20px;
+            }
+            .header h1 {
+              color: #00458B;
+              margin: 0;
+            }
+            .report-info {
+              margin-bottom: 20px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 12px;
+              text-align: center;
+            }
+            th {
+              background-color: #00458B;
+              color: white;
+              font-weight: bold;
+            }
+            tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            .footer {
+              margin-top: 30px;
+              text-align: center;
+              font-size: 12px;
+              color: #666;
+            }
+            .summary {
+              margin: 20px 0;
+              padding: 15px;
+              background-color: #f0f8ff;
+              border-left: 4px solid #00c3b8;
+            }
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Inventory Management Report</h1>
+            <p>Generated on: ${currentDate}</p>
+          </div>
+          
+          <div class="summary">
+            <strong>Report Summary:</strong><br>
+            Total Items: ${filteredRecords.length}<br>
+            Search Filter: ${searchTerm ? `"${searchTerm}"` : 'None'}
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredRecords.map(record => `
+                <tr>
+                <!-fix after->
+                  <td>${record.diagnosis}</td>
+                  <td>${record.diagnosis}</td>
+                  <td>${record.diagnosis}</td>
+                  <td>${record.diagnosis}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <p>This report was automatically generated for Arciaga-Juntilla TMJ Ortho Dental Clinic. </p>
+          </div>
+        <script>
+            window.addEventListener('afterprint', function() {
+              window.close();
+            });
+
+            window.addEventListener('beforeunload', function() {
+            });
+
+            setTimeout(function() {
+              if (!window.closed) {
+                window.close();
+              }
+            }, 10000);
+          </script>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      printWindow.focus();
+
+      setTimeout(() => {
+        printWindow.print();
+
+        setTimeout(() => {
+          if (!printWindow.closed) {
+            printWindow.addEventListener('focus', () => {
+              setTimeout(() => {
+                if (!printWindow.closed) {
+                  printWindow.close();
+                }
+              }, 1000);
+            });
+          }
+        }, 500);
+      }, 250);
+  };
+
+  // Filter based on search term (case-insensitive)
   const filteredRecords = records.filter((record) =>
     Object.values(record).some((value) =>
       value.toLowerCase().includes(searchTerm.toLowerCase())
@@ -182,6 +345,20 @@ function adminaudit() {
                 className="flex-1 outline-none text-sm text-gray-700"
               />
               <i className="fa fa-search text-[#00458B]"></i>
+                                                </div>
+                                            <div className="col-sm-8">
+                                                    <br />
+                                                    <br />
+                                                    <button class="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full mb-4" onClick={handlePrintReport}>Generate Report</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            <div className="col-sm-2">
             </div>
           </div>
 
