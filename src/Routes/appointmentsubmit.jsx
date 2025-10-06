@@ -5,39 +5,49 @@ import axios from "axios";
 
 const AppointmentSubmit = () => {
   const { appointmentData, updateAppointment } = useAppointment();
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
+
+  // ✅ Popup state and fade animation (same as ProfileChange)
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  // ✅ Popup function
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+
+    // Fade out before removing
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
 
   // Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
 
     try {
       const token = localStorage.getItem("token");
       const formData = new FormData();
 
-      // 1. Force payment_method = cash if service is NOT dentures
+      // 1️⃣ Force payment_method = cash if not dentures
       if (appointmentData.procedure_type !== "Dentures") {
         appointmentData.payment_method = "cash";
-        appointmentData.downpayment_proof = null; // ignore proof
+        appointmentData.downpayment_proof = null;
       }
 
-      // 2. Append text fields
+      // 2️⃣ Append text fields
       Object.keys(appointmentData).forEach((key) => {
         if (key !== "photos" && key !== "downpayment_proof") {
           formData.append(key, appointmentData[key]);
         }
       });
 
-      // 3. Append multiple photos
+      // 3️⃣ Append photos
       appointmentData.photos.forEach((file) => {
         formData.append("photos", file);
       });
 
-      // 4. Append downpayment receipt only if Dentures + proof
+      // 4️⃣ Append downpayment proof if applicable
       if (
         appointmentData.procedure_type === "Dentures" &&
         appointmentData.downpayment_proof
@@ -52,9 +62,10 @@ const AppointmentSubmit = () => {
         },
       });
 
-      setSuccessMessage("Appointment submitted successfully!");
+      // ✅ Success popup
+      showPopup("Appointment submitted successfully!", "success");
 
-      // Reset context data
+      // Reset data
       Object.keys(appointmentData).forEach((key) => {
         if (Array.isArray(appointmentData[key])) {
           updateAppointment(key, []);
@@ -63,27 +74,38 @@ const AppointmentSubmit = () => {
         }
       });
 
-      // Redirect to home after 2 seconds
-      setTimeout(() => {
-        navigate("/");
-      }, 2000);
+      // Redirect after 2s
+      setTimeout(() => navigate("/"), 2000);
     } catch (err) {
       console.error("Error submitting appointment:", err);
-      setErrorMessage("Failed to submit appointment. Please try again.");
+      // ❌ Error popup
+      showPopup("Failed to submit appointment. Please try again.", "error");
     }
   };
 
-
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
       style={{
-      backgroundImage:
-        "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center"}}
+        backgroundImage:
+          "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
     >
-      <br></br>
+      {/* ✅ Popup Notification (copied from ProfileChange) */}
+      {popup.show && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+            fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+          } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          style={{ zIndex: 9999 }}
+        >
+          {popup.message}
+        </div>
+      )}
+
+      <br />
       <div className="w-full sm:w-4/5 md:w-2/3 lg:w-1/2 xl:w-2/5 bg-white p-6 sm:p-8 md:p-10 rounded-lg shadow-lg text-center">
         <h2 className="text-[#00c3b8] text-xl sm:text-2xl font-bold mb-2">
           APPOINTMENT REQUEST FORM
@@ -98,31 +120,30 @@ const AppointmentSubmit = () => {
           <h4 className="text-[#00c3b8] font-bold text-base sm:text-lg mb-2">
             Summary
           </h4>
-          <p><b>Procedure:</b> {appointmentData.procedure_type || "N/A"}</p>
-          <p><b>Date:</b> {appointmentData.pref_date || "N/A"}</p>
-          <p><b>Time:</b> {appointmentData.pref_time || "N/A"}</p>
+          <p><b>Procedure:</b> {appointmentData.procedure_type || "..."}</p>
+          <p><b>Date:</b> {appointmentData.pref_date || "..."}</p>
+          <p><b>Time:</b> {appointmentData.pref_time || "..."}</p>
           <p><b>Payment Method:</b> {appointmentData.payment_method || "Cash"}</p>
 
-          {/* Patient Info */}
           <h4 className="text-[#00c3b8] font-bold text-base sm:text-lg mt-4 mb-2">
             Patient Information
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <p><b>First Name:</b> {appointmentData.p_fname || "N/A"}</p>
-            <p><b>Gender:</b> {appointmentData.p_gender || "N/A"}</p>
-            <p><b>Last Name:</b> {appointmentData.p_lname || "N/A"}</p>
-            <p><b>Date of Birth:</b> {appointmentData.p_date_birth || "N/A"}</p>
-            <p><b>Middle Name:</b> {appointmentData.p_mname || "N/A"}</p>
-            <p><b>Age:</b> {appointmentData.p_age || "N/A"}</p>
-            <p><b>Email:</b> {appointmentData.p_email || "N/A"}</p>
-            <p><b>Contact No:</b> {appointmentData.p_contact_no || "N/A"}</p>
-            <p><b>Blood Type:</b> {appointmentData.p_blood_type || "N/A"}</p>
+            <p><b>First Name:</b> {appointmentData.p_fname || "..."}</p>
+            <p><b>Gender:</b> {appointmentData.p_gender || "..."}</p>
+            <p><b>Last Name:</b> {appointmentData.p_lname || "..."}</p>
+            <p><b>Date of Birth:</b> {appointmentData.p_date_birth || "..."}</p>
+            <p><b>Middle Name:</b> {appointmentData.p_mname || "..."}</p>
+            <p><b>Age:</b> {appointmentData.p_age || "..."}</p>
+            <p><b>Email:</b> {appointmentData.p_email || "..."}</p>
+            <p><b>Contact No:</b> {appointmentData.p_contact_no || "..."}</p>
+            <p><b>Blood Type:</b> {appointmentData.p_blood_type || "..."}</p>
             <p className="sm:col-span-2">
-              <b>Home Address:</b> {appointmentData.p_home_address || "N/A"}
+              <b>Home Address:</b> {appointmentData.p_home_address || "..."}
             </p>
-        
           </div>
-          <br></br>
+
+          <br />
 
           {/* Uploaded photos */}
           {appointmentData.photos?.length > 0 ? (
@@ -151,10 +172,6 @@ const AppointmentSubmit = () => {
           )}
         </div>
 
-        {/* Error & Success */}
-        {errorMessage && <p className="text-red-500 text-sm">{errorMessage}</p>}
-        {successMessage && <p className="text-green-500 text-sm">{successMessage}</p>}
-
         <button
           className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full hover:bg-[#00a9a0] transition"
           onClick={handleSubmit}
@@ -162,7 +179,7 @@ const AppointmentSubmit = () => {
           Submit
         </button>
       </div>
-      <br></br>
+      <br />
     </div>
   );
 };

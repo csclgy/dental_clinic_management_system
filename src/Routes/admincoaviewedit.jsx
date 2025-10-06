@@ -1,13 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link, useParams } from "react-router-dom";
 import axios from "axios";
-import {
-  BarChart3,
-  Users,
-  Calendar,
-  Menu,
-  X,
-} from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
 const AdminCoaViewEdit = () => {
   const location = useLocation();
@@ -19,10 +13,19 @@ const AdminCoaViewEdit = () => {
   const [sub, setAccount] = useState({
     account_name: "",
   });
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
 
-  // Scroll to section if needed
+  // ✅ Popup state & fade animation (same as AdminCoaEdit)
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
+  // ✅ Scroll to section if needed
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -34,7 +37,7 @@ const AdminCoaViewEdit = () => {
     }
   }, [location]);
 
-  // Fetch account by ID
+  // ✅ Fetch account by ID
   useEffect(() => {
     const fetchSubAccounts = async () => {
       try {
@@ -42,6 +45,7 @@ const AdminCoaViewEdit = () => {
         setAccount(res.data);
       } catch (err) {
         console.error("Error fetching subaccounts:", err);
+        showPopup("Failed to fetch sub-account details.", "error");
       }
     };
     if (id) {
@@ -49,26 +53,40 @@ const AdminCoaViewEdit = () => {
     }
   }, [id]);
 
-  // Save handler
+  // ✅ Save handler
   const handleSave = async () => {
-    setErrorMessage("");
-    setSuccessMessage("");
+    if (!sub.account_name.trim()) {
+      showPopup("Sub-Account Name is required.", "error");
+      return;
+    }
 
     try {
       const response = await axios.put(`http://localhost:3000/auth/sub/${id}`, {
         account_name: sub.account_name,
       });
 
-      setSuccessMessage(response.data.message || "Account updated successfully!");
+      showPopup(response.data.message || "Sub-account updated successfully!", "success");
       setTimeout(() => navigate(-1), 1500);
     } catch (err) {
       console.error(err);
-      setErrorMessage(err.response?.data?.message || "Something went wrong");
+      showPopup(err.response?.data?.message || "Something went wrong.", "error");
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 relative">
+      {/* ✅ Popup Notification (same as AdminCoaEdit) */}
+      {popup.show && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+            fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+          } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          style={{ zIndex: 9999 }}
+        >
+          {popup.message}
+        </div>
+      )}
+
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
@@ -92,24 +110,39 @@ const AdminCoaViewEdit = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/admincoa"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/adminjournal"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/adminsubsidiaryreceivable"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/admingeneral"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/admintrial"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
                 Trial Balance
               </Link>
             </div>
           )}
-          
+
           <Link
             to="/adminusers"
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
@@ -151,7 +184,7 @@ const AdminCoaViewEdit = () => {
 
       {/* Sidebar (mobile with toggle) */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+        <div className="fixed inset-0 bg-black bg-opacity-40 backdrop-blur-sm z-40 md:hidden">
           <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
             <button
               onClick={() => setSidebarOpen(false)}
@@ -207,13 +240,6 @@ const AdminCoaViewEdit = () => {
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
             </div>
-
-            {errorMessage && (
-              <p className="text-red-500 font-medium">{errorMessage}</p>
-            )}
-            {successMessage && (
-              <p className="text-green-600 font-medium">{successMessage}</p>
-            )}
 
             <div className="flex justify-end gap-4 mt-6">
               <button

@@ -42,6 +42,17 @@ const Adminbillingedit = () => {
 
   const [appointment, setAppointment] = useState(null);
 
+  // ✅ Popup state and fade animation
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   const fetchBillingData = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -93,9 +104,10 @@ const Adminbillingedit = () => {
 
   // add item
     const handleAddItem = async () => {
-    if (!newInvId || !newQuantity || !newAmount) {
-      return alert("Please select item, quantity, and amount.");
-    }
+      if (!newInvId || !newQuantity || !newAmount) {
+        return showPopup("Please select item, quantity, and amount.", "error");
+      }
+
     try {
       const token = localStorage.getItem("token");
       const inv = inventory.find((i) => String(i.inv_id) === String(newInvId));
@@ -149,7 +161,7 @@ const Adminbillingedit = () => {
 
 const handleAddService = async () => {
   if (!newServiceName || !newServiceAmount) {
-    return alert("Please enter service name and amount.");
+    return showPopup("Please enter service name and amount.", "error");
   }
 
   try {
@@ -195,6 +207,28 @@ const handleAddService = async () => {
   const totalCharged = itemsTotal + servicesTotal;
 
 const handleSaveBilling = async () => {
+  // ✅ Validation
+  if (!paymentOR.trim()) {
+    return showPopup("OR Number is required", "error");
+  }
+  if (!paymentStatus) {
+    return showPopup("Payment Status is required", "error");
+  }
+  if (!paymentMode) {
+    return showPopup("Mode of Payment is required", "error");
+  }
+  if (!serviceCharge || Number(serviceCharge) <= 0) {
+    return showPopup("Main Service Charge must be greater than 0", "error");
+  }
+
+  // ✅ Optional: additional validation for GCash proof or HMO number
+  if (paymentMode === "GCash" && !gcashProof) {
+    return showPopup("Please upload GCash proof", "error");
+  }
+  if (paymentMode === "HMO" && !hmoNumber.trim()) {
+    return showPopup("HMO Number is required", "error");
+  }
+
   try {
     const token = localStorage.getItem("token");
 
@@ -202,17 +236,11 @@ const handleSaveBilling = async () => {
     formData.append("payment_method", paymentMode);
     formData.append("payment_status", paymentStatus);
     formData.append("or_num", paymentOR);
-    formData.append("total_service_charged", Number(serviceCharge || 0));
+    formData.append("total_service_charged", Number(serviceCharge));
 
-    if (pwdDiscount) {
-      formData.append("pwd_number", pwdDiscount);
-    }
-    if (hmoNumber) {
-      formData.append("hmo_number", hmoNumber);
-    }
-    if (billingDate) {
-      formData.append("billing_date", billingDate); // ✅ FIX
-    }
+    if (pwdDiscount) formData.append("pwd_number", pwdDiscount);
+    if (hmoNumber) formData.append("hmo_number", hmoNumber);
+    if (billingDate) formData.append("billing_date", billingDate);
 
     if (paymentMode === "GCash" && gcashProof) {
       formData.append("gcash_proof", gcashProof);
@@ -229,7 +257,7 @@ const handleSaveBilling = async () => {
       }
     );
 
-    alert("Billing saved successfully");
+    showPopup("Billing saved successfully", "success");
     await fetchBillingData();
   } catch (err) {
     console.error("Error saving billing:", err);
@@ -405,6 +433,17 @@ const handleDone = () => {
         </div>
       )}
        <main className="flex-1 p-6 md:p-8">
+        {/* ✅ Popup Notification */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
                         <p style={{color:"transparent"}}>...</p>
                             <div className="row">
                                 <div className="col-sm-12">
@@ -441,6 +480,7 @@ const handleDone = () => {
                                             className="border p-2 w-full rounded"
                                             value={paymentStatus}
                                             onChange={(e) => setPaymentStatus(e.target.value)}
+                                            required
                                           >
                                             <option value="">--Select--</option>
                                             <option value="Unpaid">Unpaid</option>
@@ -455,6 +495,7 @@ const handleDone = () => {
                                             className="border p-2 w-full rounded"
                                             value={paymentMode}
                                             onChange={(e) => setPaymentMode(e.target.value)}
+                                            required
                                           >
                                             <option value="">--Select--</option>
                                             <option value="Cash">Cash</option>

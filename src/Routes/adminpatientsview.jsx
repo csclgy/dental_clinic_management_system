@@ -27,6 +27,17 @@ const AdminPatientsView = () => {
   const [consultations, setConsultations] = useState([]);
   const [error, setError] = useState("");
 
+  // ✅ Popup state and fade animation
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   useEffect(() => {
     const fetchPatient = async () => {
       try {
@@ -65,26 +76,28 @@ const AdminPatientsView = () => {
     fetchPatient();
   }, [id]);
 
-const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
-  try {
-    const token = localStorage.getItem("token");
-    const res = await fetch(`http://localhost:3000/auth/followup/${appoint_id}`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ message: `Reminder: Today is your appointment, ${p_fname} ${p_lname}.` }),
-    });
+  const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/auth/followup/${appoint_id}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: `Reminder: Today is your appointment, ${p_fname} ${p_lname}.` }),
+      });
 
-    if (!res.ok) throw new Error("Failed to send follow-up notification");
-    const data = await res.json();
-    alert(data.message || "Follow-up notification sent!");
-  } catch (err) {
-    console.error("Follow-up error:", err);
-    alert("Error sending follow-up notification.");
-  }
-};
+      if (!res.ok) throw new Error("Failed to send follow-up notification");
+      const data = await res.json();
+
+      // ✅ Show popup instead of alert
+      showPopup(data.message || "Follow-up notification sent!", "success");
+    } catch (err) {
+      console.error("Follow-up error:", err);
+      showPopup("Error sending follow-up notification.", "error");
+    }
+  };
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -365,6 +378,17 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
+        {/* ✅ Popup Notification */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
 
         {/* Content */}
         <main className="p-6 overflow-y-auto space-y-6">

@@ -9,6 +9,8 @@ const ProfileChange = () => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  // ✅ Popup state and fade animation
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
   const [fade, setFade] = useState(false);
 
@@ -38,6 +40,7 @@ const ProfileChange = () => {
     fetchUser();
   }, [navigate]);
 
+  // ✅ Same popup function as in ProfileLogin
   const showPopup = (message, type) => {
     setPopup({ show: true, message, type });
     setFade(true);
@@ -72,6 +75,7 @@ const ProfileChange = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to change password");
 
+      // ✅ Success popup
       showPopup("Password changed successfully.", "success");
 
       setCurrentPassword("");
@@ -90,28 +94,28 @@ const ProfileChange = () => {
           <h2 className="text-2xl font-bold text-[#00458B] mb-6">Profile</h2>
           <div className="flex flex-col gap-2">
             <Link to="/profilelogin">
-              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+              <button className="w-full text-left px-4 py-2 rounded-lg font-medium text-[#00458B] hover:bg-blue-100">
                 <i className="fa fa-user-circle-o mr-2" /> Login Information
               </button>
             </Link>
 
             {user.role === "patient" && (
               <Link to="/profileinfo">
-                <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                <button className="w-full text-left px-4 py-2 rounded-lg font-medium text-[#00458B] hover:bg-blue-100">
                   <i className="fa fa-info-circle mr-2" /> User Information
                 </button>
               </Link>
             )}
 
             <Link to="/profilechange">
-              <button className="w-full text-left px-4 py-2 rounded-md font-medium bg-[#E6FCF9] text-[#00c3b8] hover:bg-[#d0f8f5]">
+              <button className="w-full text-left px-4 py-2 rounded-lg font-medium bg-[#E6FCF9] text-[#00c3b8] hover:bg-[#d0f8f5]">
                 <i className="fa fa-lock mr-2" /> Change Password
               </button>
             </Link>
           </div>
         </div>
 
-        {/* ✅ Popup Notification */}
+        {/* ✅ Popup Notification (same as ProfileLogin) */}
         {popup.show && (
           <div
             className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
@@ -171,7 +175,7 @@ const ProfileChange = () => {
   );
 };
 
-// Reusable Input
+// ✅ Reusable Input Component
 const Input = ({ label, type, value, onChange }) => (
   <div className="mb-4">
     <label className="block text-[#00458b] font-semibold mb-1">{label}</label>

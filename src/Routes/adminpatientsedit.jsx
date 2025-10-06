@@ -23,6 +23,17 @@ const AdminPatientsEdit = () => {
     user_status: "",
   });
 
+  // ✅ Popup state and fade animation
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
@@ -98,15 +109,17 @@ const AdminPatientsEdit = () => {
       });
 
       if (!res.ok) {
-        throw new Error("Failed to update profile");
+        const errData = await res.json();
+        throw new Error(errData.message || "Failed to update profile");
       }
 
       const data = await res.json();
-      alert(data.message);
-      navigate("/adminpatients");
+      showPopup(data.message || "Profile updated successfully!", "success");
+
+      setTimeout(() => navigate("/adminpatients"), 1500);
     } catch (err) {
       console.error("Error updating profile:", err);
-      alert("Could not update profile. Please try again.");
+      showPopup(err.message || "Could not update profile. Please try again.", "error");
     }
   };
 
@@ -225,6 +238,17 @@ const AdminPatientsEdit = () => {
 
       {/* Main Content */}
       <div className="flex-1 p-8">
+        {/* ✅ Popup Notification */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
 
         <div className="bg-white p-8 rounded-lg shadow-md border border-[#01D5C4]">
           <h2 className="text-2xl font-bold text-[#00458B] mb-6">Edit Profile</h2>

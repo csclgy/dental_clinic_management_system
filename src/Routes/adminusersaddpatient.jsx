@@ -12,6 +12,17 @@ const AdminUsersAddPatient = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
 
+  // ✅ Popup state and fade animation
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   const [registerData, setRegisterData] = useState({
     user_name: "",
     user_password: "",
@@ -63,17 +74,17 @@ const AdminUsersAddPatient = () => {
         "http://localhost:3000/auth/addpatient",
         registerData
       );
-      setSuccessMessage(response.data.message || "Patient Added successfully!");
+      showPopup(response.data.message || "Patient added successfully!", "success");
       setTimeout(() => navigate("/adminusers"), 1500);
     } catch (error) {
       if (error.response) {
-        setErrorMessage(error.response.data.message || "Something went wrong");
+        showPopup(error.response.data.message || "Something went wrong", "error");
         console.error("Response error:", error.response.data);
       } else if (error.request) {
-        setErrorMessage("No response from server. Please try again later.");
+        showPopup("No response from server. Please try again later.", "error");
         console.error("Request error:", error.request);
       } else {
-        setErrorMessage("Error: " + error.message);
+        showPopup("Error: " + error.message, "error");
         console.error("Axios error:", error.message);
       }
     }
@@ -200,6 +211,18 @@ const AdminUsersAddPatient = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
+        {/* ✅ Popup Notification */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
+
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -465,18 +488,11 @@ const AdminUsersAddPatient = () => {
               </div>
             </div>
 
-            {errorMessage && (
-              <p className="text-red-500 font-medium">{errorMessage}</p>
-            )}
-            {successMessage && (
-              <p className="text-green-600 font-medium">{successMessage}</p>
-            )}
-
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/adminusers")}
+                onClick={() => navigate("/adminpatients")}
               >
                 Back
               </button>

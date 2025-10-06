@@ -12,6 +12,17 @@ const AdminInventoryAdd = () => {
 
   const [suppliers, setSuppliers] = useState([]);
 
+  // ✅ Popup state and fade animation (same as AdminCoaAdd)
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   const [registerData, setRegisterData] = useState({
     inv_item_type: "",
     inv_item_name: "",
@@ -41,26 +52,33 @@ const AdminInventoryAdd = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
 
     try {
       const response = await axios.post(
         "http://localhost:3000/auth/additem",
         registerData
       );
-      setSuccessMessage(response.data.message || "Item added successfully!");
+
+      showPopup(response.data.message || "Item added successfully!", "success");
+
+      setRegisterData({
+        inv_item_type: "",
+        inv_item_name: "",
+        inv_price_per_item: "",
+        inv_quantity: "",
+        inv_ml: "",
+        inv_exp_date: "",
+        supplier_id: "",
+      });
+
       setTimeout(() => navigate("/admininventory"), 1500);
     } catch (error) {
       if (error.response) {
-        setErrorMessage(error.response.data.message || "Something went wrong");
-        console.error("Response error:", error.response.data);
+        showPopup(error.response.data.message || "Something went wrong", "error");
       } else if (error.request) {
-        setErrorMessage("No response from server. Please try again later.");
-        console.error("Request error:", error.request);
+        showPopup("No response from server. Please try again later.", "error");
       } else {
-        setErrorMessage("Error: " + error.message);
-        console.error("Axios error:", error.message);
+        showPopup("Error: " + error.message, "error");
       }
     }
   };
@@ -180,6 +198,18 @@ const AdminInventoryAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
+        {/* ✅ Popup Notification (same as AdminCoaAdd) */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
+
         {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
@@ -295,13 +325,6 @@ const AdminInventoryAdd = () => {
                     ))}
                   </select>
                 </div>
-
-            {errorMessage && (
-              <p className="text-red-500 font-medium">{errorMessage}</p>
-            )}
-            {successMessage && (
-              <p className="text-green-600 font-medium">{successMessage}</p>
-            )}
 
             <div className="flex justify-end gap-4 mt-6">
               <button

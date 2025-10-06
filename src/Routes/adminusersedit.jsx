@@ -9,12 +9,20 @@ const AdminUsersEdit = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
 
+  // ✅ Popup state
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   const [user, setUser] = useState({
     user_name: "",
     email: "",
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
     contact_no: "",
     role: "",
     fname: "",
@@ -55,9 +63,6 @@ const AdminUsersEdit = () => {
         setUser({
           user_name: data.user_name,
           email: data.email,
-          currentPassword: "",
-          newPassword: "",
-          confirmPassword: "",
           contact_no: data.contact_no,
           role: data.role,
           fname: data.fname,
@@ -88,30 +93,27 @@ const AdminUsersEdit = () => {
     }
 
     try {
-      const res = await fetch(
-        `http://localhost:3000/auth/updateuserinfo/${id}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(user),
-        }
-      );
+      const res = await fetch(`http://localhost:3000/auth/updateuserinfo/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(user),
+      });
 
       if (!res.ok) throw new Error("Failed to update profile");
 
       const data = await res.json();
-      alert(data.message);
-      navigate("/adminusers");
+      showPopup(data.message || "User updated successfully!", "success");
+      setTimeout(() => navigate("/adminusers"), 1500);
     } catch (err) {
       console.error(err);
-      alert("Could not update profile. Please try again.");
+      showPopup("Could not update profile. Please try again.", "error");
     }
   };
 
-    const handleDateChange = (dob) => {
+  const handleDateChange = (dob) => {
     const birthDate = new Date(dob);
     const today = new Date();
 
@@ -119,15 +121,12 @@ const AdminUsersEdit = () => {
     const monthDiff = today.getMonth() - birthDate.getMonth();
     const dayDiff = today.getDate() - birthDate.getDate();
 
-    // Adjust age if the birthday hasn't happened yet this year
-    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
-      age--;
-    }
+    if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) age--;
 
     setUser((prev) => ({
       ...prev,
       date_birth: dob,
-      age: age >= 0 ? age : 0, // prevent negative ages
+      age: age >= 0 ? age : 0,
     }));
   };
 
@@ -155,96 +154,53 @@ const AdminUsersEdit = () => {
             </span>
             <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
           </button>
+
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Chart of Accounts
-              </Link>
-              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Journal Entries
-              </Link>
-              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Subsidiary
-              </Link>
-              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                General Ledger
-              </Link>
-              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Trial Balance
-              </Link>
+              <Link to="/admincoa" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Chart of Accounts</Link>
+              <Link to="/adminjournal" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Journal Entries</Link>
+              <Link to="/adminsubsidiaryreceivable" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Subsidiary</Link>
+              <Link to="/admingeneral" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">General Ledger</Link>
+              <Link to="/admintrial" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Trial Balance</Link>
             </div>
           )}
 
           <Link
             to="/adminusers"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B] bg-white text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg bg-white text-[#00458B]"
           >
             <Users size={18} /> Users
           </Link>
-          <Link
-            to="/admininventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
+          <Link to="/admininventory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
             <i className="fa fa-archive"></i> Inventory
           </Link>
-          <Link
-            to="/adminpatients"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
+          <Link to="/adminpatients" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
             <i className="fa fa-user-plus"></i> Patients
           </Link>
-          <Link
-            to="/adminschedule"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
+          <Link to="/adminschedule" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
             <Calendar size={18} /> Schedules
           </Link>
-          <Link
-            to="/admincashier"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
+          <Link to="/admincashier" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
             <Calendar size={18} /> Cashier
           </Link>
-          <Link
-            to="/adminaudit"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
+          <Link to="/adminaudit" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
             <i className="fa fa-eye"></i> Audit Trail
           </Link>
         </nav>
       </aside>
 
-      {/* Sidebar (mobile) */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
-          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="self-end mb-6"
-            >
-              <X size={24} />
-            </button>
-            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
-            <nav className="flex flex-col gap-2">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
-              >
-                <BarChart3 size={18} /> Dashboard
-              </Link>
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
-              >
-                <Users size={18} /> Users
-              </Link>
-            </nav>
-          </aside>
-        </div>
-      )}
-
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          >
+            {popup.message}
+          </div>
+        )}
+
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -252,208 +208,60 @@ const AdminUsersEdit = () => {
           <Menu size={24} /> Menu
         </button>
 
-        {/* Edit Form */}
         <div className="bg-white p-8 rounded-xl shadow-md border border-[#01D5C4]">
           <h2 className="text-xl font-bold text-[#00458B] mb-6">Edit User</h2>
           {errorMessage && (
             <p className="text-red-500 font-medium mb-4">{errorMessage}</p>
           )}
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                Username
-              </label>
-              <input
-                type="text"
-                value={user.user_name}
-                onChange={(e) =>
-                  setUser({ ...user, user_name: e.target.value })
-                }
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              />
-            </div>
+            {/* Basic Info */}
+            <Input label="Username" value={user.user_name} onChange={(e) => setUser({ ...user, user_name: e.target.value })} />
+            <Input label="Email" type="email" value={user.email} onChange={(e) => setUser({ ...user, email: e.target.value })} />
+            <Input
+              label="Contact Number"
+              value={user.contact_no}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                if (value.length <= 11) setUser({ ...user, contact_no: value });
+              }}
+              placeholder="Enter 11-digit number"
+            />
 
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                value={user.email}
-                onChange={(e) => setUser({ ...user, email: e.target.value })}
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              />
-            </div>
+            <Select
+              label="Access Level"
+              value={user.role}
+              onChange={(e) => setUser({ ...user, role: e.target.value })}
+              options={["patient", "dentist", "receptionist", "inventory", "admin"]}
+            />
 
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                Current Password
-              </label>
-              <input
-                type="password"
-                value={user.currentPassword}
-                onChange={(e) =>
-                  setUser({ ...user, currentPassword: e.target.value })
-                }
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              />
-            </div>
+            <Input label="First Name" value={user.fname} onChange={(e) => setUser({ ...user, fname: e.target.value })} />
+            <Input label="Middle Name" value={user.mname} onChange={(e) => setUser({ ...user, mname: e.target.value })} />
+            <Input label="Last Name" value={user.lname} onChange={(e) => setUser({ ...user, lname: e.target.value })} />
 
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                New Password
-              </label>
-              <input
-                type="password"
-                value={user.newPassword}
-                onChange={(e) =>
-                  setUser({ ...user, newPassword: e.target.value })
-                }
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              />
-            </div>
+            <Select
+              label="Gender"
+              value={user.gender}
+              onChange={(e) => setUser({ ...user, gender: e.target.value })}
+              options={["male", "female"]}
+              placeholder="-- Select --"
+            />
 
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                Confirm Password
-              </label>
-              <input
-                type="password"
-                value={user.confirmPassword}
-                onChange={(e) =>
-                  setUser({ ...user, confirmPassword: e.target.value })
-                }
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              />
-            </div>
+            <Input
+              label="Date of Birth"
+              type="date"
+              value={user.date_birth}
+              onChange={(e) => handleDateChange(e.target.value)}
+              max={new Date().toISOString().split("T")[0]}
+            />
 
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                Contact Number
-              </label>
-              <input
-                type="text"
-                value={user.contact_no}
-                onChange={(e) => {
-                  // allow only numbers
-                  const value = e.target.value.replace(/\D/g, "");
-                  if (value.length <= 11) {
-                    setUser({ ...user, contact_no: value });
-                  }
-                }}
-                pattern="\d{11}" // regex: exactly 11 digits
-                required
-                placeholder="Enter 11-digit number"
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                Access Level
-              </label>
-              <select
-                value={user.role}
-                onChange={(e) => setUser({ ...user, role: e.target.value })}
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              >
-                <option value="patient">Patient</option>
-                <option value="dentist">Dentist</option>
-                <option value="receptionist">Receptionist</option>
-                <option value="inventory">Inventory Staff</option>
-                <option value="admin">Admin</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                First Name
-              </label>
-              <input
-                type="text"
-                value={user.fname}
-                onChange={(e) => setUser({ ...user, fname: e.target.value })}
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                Middle Name
-              </label>
-              <input
-                type="text"
-                value={user.mname}
-                onChange={(e) => setUser({ ...user, mname: e.target.value })}
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[#00458B] font-semibold mb-1">
-                Last Name
-              </label>
-              <input
-                type="text"
-                value={user.lname}
-                onChange={(e) => setUser({ ...user, lname: e.target.value })}
-                className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
-              />
-            </div>
-
-                <div>
-                  <label className="block text-[#00458b] font-semibold mb-1">
-                    Gender
-                  </label>
-                  <select
-                    value={user.gender}
-                    onChange={(e) => setUser({ ...user, gender: e.target.value })}
-                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                  >
-                    <option value="">-- Select --</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-[#00458b] font-semibold mb-1">
-                    Date of Birth
-                  </label>
-                  <input
-                    type="date"
-                    value={user.date_birth}
-                    onChange={(e) => handleDateChange(e.target.value)}
-                    max={new Date().toISOString().split("T")[0]} // today's date
-                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[#00458b] font-semibold mb-1">
-                    Age
-                  </label>
-                  <input
-                    type="number"
-                    value={user.age}
-                    readOnly
-                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[#00458b] font-semibold mb-1">
-                    User Status
-                  </label>
-                  <select
-                    value={user.user_status}
-                    onChange={(e) => setUser({ ...user, user_status: e.target.value })}
-                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </select>
-                </div>
+            <Input label="Age" type="number" value={user.age} readOnly />
+            <Select
+              label="User Status"
+              value={user.user_status}
+              onChange={(e) => setUser({ ...user, user_status: e.target.value })}
+              options={["active", "inactive"]}
+            />
           </div>
 
           {/* Buttons */}
@@ -477,4 +285,32 @@ const AdminUsersEdit = () => {
   );
 };
 
-export default AdminUsersEdit; 
+// Small helper components for cleaner UI
+const Input = ({ label, ...props }) => (
+  <div>
+    <label className="block text-[#00458B] font-semibold mb-1">{label}</label>
+    <input
+      {...props}
+      className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
+    />
+  </div>
+);
+
+const Select = ({ label, options, placeholder, ...props }) => (
+  <div>
+    <label className="block text-[#00458B] font-semibold mb-1">{label}</label>
+    <select
+      {...props}
+      className="w-full border border-[#00458B] rounded-full px-4 py-2 outline-none"
+    >
+      {placeholder && <option value="">{placeholder}</option>}
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {opt.charAt(0).toUpperCase() + opt.slice(1)}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
+export default AdminUsersEdit;

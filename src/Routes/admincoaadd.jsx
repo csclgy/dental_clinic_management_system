@@ -1,14 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import {
-  BarChart3,
-  Users,
-  Calendar,
-  Menu,
-  X,
-  Package,
-} from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
 const AdminCoaAdd = () => {
   const location = useLocation();
@@ -19,8 +12,17 @@ const AdminCoaAdd = () => {
 
   const [accountName, setAccountName] = useState("");
   const [accountType, setAccountType] = useState("Asset");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+
+  // ✅ Popup state and fade animation (copied from ProfileChange)
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -34,68 +36,104 @@ const AdminCoaAdd = () => {
   }, [location]);
 
   const handleSave = async () => {
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    if (!accountName) {
-      setErrorMessage("Account Name is required");
+    if (!accountName.trim()) {
+      showPopup("Account Name is required.", "error");
       return;
     }
 
     try {
-      const response = await axios.post("http://localhost:3000/auth/coa", {
-        account_name: accountName,
-        account_type: accountType,
-      });
+      const token = localStorage.getItem("token"); // get your saved JWT token
 
-      setSuccessMessage(response.data.message || "Account saved successfully!");
+      const response = await axios.post(
+        "http://localhost:3000/auth/coa",
+        {
+          account_name: accountName,
+          account_type: accountType,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ add this
+          },
+        }
+      );
+
+      showPopup(response.data.message || "Account saved successfully!", "success");
       setAccountName("");
       setAccountType("Asset");
+
+      // Redirect after a short delay
       setTimeout(() => navigate("/admincoa"), 1500);
     } catch (err) {
       console.error(err);
-      setErrorMessage(err.response?.data?.message || "Something went wrong");
+      showPopup(err.response?.data?.message || "Something went wrong.", "error");
     }
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 relative">
+      {/* ✅ Popup Notification (same style as ProfileChange) */}
+      {popup.show && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+            fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+          } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          style={{ zIndex: 9999 }}
+        >
+          {popup.message}
+        </div>
+      )}
+
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           <Link
             to="/admindashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <BarChart3 size={18} /> Dashboard
           </Link>
 
-          {/* Ledger with dropdown */}
+          {/* Ledger dropdown */}
           <button
             onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-            className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
-              <i className="fa fa-book"></i> Ledger
+              <i className="fa fa-book" /> Ledger
             </span>
             <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/admincoa"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/adminjournal"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/adminsubsidiaryreceivable"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/admingeneral"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link
+                to="/admintrial"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
                 Trial Balance
               </Link>
             </div>
@@ -103,25 +141,25 @@ const AdminCoaAdd = () => {
 
           <Link
             to="/adminusers"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <Users size={18} /> Users
           </Link>
           <Link
             to="/admininventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
-            <i className="fa fa-archive"></i> Inventory
+            <i className="fa fa-archive" /> Inventory
           </Link>
           <Link
             to="/adminpatients"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
-            <i className="fa fa-user-plus"></i> Patients
+            <i className="fa fa-user-plus" /> Patients
           </Link>
           <Link
             to="/adminschedule"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
           </Link>
@@ -133,14 +171,14 @@ const AdminCoaAdd = () => {
           </Link>
           <Link
             to="/adminaudit"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
-            <i className="fa fa-eye"></i> Audit Trail
+            <i className="fa fa-eye" /> Audit Trail
           </Link>
         </nav>
       </aside>
 
-      {/* Sidebar (mobile with toggle) */}
+      {/* Mobile Sidebar */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
           <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
@@ -171,7 +209,7 @@ const AdminCoaAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* Mobile menu button */}
+        {/* Mobile Menu Button */}
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -214,13 +252,6 @@ const AdminCoaAdd = () => {
                 <option value="Expense">Expense</option>
               </select>
             </div>
-
-            {errorMessage && (
-              <p className="text-red-500 font-medium">{errorMessage}</p>
-            )}
-            {successMessage && (
-              <p className="text-green-600 font-medium">{successMessage}</p>
-            )}
 
             <div className="flex justify-end gap-4 mt-6">
               <button

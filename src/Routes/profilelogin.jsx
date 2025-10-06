@@ -100,7 +100,7 @@ const ProfileLogin = () => {
       const data = await res.json();
 
       // ✅ Show success popup
-      showPopup("Password changed successfully.", "success");
+      showPopup("Profile changed successfully.", "success");
       setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
     } catch (err) {
       console.error("Error updating profile:", err);

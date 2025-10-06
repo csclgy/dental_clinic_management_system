@@ -35,83 +35,93 @@ const Adminconsultationcomplete = () => {
   const [assignedDentist, setAssignedDentist] = useState("");
   const [diagnosis, setDiagnosis] = useState("");
 
+  // ✅ Popup state and fade animation
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
 
-const teethList = [
-  { number: 1, name: "Upper RIGHT Central Incisor" },
-  { number: 1.1, name: "Upper LEFT Central Incisor" },
-  { number: 2, name: "Upper RIGHT Lateral Incisor" },
-  { number: 2.1, name: "Upper LEFT Lateral Incisor" },
-  { number: 3, name: "Upper RIGHT Canine" },
-  { number: 3.1, name: "Upper LEFT Canine" },
-  { number: 4, name: "Upper RIGHT First Premolar" },
-  { number: 4.1, name: "Upper LEFT First Premolar" },
-  { number: 5, name: "Upper RIGHT Second Premolar" },
-  { number: 5.1, name: "Upper LEFT Second Premolar" },
-  { number: 6, name: "Upper RIGHT First molar" },
-  { number: 6.1, name: "Upper LEFT First molar" },
-  { number: 7, name: "Upper RIGHT Second molar" },
-  { number: 7.1, name: "Upper LEFT Second molar" },
-  { number: 8, name: "Upper RIGHT Third molar(Wisdom Teeth)" },
-  { number: 8.1, name: "Upper LEFT Third molar(Wisdom Teeth)" },
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
 
-  { number: 9, name: "Lower RIGHT Third molar(Wisdom Teeth)" },
-  { number: 9.1, name: "Lower LEFT Third molar(Wisdom Teeth)" },
-  { number: 10, name: "Lower RIGHT Second Molar" },
-  { number: 10.1, name: "Lower LEFT Second Molar" },
-  { number: 11, name: "Lower RIGHT First Molar" },
-  { number: 11.1, name: "Lower LEFT First Molar" },
-  { number: 12, name: "Lower RIGHT Second Premolar" },
-  { number: 12.1, name: "Lower LEFT Second Premolar" },
-  { number: 13, name: "Lower RIGHT First Premolar" },
-  { number: 13.1, name: "Lower LEFT First Premolar" },
-  { number: 14, name: "Lower RIGHT Canine" },
-  { number: 14.1, name: "Lower LEFT Canine" },
-  { number: 15, name: "Lower RIGHT Lateral Incisor" },
-  { number: 15.1, name: "Lower LEFT Lateral Incisor" },
-  { number: 16, name: "Lower RIGHT Central Incisor" },
-  { number: 16.1, name: "Lower LEFT Central Incisor" },
-];
+  const teethList = [
+    { number: 1, name: "Upper RIGHT Central Incisor" },
+    { number: 1.1, name: "Upper LEFT Central Incisor" },
+    { number: 2, name: "Upper RIGHT Lateral Incisor" },
+    { number: 2.1, name: "Upper LEFT Lateral Incisor" },
+    { number: 3, name: "Upper RIGHT Canine" },
+    { number: 3.1, name: "Upper LEFT Canine" },
+    { number: 4, name: "Upper RIGHT First Premolar" },
+    { number: 4.1, name: "Upper LEFT First Premolar" },
+    { number: 5, name: "Upper RIGHT Second Premolar" },
+    { number: 5.1, name: "Upper LEFT Second Premolar" },
+    { number: 6, name: "Upper RIGHT First molar" },
+    { number: 6.1, name: "Upper LEFT First molar" },
+    { number: 7, name: "Upper RIGHT Second molar" },
+    { number: 7.1, name: "Upper LEFT Second molar" },
+    { number: 8, name: "Upper RIGHT Third molar(Wisdom Teeth)" },
+    { number: 8.1, name: "Upper LEFT Third molar(Wisdom Teeth)" },
 
-const handleSelect = (toothNumber, toothName, isChecked) => {
-  setSelectedTeeth((prev) => {
-    if (isChecked) {
-      return [
-        ...prev.filter((t) => t.st_number !== toothNumber),
-        { st_number: toothNumber, st_name: toothName }, // ✅ use backend field names
-      ];
-    }
-    return prev.filter((t) => t.st_number !== toothNumber);
-  });
-};
+    { number: 9, name: "Lower RIGHT Third molar(Wisdom Teeth)" },
+    { number: 9.1, name: "Lower LEFT Third molar(Wisdom Teeth)" },
+    { number: 10, name: "Lower RIGHT Second Molar" },
+    { number: 10.1, name: "Lower LEFT Second Molar" },
+    { number: 11, name: "Lower RIGHT First Molar" },
+    { number: 11.1, name: "Lower LEFT First Molar" },
+    { number: 12, name: "Lower RIGHT Second Premolar" },
+    { number: 12.1, name: "Lower LEFT Second Premolar" },
+    { number: 13, name: "Lower RIGHT First Premolar" },
+    { number: 13.1, name: "Lower LEFT First Premolar" },
+    { number: 14, name: "Lower RIGHT Canine" },
+    { number: 14.1, name: "Lower LEFT Canine" },
+    { number: 15, name: "Lower RIGHT Lateral Incisor" },
+    { number: 15.1, name: "Lower LEFT Lateral Incisor" },
+    { number: 16, name: "Lower RIGHT Central Incisor" },
+    { number: 16.1, name: "Lower LEFT Central Incisor" },
+  ];
 
-useEffect(() => {
-    const fetchConsultation = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        const res = await fetch(`http://localhost:3000/auth/displayconsultation/${appointId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!res.ok) throw new Error("Failed to fetch consultation");
-
-        const data = await res.json();
-        setConsultation(data.consultation);
-        setChargedItems(data.chargedItems || []);
-
-        // Set defaults if missing
-        setAssignedDentist(data.consultation.attending_dentist || "Unassigned");
-        setDiagnosis(data.consultation.p_diagnosis || "");
-      } catch (err) {
-        console.error("Error fetching consultation:", err);
-        setError("Could not load consultation");
+  const handleSelect = (toothNumber, toothName, isChecked) => {
+    setSelectedTeeth((prev) => {
+      if (isChecked) {
+        return [
+          ...prev.filter((t) => t.st_number !== toothNumber),
+          { st_number: toothNumber, st_name: toothName }, // ✅ use backend field names
+        ];
       }
-    };
+      return prev.filter((t) => t.st_number !== toothNumber);
+    });
+  };
 
-    fetchConsultation();
-  }, [appointId]);
+  useEffect(() => {
+      const fetchConsultation = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const res = await fetch(`http://localhost:3000/auth/displayconsultation/${appointId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!res.ok) throw new Error("Failed to fetch consultation");
+
+          const data = await res.json();
+          setConsultation(data.consultation);
+          setChargedItems(data.chargedItems || []);
+
+          // Set defaults if missing
+          setAssignedDentist(data.consultation.attending_dentist || "Unassigned");
+          setDiagnosis(data.consultation.p_diagnosis || "");
+        } catch (err) {
+          console.error("Error fetching consultation:", err);
+          setError("Could not load consultation");
+        }
+      };
+
+      fetchConsultation();
+    }, [appointId]);
 
   // Scroll effect
   useEffect(() => {
@@ -127,18 +137,18 @@ useEffect(() => {
 
 const handleComplete = async () => {
   if (assignedDentist === "Unassigned") {
-    alert("Please assign a dentist before completion.");
+    showPopup("Please assign a dentist before completion.", "error");
     return;
   }
   if (!diagnosis.trim()) {
-    alert("Please enter a diagnosis before completion.");
+    showPopup("Please enter a diagnosis before completion.", "error");
     return;
   }
 
   try {
     const token = localStorage.getItem("token");
     const res = await fetch(`http://localhost:3000/auth/completeconsultation/${appointId}`, {
-      method: "PUT", // or POST depending on your backend
+      method: "PUT",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -147,39 +157,40 @@ const handleComplete = async () => {
         attending_dentist: assignedDentist,
         p_diagnosis: diagnosis,
         appointment_status: "done",
+        payment_confirmation: 'incomplete',
         selected_teeth: selectedTeeth,
       }),
     });
 
     if (!res.ok) throw new Error("Failed to complete consultation");
 
-    alert("Consultation marked as complete!");
-    navigate("/adminpatients");
+    showPopup("Consultation marked as complete!", "success");
+    setTimeout(() => navigate("/adminpatients"), 1500);
   } catch (err) {
     console.error("Error completing consultation:", err);
-    alert("Error completing consultation. Try again.");
+    showPopup("Error completing consultation. Try again.", "error");
   }
 };
 
-useEffect(() => {
-  const fetchDentists = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:3000/auth/dentists", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setDentists(res.data);
-    } catch (err) {
-      console.error("Error fetching dentists:", err);
-    }
-  };
-  fetchDentists();
-}, []);
+  useEffect(() => {
+    const fetchDentists = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:3000/auth/dentists", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setDentists(res.data);
+      } catch (err) {
+        console.error("Error fetching dentists:", err);
+      }
+    };
+    fetchDentists();
+  }, []);
 
   if (error) return <p className="text-red-500">{error}</p>;
   if (!consultation) return <p>Loading consultation...</p>;
 
-  return (
+return (
  <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
@@ -291,6 +302,17 @@ useEffect(() => {
       )}
       
       <main className="flex-1 p-6 md:p-8">
+        {/* ✅ Popup Notification */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
                         <p style={{color:"transparent"}}>...</p>
                         <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
                             <div className="row">

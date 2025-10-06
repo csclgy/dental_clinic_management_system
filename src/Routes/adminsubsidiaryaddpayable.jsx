@@ -23,6 +23,17 @@ const AdminSubsidiaryPayableAdd = () => {
     amount: "",
   });
 
+  // ✅ Popup state and fade animation (same style as AdminCoaViewAdd)
+    const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+    const [fade, setFade] = useState(false);
+  
+    const showPopup = (message, type) => {
+      setPopup({ show: true, message, type });
+      setFade(true);
+      setTimeout(() => setFade(false), 2500);
+      setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+    };
+
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -94,7 +105,7 @@ const AdminSubsidiaryPayableAdd = () => {
       !formData.amount ||
       !formData.account1
     ) {
-      alert("Please fill in all required fields.");
+      showPopup("Please fill in all required fields.", "error");
       return;
     }
 
@@ -112,11 +123,11 @@ const AdminSubsidiaryPayableAdd = () => {
         credit,
       });
 
-      alert("Subsidiary entry saved successfully!");
+      showPopup("Subsidiary entry saved successfully!", "success");
       navigate("/adminsubsidiaryPayable");
     } catch (err) {
       console.error("Error saving entry:", err);
-      alert(err.response?.data?.message || "Something went wrong");
+      showPopup(err.response?.data?.message || "Something went wrong", "error");
     }
   };
 
@@ -233,6 +244,16 @@ const AdminSubsidiaryPayableAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
         {/* Mobile menu */}
         <button
           onClick={() => setSidebarOpen(true)}

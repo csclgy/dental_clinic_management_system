@@ -17,10 +17,18 @@ const AdminCoaEdit = () => {
     status: "Active",
   });
 
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  // ✅ Popup state and fade animation (copied from AdminCoaAdd)
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
 
-  // Fetch account by id
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
+  // ✅ Fetch account by id
   useEffect(() => {
     const fetchAccount = async () => {
       try {
@@ -28,37 +36,36 @@ const AdminCoaEdit = () => {
         setAccount(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
+        showPopup("Failed to fetch account details.", "error");
       }
     };
     fetchAccount();
   }, [id]);
 
-  // Handle field changes
+  // ✅ Handle field changes
   const handleChange = (e) => {
     setAccount({ ...account, [e.target.name]: e.target.value });
   };
 
-  // Update account
+  // ✅ Update account
   const handleUpdate = async () => {
-    setErrorMessage("");
-    setSuccessMessage("");
-
-    if (!account.account_name) {
-      setErrorMessage("Account Name is required");
+    if (!account.account_name.trim()) {
+      showPopup("Account Name is required.", "error");
       return;
     }
 
     try {
-      await axios.put(`http://localhost:3000/auth/coa/${id}`, account);
-      setSuccessMessage("Account updated successfully!");
+      const response = await axios.put(`http://localhost:3000/auth/coa/${id}`, account);
+      showPopup(response.data.message || "Account updated successfully!", "success");
+
       setTimeout(() => navigate("/admincoa"), 1500);
     } catch (err) {
       console.error("Error updating account:", err);
-      setErrorMessage("Failed to update account");
+      showPopup(err.response?.data?.message || "Failed to update account.", "error");
     }
   };
 
-  // Scroll to element if provided
+  // ✅ Scroll to element if provided
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -71,7 +78,19 @@ const AdminCoaEdit = () => {
   }, [location]);
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 relative">
+      {/* ✅ Popup Notification (same style as AdminCoaAdd) */}
+      {popup.show && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+            fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+          } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          style={{ zIndex: 9999 }}
+        >
+          {popup.message}
+        </div>
+      )}
+
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
@@ -243,13 +262,6 @@ const AdminCoaEdit = () => {
                 <option value="Inactive">Inactive</option>
               </select>
             </div>
-
-            {errorMessage && (
-              <p className="text-red-500 font-medium">{errorMessage}</p>
-            )}
-            {successMessage && (
-              <p className="text-green-600 font-medium">{successMessage}</p>
-            )}
 
             <div className="flex justify-end gap-4 mt-6">
               <button

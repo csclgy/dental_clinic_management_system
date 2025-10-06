@@ -22,6 +22,17 @@ const AdminInventoryEditItem = () => {
   const [ml, setML] = useState("");
   const [expiration, setExpiration] = useState("");
 
+  // ✅ Popup state and fade animation (same as AdminCoaEdit)
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   // fetch item details
   useEffect(() => {
     const fetchItem = async () => {
@@ -64,8 +75,6 @@ const AdminInventoryEditItem = () => {
   // handle update
   const handleUpdate = async (e) => {
     e.preventDefault();
-    setErrorMessage("");
-    setSuccessMessage("");
 
     try {
       await axios.put(
@@ -85,11 +94,11 @@ const AdminInventoryEditItem = () => {
         }
       );
 
-      setSuccessMessage("Item updated successfully!");
+      showPopup("Item updated successfully!", "success");
       setTimeout(() => navigate("/admininventory"), 1500);
     } catch (err) {
-      setErrorMessage("Failed to update item.");
       console.error("Error updating item:", err);
+      showPopup("Failed to update item.", "error");
     }
   };
 
@@ -205,6 +214,18 @@ const AdminInventoryEditItem = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
+        {/* ✅ Popup Notification (same as AdminCoaEdit) */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
+
         {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
@@ -227,6 +248,7 @@ const AdminInventoryEditItem = () => {
                 value={itemName}
                 onChange={(e) => setItemName(e.target.value)}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                required
               />
             </div>
 
@@ -240,6 +262,7 @@ const AdminInventoryEditItem = () => {
                 readOnly
                 onChange={(e) => setItemType(e.target.value)}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                required
               />
             </div>
 
@@ -253,6 +276,7 @@ const AdminInventoryEditItem = () => {
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                required
               />
             </div>
 
@@ -266,6 +290,7 @@ const AdminInventoryEditItem = () => {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                required
               />
             </div>
 
@@ -295,13 +320,6 @@ const AdminInventoryEditItem = () => {
                   />
                 </div>
               </>
-            )}
-
-            {errorMessage && (
-              <p className="text-red-500 font-medium">{errorMessage}</p>
-            )}
-            {successMessage && (
-              <p className="text-green-600 font-medium">{successMessage}</p>
             )}
 
             <div className="flex justify-end gap-4 mt-6">

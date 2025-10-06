@@ -11,6 +11,24 @@ const AdminInventoryPending = () => {
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // ✅ Popup state and fade animation
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  // ✅ Confirmation Modal
+  const [confirmBox, setConfirmBox] = useState({
+    show: false,
+    itemId: null,
+    itemName: "",
+  });
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   // Scroll behavior
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -45,12 +63,10 @@ const AdminInventoryPending = () => {
     fetchItems();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to reject this Item?")) return;
-
+  const handleDelete = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:3000/auth/deleteitem/${id}`, {
+      const res = await fetch(`http://localhost:3000/auth/deleteitem/${confirmBox.itemId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -60,11 +76,12 @@ const AdminInventoryPending = () => {
         throw new Error(errorData.message || "Failed to delete Item");
       }
 
-      setItems((prevItems) => prevItems.filter((item) => item.inv_id !== id));
-      alert("Item rejected successfully");
+      setItems((prevItems) => prevItems.filter((item) => item.inv_id !== confirmBox.itemId));
+      setConfirmBox({ show: false, itemId: null, itemName: "" });
+      showPopup("Item rejected successfully", "success");
     } catch (err) {
       console.error("Error deleting item:", err);
-      alert(err.message || "Could not reject Item");
+      showPopup(err.message || "Could not reject item", "error");
     }
   };
 
@@ -90,10 +107,10 @@ const AdminInventoryPending = () => {
         )
       );
 
-      alert("Item approved successfully");
+      showPopup("Item approved successfully", "success"); // ✅ replaced alert
     } catch (err) {
       console.error("Error approving item:", err);
-      alert(err.message || "Could not approve item");
+      showPopup(err.message || "Could not approve item", "error"); // ✅ replaced alert
     }
   };
 
@@ -220,6 +237,50 @@ const AdminInventoryPending = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
+        {/* ✅ Popup Notification */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
+
+        {/* ✅ Delete Confirmation Modal */}
+        {confirmBox.show && (
+          <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-[9998]">
+            <div className="bg-white rounded-2xl shadow-lg w-[90%] max-w-md p-6 text-center relative animate-fadeIn">
+              <i className="fa fa-exclamation-triangle text-red-500 mx-auto mb-3 text-5xl"></i>
+              <h2 className="text-lg font-bold text-gray-800 mb-2">
+                Are you sure you want to reject this item?
+              </h2>
+              <p className="text-gray-600 mb-6">
+                <span className="font-semibold text-[#00458B]">
+                  {confirmBox.itemName}
+                </span>{" "}
+                will be permanently removed.
+              </p>
+              <div className="flex justify-center gap-4">
+                <button
+                  onClick={() => setConfirmBox({ show: false, itemId: null, itemName: "" })}
+                  className="px-5 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  className="px-5 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium"
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
@@ -315,7 +376,6 @@ const AdminInventoryPending = () => {
                         </button>
                     </td>
                     <td className="px-2 py-2">
-                    
                       <button
                         onClick={() => handleApprove(item.inv_id)}
                         className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600"
@@ -325,7 +385,13 @@ const AdminInventoryPending = () => {
                     </td>
                     <td className="px-1 py-2">
                       <button
-                        onClick={() => handleDelete(item.inv_id)}
+                        onClick={() =>
+                          setConfirmBox({
+                            show: true,
+                            itemId: item.inv_id,
+                            itemName: item.inv_item_name,
+                          })
+                        }
                         className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
                       >
                         Reject

@@ -23,7 +23,8 @@ const ProfileInfo = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
-  
+  const [fade, setFade] = useState(false); // ✅ Added for fade animation
+
   useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem("token");
@@ -71,6 +72,17 @@ const ProfileInfo = () => {
     fetchUser();
   }, [navigate]);
 
+  // ✅ Same popup animation logic as ProfileLogin
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+
+    // Start fade-out after 2.5s
+    setTimeout(() => setFade(false), 2500);
+    // Remove popup after 3s
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   const handleSave = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -88,24 +100,16 @@ const ProfileInfo = () => {
         body: JSON.stringify(user),
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to update profile");
-      }
+      if (!res.ok) throw new Error("Failed to update profile");
 
       const data = await res.json();
 
-      // ✅ Show success popup
-      setPopup({ show: true, message: data.message, type: "success" });
-      setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+      // ✅ Show success popup (same style as ProfileLogin)
+      showPopup("Profile information updated successfully.", "success");
     } catch (err) {
       console.error("Error updating profile:", err);
       // ❌ Show error popup
-      setPopup({
-        show: true,
-        message: "Could not update profile. Please try again.",
-        type: "error",
-      });
-      setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+      showPopup("Could not update profile. Please try again.", "error");
     }
   };
 
@@ -148,11 +152,14 @@ const ProfileInfo = () => {
           </div>
         </div>
 
+        {/* ✅ Popup Notification (exact same animation as ProfileLogin) */}
         {popup.show && (
           <div
-            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transition-all duration-500 ${
-              popup.type === "success" ? "bg-green-500" : "bg-red-500"
-            }`}
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
             style={{ zIndex: 9999 }}
           >
             {popup.message}
@@ -167,7 +174,10 @@ const ProfileInfo = () => {
           </div>
 
           {/* Form Card */}
-          <div className="p-6 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
+          <div
+            className="p-6 rounded-lg shadow-lg"
+            style={{ border: "solid", borderColor: "#01D5C4" }}
+          >
             <div className="grid md:grid-cols-2 gap-4">
               {/* Left side */}
               <div>

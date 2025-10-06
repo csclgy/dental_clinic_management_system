@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
+import axios from "axios";
 
 function adminaudit() {
    const location = useLocation();
@@ -9,21 +10,33 @@ function adminaudit() {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Sample records
-  const records = [
-    {
-      date: "05-30-2025",
-      user: "Admin",
-      action: "Login",
-      description: "Admin logged into the system",
-    },
-    {
-      date: "07-15-2025",
-      user: "Dr. Santos",
-      action: "Update",
-      description: "Updated patient record",
-    },
-  ];
+  const [records, setRecords] = useState([]);
+
+  useEffect(() => {
+    const fetchAuditTrail = async () => {
+      try {
+        const token = localStorage.getItem("token"); // JWT token
+        const response = await axios.get("http://localhost:3000/auth/audit-trail", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        // Map backend data to frontend table fields
+        const mappedRecords = response.data.map(item => ({
+          date: new Date(item.created_at).toLocaleDateString(),
+          user: item.user_name,
+          role: item.role,
+          action: item.at_action,
+          description: item.at_description,
+        }));
+
+        setRecords(mappedRecords);
+      } catch (err) {
+        console.error("Error fetching audit trail:", err);
+      }
+    };
+
+    fetchAuditTrail();
+  }, []);
 
   // Scroll to section if passed
   useEffect(() => {
@@ -213,19 +226,19 @@ function adminaudit() {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -341,28 +354,30 @@ function adminaudit() {
               <tr className="bg-gray-100 text-[#00458B]">
                 <th className="px-4 py-2 text-left">Date</th>
                 <th className="px-4 py-2 text-left">User</th>
+                <th className="px-4 py-2 text-left">Role</th>
                 <th className="px-4 py-2 text-left">Action</th>
                 <th className="px-4 py-2 text-left">Description</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredRecords.length > 0 ? (
-                filteredRecords.map((record, index) => (
-                  <tr key={index} className="border-b border-gray-200">
-                    <td className="px-4 py-2 text-blue-700">{record.date}</td>
-                    <td className="px-4 py-2">{record.user}</td>
-                    <td className="px-4 py-2">{record.action}</td>
-                    <td className="px-4 py-2">{record.description}</td>
+              <tbody>
+                {filteredRecords.length > 0 ? (
+                  filteredRecords.map((record, index) => (
+                    <tr key={index} className="border-b border-gray-200">
+                      <td className="px-4 py-2 text-blue-700">{record.date}</td>
+                      <td className="px-4 py-2">{record.user}</td>
+                      <td className="px-4 py-2">{record.role}</td>
+                      <td className="px-4 py-2">{record.action}</td>
+                      <td className="px-4 py-2">{record.description}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" className="text-center text-gray-500 py-4">
+                      No records found
+                    </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="4" className="text-center text-gray-500 py-4">
-                    No records found
-                  </td>
-                </tr>
-              )}
-            </tbody>
+                )}
+              </tbody>
           </table>
         </div>
       </main>

@@ -28,7 +28,7 @@ const handleLogin = async () => {
 
       // 🔑 redirect based on role
       if (data.user.role === "admin") {
-        window.location.href = "/admincoa"; 
+        window.location.href = "/admindashboard"; 
       } else if (data.user.role === "dentist") {
         window.location.href = "/adminpatients";
       } else if (data.user.role === "inventory") {

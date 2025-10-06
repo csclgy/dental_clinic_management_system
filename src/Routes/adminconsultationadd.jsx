@@ -18,6 +18,17 @@ const AdminConsultationAdd = () => {
   const [preferredTime, setPreferredTime] = useState("");
   const [dentists, setDentists] = useState([]);
 
+  // ✅ Popup state and fade animation
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
   // Disable dates and time slots
   const [bookedSlots, setBookedSlots] = useState({});
   const [fullyBookedDates, setFullyBookedDates] = useState([]);
@@ -95,7 +106,7 @@ const getAvailableTimeSlots = () => {
     const selectedDate = e.target.value;
 
     if (isDateFullyBooked(selectedDate)) {
-      alert("⚠️ This date is fully booked. Please choose another date.");
+      showPopup("⚠️ This date is fully booked. Please choose another date.", "error");
       return;
     }
 
@@ -105,20 +116,20 @@ const getAvailableTimeSlots = () => {
 
   const handleSaveConsultation = async () => {
     if (!dateOfVisit || !dentist || !procedureType || !preferredTime) {
-      alert("Please fill in all fields");
+      showPopup("Please fill in all fields", "error");
       return;
     }
 
     // Double-check date isn't fully booked
     if (isDateFullyBooked(dateOfVisit)) {
-      alert("Selected date is no longer available. Please choose another date.");
+      showPopup("Selected date is no longer available. Please choose another date.", "error");
       return;
     }
 
     // Check if selected time is still available
     const availableSlots = getAvailableTimeSlots();
     if (!availableSlots.includes(preferredTime)) {
-      alert("Selected time slot is no longer available. Please choose another time.");
+      showPopup("Selected time slot is no longer available. Please choose another time.", "error");
       setPreferredTime("");
       return;
     }
@@ -148,11 +159,14 @@ const getAvailableTimeSlots = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      alert("✅ Consultation created successfully!");
-      navigate("/adminpatients");
+      showPopup("Consultation created successfully!", "success");
+      // Wait 3 seconds before navigating
+      setTimeout(() => {
+        navigate("/adminpatients");
+      }, 3000);
     } catch (err) {
       console.error("Error saving consultation:", err);
-      alert("❌ Failed to create consultation");
+      showPopup("Failed to create consultation", "error");
     }
   };
 
@@ -298,6 +312,18 @@ const getAvailableTimeSlots = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
+        {/* ✅ Popup Notification */}
+        {popup.show && (
+          <div
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            style={{ zIndex: 9999 }}
+          >
+            {popup.message}
+          </div>
+        )}
+
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"

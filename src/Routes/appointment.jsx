@@ -1,10 +1,31 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAppointment } from "../context/AppointmentContext"; // adjust path
 
 const Appointment = () => {
   const navigate = useNavigate();
   const { appointmentData, updateAppointment } = useAppointment();
+
+  // ✅ Popup state and fade animation (same as ProfileChange)
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  // Disable dates and time slots
+  const [bookedSlots, setBookedSlots] = useState({});
+  const [fullyBookedDates, setFullyBookedDates] = useState([]);
+  const timeSlots = ["9:00AM","10:00AM","11:00AM","12:00PM","1:00PM","2:00PM","3:00PM","4:00PM","5:00PM"];
+
+
+  // ✅ Reusable popup function
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+
+    // Fade out before removing
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
@@ -28,6 +49,69 @@ const Appointment = () => {
     }
   };
 
+  // ✅ Validation function (updated to use popup instead of alert)
+  const validateForm = () => {
+    const requiredFields = [
+      "pref_date",
+      "pref_time",
+      "procedure_type",
+      "p_fname",
+      "p_mname",
+      "p_lname",
+      "p_home_address",
+      "p_email",
+      "p_contact_no",
+      "p_gender",
+      "p_date_birth",
+      "p_blood_type",
+    ];
+
+    for (const field of requiredFields) {
+      if (!appointmentData[field]) {
+        showPopup(`Please fill out the required fields.`, "error");
+        return false;
+      }
+    }
+
+    showPopup("All fields are valid! Proceeding...", "success");
+    return true;
+  };
+
+  useEffect(() => {
+  const fetchAppointments = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/auth/appointments/all");
+      const appointments = response.data;
+
+      const activeAppointments = appointments.filter(apt => apt.appointment_status !== 'cancelled' && apt.appointment_status !== 'done');
+
+      const slotsByDate = {};
+      activeAppointments.forEach(apt => {
+        let date = typeof apt.pref_date === 'string' ? apt.pref_date.split('T')[0] : apt.pref_date;
+        if (!slotsByDate[date]) slotsByDate[date] = [];
+        slotsByDate[date].push(apt.pref_time);
+      });
+
+      const fullyBooked = Object.keys(slotsByDate).filter(date => slotsByDate[date].length >= timeSlots.length);
+
+      setBookedSlots(slotsByDate);
+      setFullyBookedDates(fullyBooked);
+    } catch (err) {
+      console.error("Error fetching appointments:", err);
+    }
+  };
+
+  fetchAppointments();
+}, []);
+
+const getAvailableTimeSlots = () => {
+  if (!appointmentData.pref_date) return [];
+  const bookedTimes = bookedSlots[appointmentData.pref_date] || [];
+  return timeSlots.filter(slot => !bookedTimes.includes(slot));
+};
+
+const isDateFullyBooked = (date) => fullyBookedDates.includes(date);
+
   return (
     <div 
       className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
@@ -37,6 +121,19 @@ const Appointment = () => {
       backgroundSize: "cover",
       backgroundPosition: "center"}}
     >
+
+      {/* ✅ Popup Notification (copied from ProfileChange) */}
+      {popup.show && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+            fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+          } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          style={{ zIndex: 9999 }}
+        >
+          {popup.message}
+        </div>
+      )}
+      
       <br />
       <div className="w-full max-w-5xl bg-white p-6 sm:p-10 rounded-lg shadow-lg">
         <h2 className="text-[#00c3b8] text-xl sm:text-2xl font-bold mb-2 text-center">
@@ -62,7 +159,17 @@ const Appointment = () => {
               type="date"
               className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
               value={appointmentData.pref_date}
-              onChange={(e) => updateAppointment("pref_date", e.target.value)}
+              onChange={(e) => {
+                const selectedDate = e.target.value;
+
+                if (isDateFullyBooked(selectedDate)) {
+                  showPopup("⚠️ This date is fully booked. Please choose another date.", "error");
+                  return;
+                }
+
+                updateAppointment("pref_date", selectedDate);
+                updateAppointment("pref_time", ""); // reset time
+              }}
               min={new Date().toISOString().split("T")[0]}
               required
             />
@@ -73,18 +180,25 @@ const Appointment = () => {
             <label className="block text-[#00458b] font-semibold mb-1">
               Preferred Time
             </label>
-            <select
-              className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-              value={appointmentData.pref_time}
-              onChange={(e) => updateAppointment("pref_time", e.target.value)}
-            >
-              <option value="">Select a time</option>
-              {["9:00AM","10:00AM","11:00AM","12:00PM","1:00PM","2:00PM","3:00PM","4:00PM","5:00PM"].map((time) => (
-                <option key={time} value={time}>
-                  {time}
-                </option>
-              ))}
-            </select>
+              <select
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                value={appointmentData.pref_time}
+                onChange={(e) => updateAppointment("pref_time", e.target.value)}
+                required
+                disabled={!appointmentData.pref_date || getAvailableTimeSlots().length === 0}
+              >
+                <option value="">Select a time</option>
+                {getAvailableTimeSlots().map((time) => (
+                  <option key={time} value={time}>{time}</option>
+                ))}
+              </select>
+
+              {/* Show warning if no slots available */}
+              {appointmentData.pref_date && getAvailableTimeSlots().length === 0 && (
+                <p className="text-xs text-red-600 mt-1">
+                  ⚠️ No available time slots for this date. Please select another date.
+                </p>
+              )}
           </div>
 
           {/* Upload */}
@@ -113,6 +227,7 @@ const Appointment = () => {
               className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
               value={appointmentData.procedure_type}
               onChange={(e) => updateAppointment("procedure_type", e.target.value)}
+              required
             >
               <option value="">Select a procedure</option>
               <option value="TMJ TREATMENT">TMJ TREATMENT</option>
@@ -185,6 +300,7 @@ const Appointment = () => {
                   className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                   value={appointmentData.p_gender}
                   onChange={(e) => updateAppointment("p_gender", e.target.value)}
+                  required
                 >
                   <option value="">-- Select gender --</option>
                   <option value="Male">Male</option>
@@ -201,6 +317,7 @@ const Appointment = () => {
                   onChange={(e) => handleDateChange(e.target.value)}
                   max={new Date().toISOString().split("T")[0]}
                   className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  required
                 />
               </div>
 
@@ -216,7 +333,7 @@ const Appointment = () => {
                 />
               </div>
 
-                            {/* Blood Type */}
+              {/* Blood Type */}
               <label className="block text-[#00458b] font-semibold mb-1">
                 Blood Type
               </label>
@@ -224,6 +341,7 @@ const Appointment = () => {
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                 value={appointmentData.p_blood_type}
                 onChange={(e) => updateAppointment("p_blood_type", e.target.value)}
+                required
               >
                 <option value="">-- Select Blood Type --</option>
                 <option value="O">O</option>
@@ -260,6 +378,8 @@ const Appointment = () => {
                 }`}
                 disabled={!appointmentData.procedure_type}
                 onClick={() => {
+                  if (!validateForm()) return; // stop if any field is empty
+                  
                   if (appointmentData.procedure_type === "ORTHODONTIC TREATMENT") {
                     navigate("/appointment2");
                   } else {

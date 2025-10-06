@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { BarChart3, Users, Calendar, Menu, X, PlusCircle } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, PlusCircle, AlertTriangle, Trash2 } from "lucide-react";
+import axios from "axios";
 
 function AdminUsers() {
   const location = useLocation();
@@ -11,6 +12,24 @@ function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // ✅ Popup state (notification)
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  // ✅ Confirmation modal
+  const [confirmBox, setConfirmBox] = useState({
+    show: false,
+    userId: null,
+    userName: "",
+  });
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
 
   // Scroll behavior (same as inventory page)
   useEffect(() => {
@@ -51,25 +70,25 @@ function AdminUsers() {
     fetchUsers();
   }, []);
 
-  const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
-
+  const handleDelete = async () => {
     try {
       const rawToken = localStorage.getItem("token");
-      const token = rawToken && rawToken.startsWith("Bearer ") ? rawToken.split(" ")[1] : rawToken;
+      const token =
+        rawToken && rawToken.startsWith("Bearer ")
+          ? rawToken.split(" ")[1]
+          : rawToken;
 
-      const res = await fetch(`http://localhost:3000/auth/deleteuserinfo/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await axios.delete(
+        `http://localhost:3000/auth/deleteuserinfo/${confirmBox.userId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-      if (!res.ok) throw new Error("Failed to delete user");
-
-      setUsers((prev) => prev.filter((u) => u.user_id !== id));
-      alert("User deleted successfully");
+      setUsers(users.filter((u) => u.user_id !== confirmBox.userId));
+      setConfirmBox({ show: false, userId: null, userName: "" });
+      showPopup("User deleted successfully.", "success");
     } catch (err) {
       console.error("Error deleting user:", err);
-      alert("Could not delete user");
+      showPopup("Failed to delete user.", "error");
     }
   };
 
@@ -205,6 +224,53 @@ function AdminUsers() {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
+
+      {/* ✅ Popup Notification */}
+      {popup.show && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
+            fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+          } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          style={{ zIndex: 9999 }}
+        >
+          {popup.message}
+        </div>
+      )}
+
+      {/* ✅ Delete Confirmation Modal */}
+      {confirmBox.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-[9998]">
+          <div className="bg-white rounded-2xl shadow-lg w-[90%] max-w-md p-6 text-center relative animate-fadeIn">
+            <AlertTriangle className="text-red-500 mx-auto mb-3" size={50} />
+            <h2 className="text-lg font-bold text-gray-800 mb-2">
+              Are you sure you want to delete this user?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              <span className="font-semibold text-[#00458B]">
+                {confirmBox.userName}
+              </span>{" "}
+              will be permanently removed.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() =>
+                  setConfirmBox({ show: false, userId: null, userName: "" })
+                }
+                className="px-5 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-5 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium flex items-center gap-2"
+              >
+                <Trash2 size={16} /> Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
         {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
@@ -280,7 +346,18 @@ function AdminUsers() {
                             <Link to={`/adminusersedit/${user.user_id}`}>
                               <button className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">Edit</button>
                             </Link>
-                            <button onClick={() => handleDelete(user.user_id)} className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600">Delete</button>
+                            <button
+                              onClick={() =>
+                                setConfirmBox({
+                                  show: true,
+                                  userId: user.user_id,
+                                  userName: user.user_name,
+                                })
+                              }
+                              className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                            >
+                              Delete
+                            </button>
                           </td>
                         </tr>
                       ))

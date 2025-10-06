@@ -3,7 +3,8 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { BarChart3, Users, Calendar, Menu, X } from "lucide-react";
 
-const AdminSubsidiaryAdd = () => {
+const AdminConsultationPartialPayment = () => {
+  
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -20,17 +21,6 @@ const AdminSubsidiaryAdd = () => {
     type: "debit",
     amount: "",
   });
-
-      // ✅ Popup state and fade animation (same style as AdminCoaViewAdd)
-    const [popup, setPopup] = useState({ show: false, message: "", type: "" });
-    const [fade, setFade] = useState(false);
-  
-    const showPopup = (message, type) => {
-      setPopup({ show: true, message, type });
-      setFade(true);
-      setTimeout(() => setFade(false), 2500);
-      setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
-    };
 
   // Scroll into view if coming from another page
   useEffect(() => {
@@ -64,20 +54,16 @@ const AdminSubsidiaryAdd = () => {
     fetchAccountReceivable();
   }, [location]);
 
-  const fetchSuggestions = async (query) => {
-    if (!query) {
-      setNameSuggestions([]);
-      return;
-    }
-    try {
-      const res = await axios.get(
-        `http://localhost:3000/auth/patients/search?name=${query}`
-      );
-      setNameSuggestions(res.data);
-    } catch (err) {
-      console.error("Error fetching name suggestions:", err);
-    }
-  };
+useEffect(() => {
+  if (location.state) {
+    const { patientName, invoiceNo } = location.state;
+    setFormData((prev) => ({
+      ...prev,
+      description: patientName || "",
+      invoice_no: invoiceNo || "",
+    }));
+  }
+}, [location.state]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -88,7 +74,7 @@ const AdminSubsidiaryAdd = () => {
     e.preventDefault();
 
     if (!formData.date || !formData.description || !formData.account || !formData.amount) {
-      showPopup("Please fill in all required fields.", "error");
+      alert("Please fill in all required fields.");
       return;
     }
 
@@ -107,12 +93,11 @@ const AdminSubsidiaryAdd = () => {
         credit,
         balance,
       });
-
-      showPopup("Subsidiary entry saved successfully!", "success");
-      setTimeout(() => navigate("/adminsubsidiaryreceivable"), 1500);
+      alert("Subsidiary entry saved successfully!");
+      navigate("/adminsubsidiaryreceivable");
     } catch (err) {
       console.error("Error saving entry:", err.response?.data || err.message);
-      showPopup(err.response?.data?.message || "Something went wrong", "error");
+      alert(err.response?.data?.message || "Something went wrong");
     }
   };
 
@@ -141,19 +126,19 @@ const AdminSubsidiaryAdd = () => {
           </button>
           {isLedgerOpen && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admincoa" className="hover:bg-[white] hover:text-[#00458B]">
                 Chart of Accounts
               </Link>
-              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminjournal" className="hover:bg-[white] hover:text-[#00458B]">
                 Journal Entries
               </Link>
-              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/adminsubsidiaryreceivable" className="hover:bg-[white] hover:text-[#00458B]">
                 Subsidiary
               </Link>
-              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admingeneral" className="hover:bg-[white] hover:text-[#00458B]">
                 General Ledger
               </Link>
-              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+              <Link to="/admintrial" className="hover:bg-[white] hover:text-[#00458B]">
                 Trial Balance
               </Link>
             </div>
@@ -182,12 +167,6 @@ const AdminSubsidiaryAdd = () => {
             className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
           >
             <Calendar size={18} /> Schedules
-          </Link>
-          <Link
-            to="/admincashier"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <Calendar size={18} /> Cashier
           </Link>
           <Link
             to="/adminaudit"
@@ -229,18 +208,6 @@ const AdminSubsidiaryAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-
-        {popup.show && (
-          <div
-            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
-              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
-            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
-            style={{ zIndex: 9999 }}
-          >
-            {popup.message}
-          </div>
-        )}
-
         {/* Mobile menu */}
         <button
           onClick={() => setSidebarOpen(true)}
@@ -251,7 +218,7 @@ const AdminSubsidiaryAdd = () => {
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add Subsidiary Entry
+            Add Payment
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -277,7 +244,8 @@ const AdminSubsidiaryAdd = () => {
                   name="invoice_no"
                   value={formData.invoice_no}
                   onChange={handleChange}
-                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
                 />
               </div>
             </div>
@@ -290,33 +258,10 @@ const AdminSubsidiaryAdd = () => {
                 type="text"
                 name="description"
                 value={formData.description}
-                onChange={(e) => {
-                  handleChange(e);
-                  fetchSuggestions(e.target.value);
-                }}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                autoComplete="off"
+                readOnly
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
               />
-              {nameSuggestions.length > 0 && (
-                <ul className="absolute z-10 bg-white border border-gray-300 rounded">
-                  {nameSuggestions.map((user) => (
-                    <li
-                      key={user.user_id}
-                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
-                      onClick={() => {
-                        setFormData((prev) => ({
-                          ...prev,
-                          description: user.full_name,
-                        }));
-                        setSelectedPatientId(user.user_id);
-                        setNameSuggestions([]);
-                      }}
-                    >
-                      {user.full_name}
-                    </li>
-                  ))}
-                </ul>
-              )}
+              
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -348,19 +293,6 @@ const AdminSubsidiaryAdd = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account
-              </label>
-              <input
-                type="text"
-                value={formData.accountName || ""}
-                readOnly
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
-              />
-              <input type="hidden" name="account" value={formData.account || ""} />
-            </div>
-
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
@@ -383,4 +315,4 @@ const AdminSubsidiaryAdd = () => {
   );
 };
 
-export default AdminSubsidiaryAdd;
+export default AdminConsultationPartialPayment;
