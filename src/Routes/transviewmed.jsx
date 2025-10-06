@@ -31,6 +31,338 @@ const transviewmed = () => {
     }
   }, [location]);
 
+const handlePrintReport = () => {
+  const printWindow = window.open('', '_blank');
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
+  // Calculate total amount
+  const totalAmount = (
+    consultation.total_service_charged +
+    chargedItems.reduce((sum, i) => sum + i.ci_amount, 0)
+  ).toFixed(2);
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Medical Record - ${consultation.p_lname}, ${consultation.p_fname}</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          margin: 20px;
+          color: #333;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 30px;
+          border-bottom: 3px solid #00458B;
+          padding-bottom: 20px;
+        }
+        .header h1 {
+          color: #00458B;
+          margin: 0;
+          font-size: 28px;
+        }
+        .header p {
+          color: #666;
+          margin: 5px 0;
+        }
+        .section {
+          margin-bottom: 25px;
+          page-break-inside: avoid;
+        }
+        .section-title {
+          color: #00458B;
+          font-size: 20px;
+          font-weight: bold;
+          margin-bottom: 10px;
+          padding-bottom: 5px;
+          border-bottom: 2px solid #01D5C4;
+        }
+        .info-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+          margin-top: 15px;
+        }
+        .info-item {
+          margin-bottom: 10px;
+        }
+        .info-label {
+          font-weight: bold;
+          color: #00458B;
+          margin-bottom: 3px;
+        }
+        .info-value {
+          color: #333;
+        }
+        .patient-name {
+          color: #00c3b8;
+          font-size: 24px;
+          font-weight: bold;
+          margin-bottom: 5px;
+        }
+        .patient-basic {
+          color: #00458B;
+          margin-bottom: 20px;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 10px;
+        }
+        th, td {
+          border: 1px solid #ddd;
+          padding: 10px;
+          text-align: left;
+        }
+        th {
+          background-color: #00458B;
+          color: white;
+          font-weight: bold;
+        }
+        tr:nth-child(even) {
+          background-color: #f9f9f9;
+        }
+        .billing-box {
+          background-color: #f0f8ff;
+          border: 2px solid #01D5C4;
+          border-radius: 8px;
+          padding: 15px;
+          margin-top: 10px;
+        }
+        .total-row {
+          font-weight: bold;
+          font-size: 18px;
+          color: #00458B;
+          margin-top: 10px;
+          padding-top: 10px;
+          border-top: 2px solid #00458B;
+        }
+        .footer {
+          margin-top: 40px;
+          text-align: center;
+          font-size: 12px;
+          color: #666;
+          border-top: 1px solid #ddd;
+          padding-top: 15px;
+        }
+        .teeth-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 10px;
+          margin-top: 10px;
+        }
+        .tooth-item {
+          border: 1px solid #01D5C4;
+          border-radius: 5px;
+          padding: 8px;
+          background-color: #f9f9f9;
+        }
+        @media print {
+          body { margin: 0; }
+          .no-print { display: none; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Medical Record Report</h1>
+        <p>Arciaga-Juntilla TMJ Ortho Dental Clinic</p>
+        <p>Generated on: ${currentDate}</p>
+      </div>
+
+      <!-- Patient Information -->
+      <div class="section">
+        <div class="section-title">Patient Information</div>
+        <div class="patient-name">
+          ${consultation.p_lname}, ${consultation.p_fname} ${consultation.p_mname}
+        </div>
+        <div class="patient-basic">
+          ${consultation.p_gender} | ${consultation.p_age} years old | ${new Date(consultation.p_date_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+        </div>
+        
+        <div class="info-grid">
+          <div>
+            <div class="info-item">
+              <div class="info-label">Address:</div>
+              <div class="info-value">${consultation.p_home_address}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Email Address:</div>
+              <div class="info-value">${consultation.p_email}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Contact Number:</div>
+              <div class="info-value">${consultation.p_contact_no}</div>
+            </div>
+          </div>
+          <div>
+            <div class="info-item">
+              <div class="info-label">Blood Type:</div>
+              <div class="info-value">${consultation.p_blood_type}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consultation Details -->
+      <div class="section">
+        <div class="section-title">Consultation Details</div>
+        <div class="info-grid">
+          <div>
+            <div class="info-item">
+              <div class="info-label">Date of Visit:</div>
+              <div class="info-value">${new Date(consultation.pref_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} | ${consultation.pref_time}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Attending Dentist:</div>
+              <div class="info-value">${consultation.attending_dentist}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Diagnosis:</div>
+              <div class="info-value">${consultation.p_diagnosis}</div>
+            </div>
+          </div>
+          <div>
+            <div class="info-item">
+              <div class="info-label">Services:</div>
+              <div class="info-value">${consultation.procedure_type}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Consultation Completed:</div>
+              <div class="info-value">${consultation.p_date_completed ? new Date(consultation.p_date_completed).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected Teeth -->
+      ${selectedTeeth.length > 0 ? `
+        <div class="section">
+          <div class="section-title">Selected Teeth</div>
+          <div class="teeth-grid">
+            ${selectedTeeth.map(tooth => `
+              <div class="tooth-item">
+                <strong>Tooth ${tooth.st_number}</strong> - ${tooth.st_name}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Billing Information -->
+      <div class="section">
+        <div class="section-title">Billing Information</div>
+        <div class="billing-box">
+          <div class="info-grid" style="margin-bottom: 15px;">
+            <div class="info-item">
+              <div class="info-label">OR Number:</div>
+              <div class="info-value">${consultation.or_num || 'N/A'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Payment Method:</div>
+              <div class="info-value">${consultation.payment_method || 'N/A'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Payment Status:</div>
+              <div class="info-value">${consultation.payment_status || 'N/A'}</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th style="text-align: right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Service:</strong> ${consultation.procedure_type}</td>
+                <td style="text-align: right;">₱ ${consultation.total_service_charged.toFixed(2)}</td>
+              </tr>
+              ${chargedItems.length > 0 ? chargedItems.map(item => `
+                <tr>
+                  <td>${item.ci_item_name} (x${item.ci_quantity})</td>
+                  <td style="text-align: right;">₱ ${item.ci_amount.toFixed(2)}</td>
+                </tr>
+              `).join('') : '<tr><td colspan="2">No additional items</td></tr>'}
+            </tbody>
+          </table>
+
+          <div class="total-row">
+            Total Amount: ₱ ${totalAmount}
+          </div>
+        </div>
+      </div>
+
+      ${consultation?.appointment_status === "cancelled" && cancelInfo ? `
+        <div class="section">
+          <div class="section-title">Cancellation Details</div>
+          <div class="info-item">
+            <div class="info-label">Reason:</div>
+            <div class="info-value">${cancelInfo.cc_reason || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Notes:</div>
+            <div class="info-value">${cancelInfo.cc_notes || 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Date Cancelled:</div>
+            <div class="info-value">${cancelInfo.cc_date ? new Date(cancelInfo.cc_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Refund Method:</div>
+            <div class="info-value">${cancelInfo.refund_method || 'N/A'}</div>
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="footer">
+        <p>This report was automatically generated for Arciaga-Juntilla TMJ Ortho Dental Clinic.</p>
+        <p>Confidential Medical Record - Handle with Care</p>
+      </div>
+
+      <script>
+        window.addEventListener('afterprint', function() {
+          window.close();
+        });
+
+        setTimeout(function() {
+          if (!window.closed) {
+            window.close();
+          }
+        }, 10000);
+      </script>
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+
+  setTimeout(() => {
+    printWindow.print();
+
+    setTimeout(() => {
+      if (!printWindow.closed) {
+        printWindow.addEventListener('focus', () => {
+          setTimeout(() => {
+            if (!printWindow.closed) {
+              printWindow.close();
+            }
+          }, 1000);
+        });
+      }
+    }, 500);
+  }, 250);
+};
+
   useEffect(() => {
       const fetchConsultation = async () => {
         try {
@@ -342,17 +674,18 @@ const transviewmed = () => {
                             </div>
                             <div className="col-sm-6">
                                 <button
-                                disabled={!consultation || consultation.appointment_status !== "done"}
+                                //disabled={!consultation || consultation.appointment_status !== "done"}
                                 className={`px-6 py-2 rounded-full font-semibold w-full mb-4 border ${
                                     consultation && consultation.appointment_status === "done"
                                     ? "bg-[#00458B] text-[white] border-[#00458b] hover:bg-[#00458B]-100 cursor-pointer"
                                     : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
                                 }`}
-                                onClick={() => {
-                                    if (consultation && consultation.appointment_status === "done") {
-                                    navigate("/"); // 👉 replace with your actual print page route
-                                    }
-                                }}
+                                // onClick={() => { /*Fix logic, I add onClick first to check if it works*/
+                                //     if (consultation && consultation.appointment_status === "done") {
+                                //     navigate(handlePrintReport);
+                                //     }
+                                // }}
+                                onClick={handlePrintReport}
                                 >
                                 Print
                                 </button>
