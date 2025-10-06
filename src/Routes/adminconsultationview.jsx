@@ -83,11 +83,13 @@ const Adminconsultationview = () => {
         }, 100);
       }
     }
+
   }, [location]);
 
   if (error) return <p className="text-red-500">{error}</p>;
   if (!consultation) return <p>Loading consultation...</p>;
 
+  
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar (desktop) */}
@@ -488,7 +490,15 @@ const Adminconsultationview = () => {
                                                   }}
                                                 >
                                                   Print
+                                                </button >
+                                                <div className="col-sm-12">
+                                                  <button 
+                                                  onClick={() => navigate(-1)}
+                                                  className={`px-6 py-2 rounded-full font-semibold w-full mb-4 border bg-white text-[#00c3b8] border-[#00458b] hover:bg-gray-100 cursor-pointer`} >
+                                                  Back to list
                                                 </button>
+                                                </div>
+                                                
                                               </div>
                                             </div>
                                         </div>

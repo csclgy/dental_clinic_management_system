@@ -147,6 +147,7 @@ const handleComplete = async () => {
         attending_dentist: assignedDentist,
         p_diagnosis: diagnosis,
         appointment_status: "done",
+        payment_confirmation: 'incomplete',
         selected_teeth: selectedTeeth,
       }),
     });

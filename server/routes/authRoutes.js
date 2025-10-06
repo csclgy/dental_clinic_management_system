@@ -700,6 +700,103 @@ router.get('/displayconsultations', async (req, res) => {
   }
 });
 
+// (DISPLAY ALL COMPLETED PATIENTS UNPAID)
+router.get('/displayconsultations1', async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT appoint_id, procedure_type, pref_date, pref_time, payment_method,
+             downpayment_proof, attending_dentist, or_num, payment_status,
+             total_charged, appointment_status,
+             p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
+             p_home_address, p_email, p_contact_no, p_blood_type
+      FROM appointment
+      WHERE appointment_status = 'done' and  payment_confirmation = 'incomplete'
+      ORDER BY pref_date ASC
+    `);
+
+    return res.json({ consultations: rows }); // wrap for frontend clarity
+  } catch (err) {
+    console.error("Display consultations error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+// (DISPLAY ALL COMPLETED PATIENTS PAID)
+router.get('/displayconsultations2', async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT appoint_id, procedure_type, pref_date, pref_time, payment_method,
+             downpayment_proof, attending_dentist, or_num, payment_status,
+             total_charged, appointment_status, payment_confirmation,
+             p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
+             p_home_address, p_email, p_contact_no, p_blood_type
+      FROM appointment
+      WHERE appointment_status = 'done' and  payment_confirmation = 'Complete'
+      ORDER BY pref_date ASC
+    `);
+
+    return res.json({ consultations: rows }); // wrap for frontend clarity
+  } catch (err) {
+    console.error("Display consultations error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+// (DISPLAY ALL PARTIAL PAYMENTS)
+router.get('/displayconsultations3', async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+      SELECT appoint_id, procedure_type, pref_date, pref_time, payment_method,
+             downpayment_proof, attending_dentist, or_num, payment_status,
+             total_charged, appointment_status, payment_confirmation,
+             p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
+             p_home_address, p_email, p_contact_no, p_blood_type
+      FROM appointment
+      WHERE appointment_status = 'done' and  payment_confirmation = 'incomplete' and payment_status = 'Partial'
+      ORDER BY pref_date ASC
+    `);
+
+    return res.json({ consultations: rows }); // wrap for frontend clarity
+  } catch (err) {
+    console.error("Display consultations error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 // (DISPLAY SPECIFIC PATIENT BY ID + CONSULTATION HISTORY)
 router.get('/displaypatient/:id', async (req, res) => {
   const authHeader = req.headers["authorization"];
@@ -1205,7 +1302,7 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
 // Mark consultation as DONE or INCOMPLETE + save selected teeth
 router.put("/completeconsultation/:appointId", async (req, res) => {
   const { appointId } = req.params;
-  const { attending_dentist, p_diagnosis, appointment_status, selected_teeth } = req.body;
+  const { attending_dentist, p_diagnosis, appointment_status, payment_confirmation, selected_teeth } = req.body;
 
   // Validate status
   if (!["done", "incomplete"].includes(appointment_status)) {
@@ -1222,10 +1319,11 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
       SET attending_dentist = ?, 
           p_diagnosis = ?, 
           appointment_status = ?, 
+          payment_confirmation = ?,
           p_date_completed = NOW()
       WHERE appoint_id = ?
       `,
-      [attending_dentist, p_diagnosis, appointment_status, appointId]
+      [attending_dentist, p_diagnosis, appointment_status, payment_confirmation , appointId]
     );
 
     if (result.affectedRows === 0) {
@@ -1362,6 +1460,118 @@ router.post(
     }
   }
 );
+
+router.post("/complete/:appoint_id", async (req, res) => {
+  const { appoint_id } = req.params;
+  const connection = await connectToDatabase(); 
+
+  try {
+    console.log("🔹 Starting payment completion for appointment:", appoint_id);
+    
+    await connection.beginTransaction();
+
+    //  Get appointment
+    const [appoint] = await connection.query(
+      `SELECT total_charged, p_fname, p_mname, p_lname, procedure_type 
+       FROM appointment 
+       WHERE appoint_id = ?`,
+      [appoint_id]
+    );
+
+    if (appoint.length === 0) {
+      connection.release();
+      return res.status(404).json({ message: "Appointment not found." });
+    }
+
+     const { total_charged, p_fname, p_mname, p_lname, procedure_type } = appoint[0];
+     const patient_name = `${p_fname} ${p_mname ? p_mname + " " : ""}${p_lname}`;
+
+    //  Get accounts
+    const [accounts] = await connection.query(
+      "SELECT account_id, account_name FROM chartofaccounts WHERE account_name IN ('Cash', 'Service Income')"
+    );
+
+    const incomeAcc = accounts.find(
+    (a) => a.account_name.trim().toLowerCase() === "service income"
+    );
+
+    const cashAcc = accounts.find(
+      (a) => a.account_name.trim().toLowerCase() === "cash"
+    );
+
+    if (!cashAcc || !incomeAcc) {
+      console.log("Missing Cash or Service Income account record");
+      await connection.rollback();
+      return res
+        .status(400)
+        .json({ message: "Cash or Service Income account not found." });
+    }
+
+    const date = new Date();
+    const description = `Payment received from ${patient_name}`;
+    const fullDescription = `${procedure_type} - ${patient_name}`;
+    const subAccountId = 0; 
+
+    // 3️⃣ Insert Journal Entries
+    console.log("Inserting journal entries...");
+    const [debitEntry] = await connection.query(
+      `INSERT INTO journalentry (\`date\`, description, account_id, id, debit, credit, comment)
+       VALUES (?, ?, ?, ?, ?, 0, 'Payment Received')`,
+      [date, description, cashAcc.account_id, subAccountId, total_charged]
+    );
+    console.log(" Debit journal entry inserted:", debitEntry.insertId);
+
+    const [creditEntry] = await connection.query(
+      `INSERT INTO journalentry (\`date\`, description, account_id, id, debit, credit, comment)
+       VALUES (?, ?, ?, ?, 0, ?, 'Service Income Recorded')`,
+      [date, description, incomeAcc.account_id, subAccountId, total_charged]
+    );
+    console.log("Credit journal entry inserted:", creditEntry.insertId);
+
+    // 4️⃣ Insert into General Ledger
+    console.log("Inserting general ledger...");
+    await connection.query(
+      `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, \`date\`)
+       VALUES (?, ?, ?, 0, ?, ?)`,
+      [debitEntry.insertId, cashAcc.account_id, total_charged, fullDescription , date]
+    );
+
+    await connection.query(
+      `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, \`date\`)
+       VALUES (?, ?, 0, ?, ?, ?)`,
+      [creditEntry.insertId, incomeAcc.account_id, total_charged, fullDescription , date]
+    );
+    console.log(" General ledger entries inserted");
+
+    // 5️⃣ Update appointment
+    console.log(" Updating appointment...");
+    await connection.query(
+       "UPDATE appointment SET payment_confirmation = 'Complete', payment_status = 'Paid' WHERE appoint_id = ?",
+      [appoint_id]
+    );
+    console.log("Appointment marked as Complete");
+
+    await connection.commit();
+    console.log(" Transaction committed successfully.");
+
+    res.status(200).json({
+      message: "Payment completed successfully.",
+      appoint_id,
+      patient_name,
+      total_charged,
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error(" ERROR completing payment:", error.message);
+    console.error("🔍 Full stack:", error);
+    res.status(500).json({
+      message: "Internal server error.",
+      error: error.message,
+    });
+  } 
+});
+
+
 
 // Admin/receptionist completes refund cancellation
 router.post("/processRefund/:appointId", upload.single("refund_photo"), async (req, res) => {

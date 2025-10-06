@@ -68,7 +68,11 @@ import AdminSupplierAdd from "./Routes/adminsupplieradd";
 import AdminSupplierEdit from "./Routes/adminsupplieredit.jsx";
 import AdminInventoryView from "./Routes/admininventoryview.jsx";
 import AdminCashier from "./Routes/admincashier.jsx";
-
+import AdminConsultationPaid from './Routes/adminconsultationpaid.jsx'
+import AdminCashierPaid from "./Routes/admincashierpaid.jsx";
+import AdminCashierPartial from "./Routes/admincashierpartial.jsx";
+import AdminConsultationPartial from "./Routes/adminconsultationpartial.jsx";
+import AdminConsultationPartialPayment from "./Routes/adminconsultationpartialpay.jsx";
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-white-50">
@@ -218,6 +222,12 @@ function App() {
              <Route path="/adminsupplieredit/:id" element={<AdminSupplierEdit />}/>
              <Route path="/admininventoryview/:id" element={<AdminInventoryView />}/>
              <Route path="/admincashier" element={<AdminCashier />}/>
+             <Route path="/adminconsultationpaid/:appointId" element={<AdminConsultationPaid />}/>
+             <Route path="/adminconsultationpartial/:appointId" element={<AdminConsultationPartial />}/>
+             <Route path="/adminconsultationpartialpay/:appointId" element={<AdminConsultationPartialPayment />}/>
+             <Route path="/admincashierpaid" element={<AdminCashierPaid />}/>
+             <Route path="/admincashierpartial" element={<AdminCashierPartial />}/>
+
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

@@ -20,7 +20,7 @@ const AdminCashier = () => {
 
   const [records, setRecords] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("Unpaid");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState("table"); // table | calendar
@@ -47,7 +47,7 @@ const AdminCashier = () => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch("http://localhost:3000/auth/displayconsultations", {
+        const res = await fetch("http://localhost:3000/auth/displayconsultations1", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -100,7 +100,7 @@ const AdminCashier = () => {
 
   // Filtered data
   const filteredRecords = records.filter((record) => {
-    const status = record.appointment_status?.toLowerCase().trim();
+    const status = record.payment_status?.toLowerCase().trim();
     const matchesFilter =
       statusFilter === "all" ? true : status === statusFilter.toLowerCase();
     const matchesSearch = Object.values(record).some((value) =>
@@ -233,29 +233,7 @@ const AdminCashier = () => {
 
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#00458B]">Upcoming Appointments</h1>
-          <div>
-            <button
-              onClick={() => setViewMode("table")}
-              className={`px-4 py-2 rounded-lg mr-2 ${
-                viewMode === "table"
-                  ? "bg-[#00c3b8] text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              Table View
-            </button>
-            <button
-              onClick={() => setViewMode("calendar")}
-              className={`px-4 py-2 rounded-lg ${
-                viewMode === "calendar"
-                  ? "bg-[#00c3b8] text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
-            >
-              Calendar View
-            </button>
-          </div>
+          <h1 className="text-2xl font-bold text-[#00458B]"> Payments </h1>
         </div>
 
         {/* Content */}
@@ -264,14 +242,13 @@ const AdminCashier = () => {
             {/* Filters */}
             <div className="flex justify-between items-center mb-4 p-3">
               <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                defaultValue="/admincashier"
+                onChange={(e) => navigate(e.target.value)}
                 className="border border-[#00458B] rounded-full px-3 py-1 text-sm text-gray-700"
               >
-                <option value="all">All</option>
-                <option value="pending">Pending</option>
-                <option value="incomplete">Incomplete</option>
-                <option value="cancel with refund request">Cancel with refund request</option>
+                <option value="/admincashier">Unpaid</option>
+                <option value="/admincashierpaid">Paid</option>
+                <option value="/admincashierpartial">Partial</option>
               </select>
 
               <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
@@ -290,15 +267,13 @@ const AdminCashier = () => {
             <table className="w-full border-collapse border border-gray-200">
               <thead>
                 <tr className="bg-gray-100 text-[#00458B]">
-                  <th className="px-4 py-2">Visit Date</th>
+                  <th className="px-4 py-2">Date</th>
                   <th className="px-4 py-2">Last Name</th>
                   <th className="px-4 py-2">First Name</th>
                   <th className="px-4 py-2">Services</th>
                   <th className="px-4 py-2">Dentist</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2"></th>
+                  <th className="px-4 py-2">Appointment Status</th>
+                  <th className="px-4 py-2">Action</th>
                   <th className="px-4 py-2"></th>
                 </tr>
               </thead>
@@ -312,27 +287,15 @@ const AdminCashier = () => {
                       <td className="px-4 py-2">{record.procedure_type}</td>
                       <td className="px-4 py-2">{record.attending_dentist}</td>
                       <td className="px-4 py-2">{record.appointment_status}</td>
-                      <td className="px-2 py-3 whitespace-nowrap">
+                        <td className="px-2 py-3 whitespace-nowrap">
                         <button
-                          onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
-                          className="bg-[#008CBA] text-white px-4 py-2 rounded-lg font-semibold"
-                        >
-                          View
-                        </button>
-                      </td>
-                      <td className="px-2 py-3 whitespace-nowrap">
-                        <button
-                          onClick={() => navigate(`/adminconsultationcomplete/${record.appoint_id}`)}
-                          disabled={record.appointment_status !== "incomplete"}
-                          className={`px-4 py-2 rounded-lg font-semibold ${
-                            record.appointment_status === "incomplete"
-                              ? "bg-green-600 hover:bg-green-700 text-white"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          }`}
+                          onClick={() => navigate(`/adminconsultationpaid/${record.appoint_id}`)}
+                          className={`px-4 py-2 rounded-lg font-semibold bg-green-600 hover:bg-green-700 text-white `}
                         >
                           Complete
                         </button>
                       </td>
+                       <td className="px-4 py-2"></td>
                     </tr>
                   ))
                 ) : (
