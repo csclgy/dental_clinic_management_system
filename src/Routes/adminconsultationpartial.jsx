@@ -18,6 +18,7 @@ const AdminConsultationPartial = () => {
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const [cancelInfo, setCancelInfo] = useState(null);
   const [dentists, setDentists] = useState([]);
+  const [payments, setPayments] = useState([]);
 
   useEffect(() => {
     const fetchConsultation = async () => {
@@ -61,6 +62,22 @@ const AdminConsultationPartial = () => {
     };
     fetchDentists();
   }, []);
+
+  useEffect(() => {
+  const fetchPayments = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(
+        `http://localhost:3000/auth/consultationpayments/${appointId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setPayments(res.data || []);
+    } catch (err) {
+      console.error("Error fetching payments:", err);
+    }
+  };
+  fetchPayments();
+}, [appointId]);
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -375,7 +392,9 @@ const AdminConsultationPartial = () => {
                     navigate(`/adminconsultationpartialpay/${appointId}`, {
                     state: {
                         patientName: `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`,
-                        invoiceNo: consultation.or_num || "", // or consultation.invoice_no if that's your column
+                        invoiceNo: consultation.or_num || "", 
+                        procedureType: consultation.procedure_type || "",
+                        appointId: consultation.appoint_id || ""
                     },
                     })
                 }
@@ -398,14 +417,29 @@ const AdminConsultationPartial = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {/* Empty row */}
-                    <tr>
-                    <td className="border border-gray-300 px-4 py-2">&nbsp;</td>
-                    <td className="border border-gray-300 px-4 py-2">&nbsp;</td>
-                    <td className="border border-gray-300 px-4 py-2 text-right">&nbsp;</td>
-                    <td className="border border-gray-300 px-4 py-2 text-right">&nbsp;</td>
-                    </tr>
-                </tbody>
+  {payments.length > 0 ? (
+    payments.map((p, idx) => (
+      <tr key={idx}>
+        <td className="border border-gray-300 px-4 py-2 text-center">
+          {new Date(p.date).toLocaleDateString()}
+        </td>
+        <td className="border border-gray-300 px-4 py-2">{p.particulars}</td>
+        <td className="border border-gray-300 px-4 py-2 text-right">
+            ₱ {Number(p.credit || 0).toFixed(2)}
+        </td>
+        <td className="border border-gray-300 px-4 py-2 text-right">
+            ₱ {Number(p.balance || 0).toFixed(2)}
+        </td>
+      </tr>
+    ))
+  ) : (
+    <tr>
+      <td className="border border-gray-300 px-4 py-2 text-center" colSpan={4}>
+        No payments recorded
+      </td>
+    </tr>
+  )}
+</tbody>
                 </table>
             </div>
             </div>
@@ -486,7 +520,7 @@ const AdminConsultationPartial = () => {
                 </button>
                 <button
                   className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full sm:w-auto"
-                  onClick={() => navigate("/admincashier")}
+                  onClick={() => navigate("/admincashierpartial")}
                 >
                   Back to List
                 </button>

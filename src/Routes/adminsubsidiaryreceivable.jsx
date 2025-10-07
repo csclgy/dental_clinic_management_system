@@ -26,7 +26,7 @@ const AdminSubsidiaryReceivable = () => {
   useEffect(() => {
     const fetchSubsidiary = async (account_id) => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/subsidiary", {
+        const res = await axios.get("http://localhost:3000/auth/subsidiaryReceivable", {
           params: { account_id },
         });
         setSubsidiaryRecords(res.data);
@@ -226,7 +226,7 @@ const AdminSubsidiaryReceivable = () => {
             <thead>
               <tr className="bg-gray-100 text-[#00458B]">
                 <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Patient Name</th>
+                <th className="px-4 py-2 text-left">Particulars</th>
                 <th className="px-4 py-2 text-left">Invoice No.</th>
                 <th className="px-4 py-2 text-left">Debit</th>
                 <th className="px-4 py-2 text-left">Credit</th>
@@ -238,8 +238,8 @@ const AdminSubsidiaryReceivable = () => {
                 filteredRecords.map((record, index) => (
                   <tr key={index} className="border-b border-gray-200">
                     <td className="px-4 py-2 text-black">{record.date}</td>
-                    <td className="px-4 py-2 text-blue-700">{record.name}</td>
-                    <td className="px-4 py-2 text-black">{record.invoice_no}</td>
+                    <td className="px-4 py-2 text-blue-700">{record.particulars}</td>
+                    <td className="px-4 py-2 text-black">{record.Invoice_no}</td>
                     <td className="px-4 py-2 text-black">
                       ₱ {(Number(record.debit) || 0).toFixed(2)}
                     </td>

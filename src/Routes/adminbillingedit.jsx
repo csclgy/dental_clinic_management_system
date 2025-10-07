@@ -236,6 +236,25 @@ const handleSaveBilling = async () => {
     formData.append("payment_method", paymentMode);
     formData.append("payment_status", paymentStatus);
     formData.append("or_num", paymentOR);
+      try {
+    const token = localStorage.getItem("token");
+    const checkRes = await axios.get(
+      `http://localhost:3000/auth/checkOR/${paymentOR}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    if (checkRes.data.exists && checkRes.data.appoint_id !== Number(appointId)) {
+      return showPopup(
+        `OR Number ${paymentOR} is already used for another appointment`,
+        "error"
+      );
+    }
+  } catch (err) {
+    console.error("Error checking OR number:", err);
+    return showPopup("Failed to validate OR number", "error");
+  }
     formData.append("total_service_charged", Number(serviceCharge));
 
     if (pwdDiscount) formData.append("pwd_number", pwdDiscount);

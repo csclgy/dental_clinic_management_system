@@ -21,6 +21,10 @@ const AdminSubsidiaryPayableAdd = () => {
     account1: "",
     type: "debit",
     amount: "",
+    items:"",
+    day_agreement:"",
+    due_date:""
+
   });
 
   // ✅ Popup state and fade animation (same style as AdminCoaViewAdd)
@@ -90,10 +94,51 @@ const AdminSubsidiaryPayableAdd = () => {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
+  useEffect(() => {
+  if (formData.day_agreement && formData.date) {
+    let days = parseInt(formData.day_agreement);
+    const baseDate = new Date(formData.date);
+    const due = new Date(baseDate);
+    due.setDate(baseDate.getDate() + days);
+    const formattedDue = due.toISOString().split("T")[0];
+    setFormData((prev) => ({ ...prev, due_date: formattedDue }));
+  }
+}, [formData.day_agreement, formData.date]);
+
+const handleChange = (e) => {
+  const { name, value } = e.target;
+
+  // Handle day agreement change
+  if (name === "day_agreement") {
+    let days = 0;
+
+    if (value.includes("30")) days = 30;
+    else if (value.includes("60")) days = 60;
+    else if (value.includes("90")) days = 90;
+    else if (value.includes("100")) days = 100;
+
+    // Use the current date or selected formData.date as base
+    const baseDate = formData.date ? new Date(formData.date) : new Date();
+    const due = new Date(baseDate);
+    due.setDate(baseDate.getDate() + days);
+
+    // Format date to YYYY-MM-DD for input type="date"
+    const formattedDue = due.toISOString().split("T")[0];
+
+    setFormData((prev) => ({
+      ...prev,
+      day_agreement: value,
+      due_date: formattedDue,
+    }));
+  } 
+  // Handle normal input fields
+  else {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  }
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -119,8 +164,12 @@ const AdminSubsidiaryPayableAdd = () => {
         account_id: formData.account,
         expense_id: formData.account1,
         invoice_no: formData.invoice_no,
+        amount:formData.amount,
         debit,
         credit,
+        items: formData.items,
+        day_agreement: formData.day_agreement,
+        due_date: formData.due_date
       });
 
       showPopup("Subsidiary entry saved successfully!", "success");
@@ -130,6 +179,46 @@ const AdminSubsidiaryPayableAdd = () => {
       showPopup(err.response?.data?.message || "Something went wrong", "error");
     }
   };
+
+useEffect(() => {
+  const state = location.state;
+  if (!state?.mode) return;
+
+  if (state.mode === "pay") {
+    const expenseName = (state.expense_account || state.expenseAccount || "").trim();
+
+    // Try to find the account object whose name matches the expense name (case-insensitive)
+    const matched = account.find(
+      (acc) =>
+        acc.account_name &&
+        acc.account_name.toLowerCase() === expenseName.toLowerCase()
+    );
+
+    setFormData((prev) => ({
+      ...prev,
+      date: state.date || prev.date,
+      description: state.name || prev.description,
+      invoice_no: state.invoice_no || prev.invoice_no,
+      type: "debit",
+      account: prev.account,         
+      accountName: prev.accountName, 
+      account1: matched ? String(matched.account_id) : "",
+      items: state.items || prev.items,
+      day_agreement: state.day_agreement || prev.day_agreement,
+      due_date: state.due_date || prev.due_date,
+    }));
+  }
+}, [location.state, account]); 
+
+const expenseFromState =
+  (location.state?.expense_account || location.state?.expenseAccount || "").trim();
+
+const matchedAccount = account.find(
+  (acc) =>
+    expenseFromState &&
+    acc.account_name &&
+    acc.account_name.toLowerCase() === expenseFromState.toLowerCase()
+);
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -279,6 +368,7 @@ const AdminSubsidiaryPayableAdd = () => {
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
+                    readOnly={location.state?.mode === "pay"}
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 />
               </div>
@@ -291,6 +381,7 @@ const AdminSubsidiaryPayableAdd = () => {
                   name="invoice_no"
                   value={formData.invoice_no}
                   onChange={handleChange}
+                    readOnly={location.state?.mode === "pay"}
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 />
               </div>
@@ -309,6 +400,7 @@ const AdminSubsidiaryPayableAdd = () => {
                   handleChange(e);
                   fetchSuggestions(e.target.value);
                 }}
+                  readOnly={location.state?.mode === "pay"}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 autoComplete="off"
               />
@@ -345,6 +437,7 @@ const AdminSubsidiaryPayableAdd = () => {
                   value={formData.type}
                   onChange={handleChange}
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                    readOnly={location.state?.mode === "pay"}
                 >
                   <option value="debit">Debit</option>
                   <option value="credit">Credit</option>
@@ -359,6 +452,7 @@ const AdminSubsidiaryPayableAdd = () => {
                   name="amount"
                   value={formData.amount}
                   onChange={handleChange}
+                  
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 />
               </div>
@@ -381,19 +475,92 @@ const AdminSubsidiaryPayableAdd = () => {
                 <label className="block text-[#00458b] font-semibold mb-1">
                   Expense Account
                 </label>
-                <select
-                  name="account1"
-                  value={formData.account1}
+
+              {/* if pay mode */}
+                {location.state?.mode === "pay" && matchedAccount ? (
+                  <select
+                    name="account1"
+                    value={formData.account1}
+                    onChange={handleChange}
+                    className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                    disabled
+                  >
+                    <option value="">-- Select Account --</option>
+                    {account.map((acc) => (
+                      <option key={acc.account_id} value={String(acc.account_id)}>
+                        {acc.account_name}
+                      </option>
+                    ))}
+                  </select>
+                ) : location.state?.mode === "pay" && expenseFromState ? (
+                  <input
+                    type="text"
+                    value={expenseFromState}
+                    readOnly
+                    className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                  />
+                    ) : (
+                      <select
+                        name="account1"
+                        value={formData.account1}
+                        onChange={handleChange}
+                        className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                      >
+                        <option value="">-- Select Account --</option>
+                        {account.map((acc) => (
+                          <option key={acc.account_id} value={String(acc.account_id)}>
+                            {acc.account_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+              </div>
+            </div>
+            
+            {/* Transaction Description */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Items:
+                </label>
+                <input
+                  type="text"
+                  name="items"
+                  value={formData.items}
                   onChange={handleChange}
+                  readOnly={location.state?.mode === "pay"}
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                >
-                  <option value="">-- Select Account --</option>
-                  {account.map((acc) => (
-                    <option key={acc.account_id} value={acc.account_id}>
-                      {acc.account_name}
-                    </option>
-                  ))}
-                </select>
+                />
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Agreement
+                </label>
+                <select
+                    name="day_agreement"
+                    value={formData.day_agreement}
+                    onChange={handleChange}
+                    className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                      readOnly={location.state?.mode === "pay"}
+                  >
+                    <option value="">Select Agreement</option>
+                    <option value="30 days">30 days</option>
+                    <option value="60 days">60 days</option>
+                    <option value="90 days">90 days</option>
+                    <option value="100 days">100 days</option>
+                  </select>
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  name="due_date"
+                  value={formData.due_date}
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
               </div>
             </div>
 
