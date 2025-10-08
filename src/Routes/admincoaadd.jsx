@@ -12,7 +12,7 @@ const AdminCoaAdd = () => {
 
   const [accountName, setAccountName] = useState("");
   const [accountType, setAccountType] = useState("Asset");
-   const [description, setDescription] = useState("Account Description");
+  const [description, setDescription] = useState("Account Description");
 
   // ✅ Popup state and fade animation (copied from ProfileChange)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });

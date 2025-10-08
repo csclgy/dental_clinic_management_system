@@ -2300,7 +2300,7 @@ router.post("/coa", authenticateToken, async (req, res) => {
   // ✅ Get COA data from request
   const { account_name, account_type, description } = req.body;
 
-  if (!account_name || !account_type) {
+  if (!account_name || !account_type || !description) {
     return res.status(400).json({ message: "All fields required" });
   }
 
@@ -2309,22 +2309,22 @@ router.post("/coa", authenticateToken, async (req, res) => {
 
     // 1️⃣ Insert into chartofaccounts
     await db.query(
-      "INSERT INTO chartofaccounts (account_name, account_type, status,description) VALUES (?, ?, ?, ?)",
-      [account_name, account_type, 'Active' , description ]
+      "INSERT INTO chartofaccounts (account_name, account_type, status, description) VALUES (?, ?, ?, ?)",
+      [account_name, account_type, "Active", description]
     );
 
     // 2️⃣ Get logged-in user info
-    const user_name = req.user.user_name; // comes from your auth middleware
+    const user_name = req.user.user_name;
     const role = req.user.role;
 
     // 3️⃣ Insert into audit_trail
     const action = "Add COA";
-    const description = `Added new COA: ${account_name} (${account_type})`;
+    const actionDescription = `Added new COA: ${account_name} (${account_type})`;
 
-    const created_at = new Date(); // current date and time
+    const created_at = new Date();
     await db.query(
       "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
-      [user_name, role, action, description, created_at]
+      [user_name, role, action, actionDescription, created_at]
     );
 
     return res.status(201).json({ message: "Account saved successfully!" });
