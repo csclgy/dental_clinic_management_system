@@ -73,6 +73,7 @@ import AdminCashierPaid from "./Routes/admincashierpaid.jsx";
 import AdminCashierPartial from "./Routes/admincashierpartial.jsx";
 import AdminConsultationPartial from "./Routes/adminconsultationpartial.jsx";
 import AdminConsultationPartialPayment from "./Routes/adminconsultationpartialpay.jsx";
+import ReceptionistDashboard from "./Routes/receptionistdashboard";
 
 function App() {
   return (
@@ -228,6 +229,9 @@ function App() {
              <Route path="/adminconsultationpartialpay/:appointId" element={<AdminConsultationPartialPayment />}/>
              <Route path="/admincashierpaid" element={<AdminCashierPaid />}/>
              <Route path="/admincashierpartial" element={<AdminCashierPartial />}/>
+             
+            {/*Receptionist*/}
+            <Route path="/receptionistdashboard" element={<ReceptionistDashboard />} />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>
