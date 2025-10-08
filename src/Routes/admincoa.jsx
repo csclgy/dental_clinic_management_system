@@ -328,14 +328,17 @@ const AdminCoa = () => {
                     <tr
                       key={account.account_id}
                       className="border-b border-gray-200 cursor-pointer hover:bg-gray-100">
-                      <td className="px-4 py-2 text-blue-700" onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect(); 
+                      <td
+                        className="px-4 py-2 text-blue-700 relative group"
+                        onMouseEnter={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect();
                           setTooltipPosition({
-                            x: rect.right + 10 + window.scrollX,
-                            y: rect.top + window.scrollY,
+                            x: rect.left + 200 + window.scrollX,
+                            y: rect.top -5+ window.scrollY,
                           });
                           setSelectedRecord(account);
                         }}
+                        onMouseLeave={() => setSelectedRecord(null)}
                       >
                         {account.account_name}
                       </td>
