@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, Menu, X, Clock, CheckCircle } from "lucide-react";
+import { Calendar, Users, BarChart3, Menu, X, Clock, XCircle, CheckCircle } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
 function ReceptionistDashboard() {
@@ -10,6 +10,7 @@ function ReceptionistDashboard() {
   const totalAppointments = 50;
   const patientsCount = 34;
   const pendingAppointments = 12;
+  const cancelledAppointments = 3;
   const completedAppointments = 35;
 
   // Patient Demographics dummy data
@@ -94,35 +95,46 @@ function ReceptionistDashboard() {
         <h1 className="text-2xl font-bold text-[#00458B] mb-6">Receptionist Dashboard</h1>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-[#01D5C4] hover:shadow-lg transition">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-[#01D5C4] hover:shadow-lg transition">
             <Calendar size={32} className="text-[#00458B]" />
             <div>
-              <h2 className="text-lg font-semibold">Total Appointments</h2>
-              <p className="text-2xl font-bold">{totalAppointments}</p>
+            <h2 className="text-lg font-semibold">Total Appointments</h2>
+            <p className="text-2xl font-bold">{totalAppointments}</p>
             </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-[#01D5C4] hover:shadow-lg transition">
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-[#01D5C4] hover:shadow-lg transition">
             <Users size={32} className="text-[#00458B]" />
             <div>
-              <h2 className="text-lg font-semibold">Patients</h2>
-              <p className="text-2xl font-bold">{patientsCount}</p>
+            <h2 className="text-lg font-semibold">Patients</h2>
+            <p className="text-2xl font-bold">{patientsCount}</p>
             </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-yellow-400 hover:shadow-lg transition">
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-yellow-400 hover:shadow-lg transition">
             <Clock size={32} className="text-[#00458B]" />
             <div>
-              <h2 className="text-lg font-semibold">Pending</h2>
-              <p className="text-2xl font-bold">{pendingAppointments}</p>
+            <h2 className="text-lg font-semibold">Pending</h2>
+            <p className="text-2xl font-bold">{pendingAppointments}</p>
             </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-green-400 hover:shadow-lg transition">
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-red-400 hover:shadow-lg transition">
+            <XCircle size={32} className="text-[#00458B]" />
+            <div>
+            <h2 className="text-lg font-semibold">Cancelled</h2>
+            <p className="text-2xl font-bold">{cancelledAppointments}</p>
+            </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-green-400 hover:shadow-lg transition">
             <CheckCircle size={32} className="text-[#00458B]" />
             <div>
-              <h2 className="text-lg font-semibold">Completed</h2>
-              <p className="text-2xl font-bold">{completedAppointments}</p>
+            <h2 className="text-lg font-semibold">Completed</h2>
+            <p className="text-2xl font-bold">{completedAppointments}</p>
             </div>
-          </div>
+        </div>        
         </div>
 
         {/* Charts Section */}

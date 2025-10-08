@@ -1,8 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import {Calendar, Users, PhilippinePeso, BarChart3, ChevronDown, ChevronUp, Menu, X,} from "lucide-react";
-import {PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend,} from "recharts";
+import {
+  Calendar,
+  Users,
+  PhilippinePeso,
+  BarChart3,
+  ChevronDown,
+  ChevronUp,
+  Menu,
+} from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 function AdminDashboard() {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
@@ -18,10 +37,19 @@ function AdminDashboard() {
   const [endMonth, setEndMonth] = useState("Dec");
   const [year, setYear] = useState(new Date().getFullYear());
 
+  // Dummy General Ledger Data
+  const generalLedger = [
+    { account: "Cash", debit: 0, credit: 25000, balance: 25000 },
+    { account: "Supplies", debit: 5000, credit: 0, balance: 20000 },
+    { account: "Wages", debit: 10000, credit: 0, balance: 10000 },
+    { account: "Electricity", debit: 2500, credit: 0, balance: 7500 },
+    { account: "Dental Services", debit: 0, credit: 15000, balance: 22500 },
+  ];
+
   const COLORS = ["#01D5C4", "#00458B", "#A3A3A3"];
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  // Fetch data from backend
+  // Fetch backend data
   useEffect(() => {
     axios.get("http://localhost:3000/auth/appointments/count")
       .then(res => setAppointmentsCount(res.data))
@@ -37,14 +65,13 @@ function AdminDashboard() {
 
     axios.get("http://localhost:3000/auth/revenue")
       .then(res => {
-        // Expected format: [{ month: "Jan", year: 2025, revenue: 120000 }, ...]
         setRevenueData(res.data);
         setFilteredRevenue(res.data);
       })
       .catch(err => console.error("Error fetching revenue data:", err));
   }, []);
 
-  // Filter revenue 
+  // Filter revenue by month/year
   useEffect(() => {
     const startIndex = months.indexOf(startMonth);
     const endIndex = months.indexOf(endMonth);
@@ -61,9 +88,28 @@ function AdminDashboard() {
     setFilteredRevenue(filtered);
   }, [startMonth, endMonth, year, revenueData]);
 
+  // Compute Ledger Summary
+  const totalDebit = generalLedger.reduce((sum, item) => sum + item.debit, 0);
+  const totalCredit = generalLedger.reduce((sum, item) => sum + item.credit, 0);
+  const netBalance = totalCredit - totalDebit;
+
+  const ledgerSummaryData = [
+    { name: "Total Debit", value: totalDebit },
+    { name: "Total Credit", value: totalCredit },
+  ];
+
+  const topAccounts = generalLedger
+    .reduce((acc, curr) => {
+      const found = acc.find((a) => a.account === curr.account);
+      if (found) found.balance += curr.balance;
+      else acc.push({ account: curr.account, balance: curr.balance });
+      return acc;
+    }, [])
+    .slice(0, 5);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar (Desktop) */}
+      {/* Sidebar */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
@@ -100,13 +146,11 @@ function AdminDashboard() {
             <div className="ml-6 flex flex-col gap-1 text-sm">
               <Link to="/admincoa" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Chart of Accounts</Link>
               <Link to="/adminjournal" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Journal Entries</Link>
-              <Link to="/adminsubsidiaryreceivable" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Subsidiary</Link>
               <Link to="/admingeneral" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">General Ledger</Link>
               <Link to="/admintrial" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Trial Balance</Link>
             </div>
           )}
 
-          {/* Other Links */}
           <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
             <Users size={18} /> Users
           </Link>
@@ -169,7 +213,7 @@ function AdminDashboard() {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {/* Patient Demographics */}
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
             <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-[#00458B]">
@@ -221,6 +265,56 @@ function AdminDashboard() {
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* ===== Ledger Analytics Section ===== */}
+        <section className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <h2 className="text-xl font-semibold text-[#00458B] mb-4">Ledger Analytics</h2>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <h3 className="font-semibold text-[#00458B]">Total Debit</h3>
+              <p className="text-2xl font-bold text-red-500">₱{totalDebit.toLocaleString("en-PH")}</p>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <h3 className="font-semibold text-[#00458B]">Total Credit</h3>
+              <p className="text-2xl font-bold text-green-500">₱{totalCredit.toLocaleString("en-PH")}</p>
+            </div>
+            <div className="bg-gray-50 p-4 rounded-lg text-center">
+              <h3 className="font-semibold text-[#00458B]">Net Balance</h3>
+              <p className="text-2xl font-bold text-blue-600">₱{netBalance.toLocaleString("en-PH")}</p>
+            </div>
+          </div>
+
+          {/* Debit vs Credit Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-[#00458B] mb-2 text-center">Debit vs Credit</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={ledgerSummaryData} dataKey="value" nameKey="name" outerRadius={90} label>
+                    {ledgerSummaryData.map((_, index) => (
+                      <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-[#00458B] mb-2 text-center">Top Accounts by Balance</h3>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={topAccounts}>
+                  <XAxis dataKey="account" />
+                  <YAxis />
+                  <Tooltip formatter={(v) => `₱${v.toLocaleString("en-PH")}`} />
+                  <Bar dataKey="balance" fill="#00458B" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );
