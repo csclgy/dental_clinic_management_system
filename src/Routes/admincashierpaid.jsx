@@ -267,7 +267,7 @@ const filteredRecords = records.filter((record) => {
                       <td className="px-4 py-2">{record.payment_confirmation}</td>
                         <td className="px-2 py-3 whitespace-nowrap">
                         <button
-                          onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
+                          onClick={() => navigate(`/adminconsultationpartial/${record.appoint_id}`)}
                           className={`px-4 py-2 rounded-lg font-semibold bg-blue-500 hover:bg-blue-700 text-white `}
                         >
                           View

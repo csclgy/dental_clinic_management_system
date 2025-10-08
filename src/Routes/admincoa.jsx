@@ -20,6 +20,8 @@ const AdminCoa = () => {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   // ✅ Popup state and fade animation (same as AdminCoaEdit)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -49,6 +51,19 @@ const AdminCoa = () => {
       }
     }
   }, [location]);
+  
+  useEffect(() => {
+  const handleClickOutside = (e) => {
+    const tooltip = document.getElementById("floatingTooltipBox");
+    if (tooltip && !tooltip.contains(e.target)) {
+      setSelectedRecord(null);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
+
 
   useEffect(() => {
     const fetchAccounts = async () => {
@@ -312,9 +327,16 @@ const AdminCoa = () => {
                   filteredAccounts.map((account) => (
                     <tr
                       key={account.account_id}
-                      className="border-b border-gray-200"
-                    >
-                      <td className="px-4 py-2 text-blue-700">
+                      className="border-b border-gray-200 cursor-pointer hover:bg-gray-100">
+                      <td className="px-4 py-2 text-blue-700" onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect(); 
+                          setTooltipPosition({
+                            x: rect.right + 10 + window.scrollX,
+                            y: rect.top + window.scrollY,
+                          });
+                          setSelectedRecord(account);
+                        }}
+                      >
                         {account.account_name}
                       </td>
                       <td className="px-4 py-2 text-center">
@@ -362,6 +384,35 @@ const AdminCoa = () => {
                   </tr>
                 )}
               </tbody>
+              {selectedRecord && (
+              <div
+                  id="floatingTooltipBox"
+                style={{
+                  position: "absolute",
+                  top: tooltipPosition.y,
+                  left: tooltipPosition.x,
+                  zIndex: 1000,
+                }}
+                className="bg-white border border-gray-300 shadow-lg p-4 rounded-md w-80"
+              >
+                <div className="flex justify-between items-center mb-2">
+                   <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
+                    Account Details
+                  </h3>
+                  <br></br>
+                  <button
+                    onClick={() => setSelectedRecord(null)}
+                    className="text-gray-500 hover:text-red-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="text-sm text-gray-800">
+                  <p className="mt-2 text-blue-800"><strong>{selectedRecord.account_name}</strong></p>
+                  <p className="mt-1 ml-3 text-black"> {selectedRecord.description}</p>
+                </div>
+              </div>
+            )}
             </table>
           </div>
         )}

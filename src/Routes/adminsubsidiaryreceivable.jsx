@@ -10,6 +10,8 @@ const AdminSubsidiaryReceivable = () => {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [subsidiaryRecords, setSubsidiaryRecords] = useState([]);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -48,6 +50,18 @@ const AdminSubsidiaryReceivable = () => {
     };
 
     fetchAccountReceivable();
+  }, []);
+
+    useEffect(() => {
+    const handleClickOutside = (e) => {
+      const tooltip = document.getElementById("floatingTooltipBox");
+      if (tooltip && !tooltip.contains(e.target)) {
+        setSelectedRecord(null);
+      }
+    };
+  
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Filter records
@@ -236,9 +250,18 @@ const AdminSubsidiaryReceivable = () => {
             <tbody>
               {filteredRecords.length > 0 ? (
                 filteredRecords.map((record, index) => (
-                  <tr key={index} className="border-b border-gray-200">
+                  <tr key={index} className="border-b border-gray-200 cursor-pointer hover:bg-gray-100">
                     <td className="px-4 py-2 text-black">{record.date}</td>
-                    <td className="px-4 py-2 text-blue-700">{record.particulars}</td>
+                    <td className="px-4 py-2 text-black-700 cursor-pointer"
+                         onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect(); 
+                          setTooltipPosition({
+                            x: rect.right + 10 + window.scrollX,
+                            y: rect.top + window.scrollY,
+                          });
+                          setSelectedRecord(record);
+                        }}
+                      > {record.particulars}</td>
                     <td className="px-4 py-2 text-black">{record.Invoice_no}</td>
                     <td className="px-4 py-2 text-black">
                       ₱ {(Number(record.debit) || 0).toFixed(2)}
@@ -259,6 +282,54 @@ const AdminSubsidiaryReceivable = () => {
                 </tr>
               )}
             </tbody>
+            {selectedRecord && (
+              <div
+                  id="floatingTooltipBox"
+                style={{
+                  position: "absolute",
+                  top: tooltipPosition.y,
+                  left: tooltipPosition.x,
+                  zIndex: 1000,
+                }}
+                className="bg-white border border-gray-300 shadow-lg p-4 rounded-md w-80"
+              >
+                <div className="flex justify-between items-center mb-2">
+                   <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
+                    Invoice Details
+                  </h3>
+                  <br></br>
+                  <button
+                    onClick={() => setSelectedRecord(null)}
+                    className="text-gray-500 hover:text-red-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="text-sm text-gray-800">
+                  <p className="mt-2"><strong>Invoice No:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.Invoice_no}</p>
+
+                  <p className="mt-1"><strong>Date:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800">{selectedRecord.date}</p>
+
+                  <p className="mt-1"><strong>Patient Name:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.patient_name}</p>
+
+                  <p className="mt-1"><strong>Apointment Date:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.pref_date}</p>
+                  
+                  <p className="mt-1"><strong>Service:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.procedure_type}</p>
+
+                  <p className="mt-1"><strong>Service Charge:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.total_service_charged}</p>
+
+                  <p className="mt-1"><strong> Total Amount:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800">  ₱ {(Number(selectedRecord.total_charged) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+
+                </div>
+              </div>
+            )}
           </table>
         </div>
       </main>

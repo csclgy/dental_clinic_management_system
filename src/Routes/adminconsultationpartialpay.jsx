@@ -84,7 +84,7 @@ useEffect(() => {
 
     const debit = formData.type === "debit" ? Number(formData.amount) : 0;
     const credit = formData.type === "credit" ? Number(formData.amount) : 0;
-    const balance = debit - credit;
+ 
 
     try {
       await axios.post("http://localhost:3000/auth/subsidiaryReceivable", {
@@ -250,19 +250,6 @@ useEffect(() => {
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 />
               </div>
-              {/* <div>
-                <label className="block text-[#00458b] font-semibold mb-1">
-                  Invoice Number
-                </label>
-                <input
-                  type="text"
-                  name="invoice_no"
-                  value={formData.invoice_no}
-                  onChange={handleChange}
-                  readOnly
-                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
-                />
-              </div> */}
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               

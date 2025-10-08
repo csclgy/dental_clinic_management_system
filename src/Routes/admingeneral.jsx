@@ -12,6 +12,8 @@ const Admingeneral = () => {
   const [records, setRecords] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState("");
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -23,6 +25,19 @@ const Admingeneral = () => {
       }
     }
   }, [location]);
+
+  
+    useEffect(() => {
+    const handleClickOutside = (e) => {
+      const tooltip = document.getElementById("floatingTooltipBox");
+      if (tooltip && !tooltip.contains(e.target)) {
+        setSelectedRecord(null);
+      }
+    };
+  
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchLedger = async () => {
@@ -400,9 +415,20 @@ const Admingeneral = () => {
             <tbody>
               {filteredRecords.length > 0 ? (
                 filteredRecords.map((record, index) => (
-                  <tr key={index} className="border-b border-gray-200">
+                  < tr key={index}
+                      className="border-b border-gray-200 cursor-pointer hover:bg-gray-100">
                     <td className="px-4 py-2 text-black">{record.date}</td>
-                    <td className="px-4 py-2 text-blue-700">{record.account}</td>
+                    <td className="px-4 py-2 text-blue-700"
+                    onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect(); // Get position of the cell
+                          setTooltipPosition({
+                            x: rect.right + 10 + window.scrollX,
+                            y: rect.top + window.scrollY,
+                          });
+                          setSelectedRecord(record);
+                        }} >
+                        {record.account}
+                        </td>
                     <td className="px-4 py-2 text-black">
                       {record.account_type || "-"}
                     </td>
@@ -425,6 +451,42 @@ const Admingeneral = () => {
                 </tr>
               )}
             </tbody>
+            {selectedRecord && (
+              <div
+                  id="floatingTooltipBox"
+                style={{
+                  position: "absolute",
+                  top: tooltipPosition.y,
+                  left: tooltipPosition.x,
+                  zIndex: 1000,
+                }}
+                className="bg-white border border-gray-300 shadow-lg p-4 rounded-md w-80"
+              >
+                <div className="flex justify-between items-center mb-2">
+                   <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
+                    Description
+                  </h3>
+                  <br></br>
+                  <button
+                    onClick={() => setSelectedRecord(null)}
+                    className="text-gray-500 hover:text-red-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="text-sm text-gray-800">
+                  <p className="mt-2"><strong>Date:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.date}</p>
+
+                  <p className="mt-1"><strong>Description:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.description}</p>
+
+                  <p className="mt-1"><strong> Total Amount:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800">  ₱ {(Number(selectedRecord.total_amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+
+                </div>
+              </div>
+            )}
           </table>
 
           {/* Generate Report Button */}

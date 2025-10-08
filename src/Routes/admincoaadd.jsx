@@ -12,6 +12,7 @@ const AdminCoaAdd = () => {
 
   const [accountName, setAccountName] = useState("");
   const [accountType, setAccountType] = useState("Asset");
+   const [description, setDescription] = useState("Account Description");
 
   // ✅ Popup state and fade animation (copied from ProfileChange)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -42,17 +43,18 @@ const AdminCoaAdd = () => {
     }
 
     try {
-      const token = localStorage.getItem("token"); // get your saved JWT token
+      const token = localStorage.getItem("token"); 
 
       const response = await axios.post(
         "http://localhost:3000/auth/coa",
         {
           account_name: accountName,
           account_type: accountType,
+          description: description
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`, // ✅ add this
+            Authorization: `Bearer ${token}`, 
           },
         }
       );
@@ -251,6 +253,18 @@ const AdminCoaAdd = () => {
                 <option value="Income">Income</option>
                 <option value="Expense">Expense</option>
               </select>
+            </div>
+
+              <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Description
+              </label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              />
             </div>
 
             <div className="flex justify-end gap-4 mt-6">

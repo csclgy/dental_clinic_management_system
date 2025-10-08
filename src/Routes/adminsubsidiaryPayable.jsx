@@ -67,6 +67,7 @@ const AdminSubsidiaryPayable = () => {
     particulars.includes(searchTerm.toLowerCase())
   );
 });
+
   const fullyPaidInvoices = new Set(
   subsidiaryRecords
     .filter((r) => Number(r.balance) <= 0)
@@ -258,7 +259,7 @@ const AdminSubsidiaryPayable = () => {
                         <td
                         className="px-4 py-2 text-blue-700 cursor-pointer"
                         onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect(); // Get position of the cell
+                          const rect = e.currentTarget.getBoundingClientRect(); 
                           setTooltipPosition({
                             x: rect.right + 10 + window.scrollX,
                             y: rect.top + window.scrollY,
@@ -291,7 +292,6 @@ const AdminSubsidiaryPayable = () => {
                                 invoice_no: record.invoice_no,
                                 name: companyName,
                                 expense_account: expenseAccount,
-                                date: record.date,
                                 items: record.items,
                                 day_agreement: record.day_agreement,
                                 due_date: record.due_date,
@@ -365,7 +365,7 @@ const AdminSubsidiaryPayable = () => {
                   <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.items}</p>
 
                   <p className="mt-1"><strong> Total Amount:</strong></p>
-                  <p className="mt-1 ml-3 text-blue-800">  ₱ {(Number(selectedRecord.balance) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                  <p className="mt-1 ml-3 text-blue-800">  ₱ {(Number(selectedRecord.total_amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
 
                 </div>
               </div>

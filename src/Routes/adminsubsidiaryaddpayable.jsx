@@ -19,7 +19,7 @@ const AdminSubsidiaryPayableAdd = () => {
     account: "",
     accountName: "",
     account1: "",
-    type: "debit",
+    type: "credit",
     amount: "",
     items:"",
     day_agreement:"",
@@ -158,6 +158,7 @@ const handleChange = (e) => {
       const debit = formData.type === "debit" ? Number(formData.amount) : 0;
       const credit = formData.type === "credit" ? Number(formData.amount) : 0;
 
+
       await axios.post("http://localhost:3000/auth/subsidiary1", {
         date: formData.date,
         name: formData.description,
@@ -176,7 +177,12 @@ const handleChange = (e) => {
       navigate("/adminsubsidiaryPayable");
     } catch (err) {
       console.error("Error saving entry:", err);
-      showPopup(err.response?.data?.message || "Something went wrong", "error");
+      const backendMessage =
+        err.response?.data?.error || 
+        err.response?.data?.message || 
+        "Something went wrong.";
+
+      showPopup(backendMessage, "error");
     }
   };
 
@@ -184,10 +190,8 @@ useEffect(() => {
   const state = location.state;
   if (!state?.mode) return;
 
-  if (state.mode === "pay") {
+   if (state.mode === "pay") {
     const expenseName = (state.expense_account || state.expenseAccount || "").trim();
-
-    // Try to find the account object whose name matches the expense name (case-insensitive)
     const matched = account.find(
       (acc) =>
         acc.account_name &&
@@ -199,16 +203,22 @@ useEffect(() => {
       date: state.date || prev.date,
       description: state.name || prev.description,
       invoice_no: state.invoice_no || prev.invoice_no,
-      type: "debit",
-      account: prev.account,         
-      accountName: prev.accountName, 
+      type: "debit", 
+      account: prev.account,
+      accountName: prev.accountName,
       account1: matched ? String(matched.account_id) : "",
       items: state.items || prev.items,
       day_agreement: state.day_agreement || prev.day_agreement,
       due_date: state.due_date || prev.due_date,
     }));
+  } else {
+   
+    setFormData((prev) => ({
+      ...prev,
+      type: "credit"
+    }));
   }
-}, [location.state, account]); 
+}, [location.state, account]);
 
 const expenseFromState =
   (location.state?.expense_account || location.state?.expenseAccount || "").trim();
@@ -368,7 +378,6 @@ const matchedAccount = account.find(
                   name="date"
                   value={formData.date}
                   onChange={handleChange}
-                    readOnly={location.state?.mode === "pay"}
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 />
               </div>
@@ -432,16 +441,13 @@ const matchedAccount = account.find(
                 <label className="block text-[#00458b] font-semibold mb-1">
                   Debit/Credit
                 </label>
-                <select
+                <input
+                  type="text"
                   name="type"
                   value={formData.type}
-                  onChange={handleChange}
-                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                    readOnly={location.state?.mode === "pay"}
-                >
-                  <option value="debit">Debit</option>
-                  <option value="credit">Credit</option>
-                </select>
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
@@ -541,7 +547,7 @@ const matchedAccount = account.find(
                     value={formData.day_agreement}
                     onChange={handleChange}
                     className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                      readOnly={location.state?.mode === "pay"}
+                    disabled={location.state?.mode === "pay"}
                   >
                     <option value="">Select Agreement</option>
                     <option value="30 days">30 days</option>

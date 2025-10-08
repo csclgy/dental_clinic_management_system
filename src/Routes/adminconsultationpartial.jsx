@@ -19,6 +19,7 @@ const AdminConsultationPartial = () => {
   const [cancelInfo, setCancelInfo] = useState(null);
   const [dentists, setDentists] = useState([]);
   const [payments, setPayments] = useState([]);
+  const [balance, setBalance] = useState(0);
 
   useEffect(() => {
     const fetchConsultation = async () => {
@@ -78,6 +79,17 @@ const AdminConsultationPartial = () => {
   };
   fetchPayments();
 }, [appointId]);
+
+useEffect(() => {
+  if (consultation && payments.length > 0) {
+    const totalPaid = payments.reduce((sum, p) => sum + Number(p.credit || 0), 0);
+    const totalCharged = consultation.total_charged || 0;
+    const remainingBalance = totalCharged - totalPaid;
+    setBalance(remainingBalance);
+  } else if (consultation) {
+    setBalance(consultation.total_charged || 0);
+  }
+}, [payments, consultation]);
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -384,23 +396,30 @@ const AdminConsultationPartial = () => {
               <div className="mt-6">
             <div className="flex flex-col sm:flex-row justify-between items-center mt-3 gap-3">
                 <p className="font-bold text-2xl text-[#00458B]">
-                Payments:
+                Payments for installment: 
                 </p>
                 <button
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-full w-full sm:w-auto"
-                onClick={() =>
-                    navigate(`/adminconsultationpartialpay/${appointId}`, {
-                    state: {
-                        patientName: `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`,
-                        invoiceNo: consultation.or_num || "", 
-                        procedureType: consultation.procedure_type || "",
-                        appointId: consultation.appoint_id || ""
-                    },
-                    })
-                }
-                >
-                Add Payment
-                </button>
+                    disabled={balance <= 0  || consultation?.payment_confirmation === "Complete"}
+                    className={`font-semibold px-6 py-2 rounded-full w-full sm:w-auto ${
+                      balance <= 0  || consultation?.payment_confirmation === "Complete"
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : "bg-red-500 hover:bg-red-600 text-white"
+                    }`}
+                    onClick={() => {
+                      if (balance > 0 ) {
+                        navigate(`/adminconsultationpartialpay/${appointId}`, {
+                          state: {
+                            patientName: `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`,
+                            invoiceNo: consultation.or_num || "",
+                            procedureType: consultation.procedure_type || "",
+                            appointId: consultation.appoint_id || "",
+                          },
+                        });
+                      }
+                    }}
+                  >
+                    Add Payment
+                  </button>
             </div>
             <br />
             <hr />
@@ -417,29 +436,29 @@ const AdminConsultationPartial = () => {
                     </tr>
                 </thead>
                 <tbody>
-  {payments.length > 0 ? (
-    payments.map((p, idx) => (
-      <tr key={idx}>
-        <td className="border border-gray-300 px-4 py-2 text-center">
-          {new Date(p.date).toLocaleDateString()}
-        </td>
-        <td className="border border-gray-300 px-4 py-2">{p.particulars}</td>
-        <td className="border border-gray-300 px-4 py-2 text-right">
-            ₱ {Number(p.credit || 0).toFixed(2)}
-        </td>
-        <td className="border border-gray-300 px-4 py-2 text-right">
-            ₱ {Number(p.balance || 0).toFixed(2)}
-        </td>
-      </tr>
-    ))
-  ) : (
-    <tr>
-      <td className="border border-gray-300 px-4 py-2 text-center" colSpan={4}>
-        No payments recorded
-      </td>
-    </tr>
-  )}
-</tbody>
+                      {payments.length > 0 ? (
+                        payments.map((p, idx) => (
+                          <tr key={idx}>
+                            <td className="border border-gray-300 px-4 py-2 text-center">
+                              {new Date(p.date).toLocaleDateString()}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-center">{p.particulars}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-center">
+                                ₱ {Number(p.credit || 0).toFixed(2)}
+                            </td>
+                            <td className="border border-gray-300 px-4 py-2 text-center">
+                                ₱ {Number(p.balance || 0).toFixed(2)}
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td className="border border-gray-300 px-4 py-2 text-center" colSpan={4}>
+                            No Record
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
                 </table>
             </div>
             </div>
@@ -520,16 +539,27 @@ const AdminConsultationPartial = () => {
                 </button>
                 <button
                   className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full sm:w-auto"
-                  onClick={() => navigate("/admincashierpartial")}
+                  onClick={() => navigate(-1)}
                 >
                   Back to List
                 </button>
                 <button
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-full w-full sm:w-auto"
-                onClick={handleComplete}
-                >
-                Complete
-                </button>
+                    disabled={balance > 0 || consultation?.payment_confirmation === "Complete"}
+                    className={`px-6 py-2 rounded-full font-semibold w-full sm:w-auto ${
+                      balance > 0 || consultation?.payment_confirmation === "Complete"
+                        ? "bg-gray-400 text-white cursor-not-allowed"
+                        : "bg-green-600 hover:bg-green-700 text-white"
+                    }`}
+                    onClick={() => {
+                      if (balance === 0 && consultation?.payment_confirmation !== "Complete") {
+                        handleComplete();
+                      }
+                    }}
+                  >
+                    {consultation?.payment_confirmation === "complete"
+                      ? "Completed"
+                      : "Complete"}
+                  </button>
               </div>
             </div>
           </div>

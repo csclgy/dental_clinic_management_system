@@ -1452,8 +1452,8 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
           //  Insert Sub Receivable Entry
           await db.query(
             `INSERT INTO sub_receivable 
-             (date, particulars, invoice_no, debit, credit, balance, appoint_id, user_id)
-             VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+             (date, particulars, invoice_no, debit, credit, balance, appoint_id, user_id,total_amount)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`,
             [
               date,
               particulars,
@@ -1462,6 +1462,7 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
               balance,
               appointId,
               appointment.user_id,
+              debit
             ]
           );
 
@@ -1489,21 +1490,21 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
 
           // Journal Entry — Debit: A/R, Credit: Service Income
           const [debitEntry] = await db.query(
-            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment)
-             VALUES (?, ?, ?, ?, ?, 0, ?)`,
-            [date, description, arAccount.account_id, '0', debit, comment]
+            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
+             VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
+            [date, description, arAccount.account_id, '0', debit, comment, debit]
           );
 
           const [creditEntry] = await db.query(
-            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment)
-             VALUES (?, ?, ?, ?, 0, ?, ?)`,
-            [date, description, siAccount.account_id, '0', debit, comment]
+            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+            [date, description, siAccount.account_id, '0', debit, comment, debit]
           );
 
           //  General Ledger entries (positive flow)
           await db.query(
-            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description)
-             VALUES (?, ?, ?, ?, 0, ?, ?)`,
+            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
             [
               arAccount.account_id,
               debitEntry.insertId,
@@ -1511,12 +1512,13 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
               debit,
               debit,
               description,
+              debit
             ]
           );
 
           await db.query(
-            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description)
-             VALUES (?, ?, ?, 0, ?, ?, ?)`,
+            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount )
+             VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
             [
               siAccount.account_id,
               creditEntry.insertId,
@@ -1524,6 +1526,7 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
               debit,
               debit,
               description,
+              debit
             ]
           );
 
@@ -1579,16 +1582,14 @@ router.get("/consultationpayments/:appointId", async (req, res) => {
 //
 router.post("/complete/:appoint_id", async (req, res) => {
   const { appoint_id } = req.params;
-  const connection = await connectToDatabase(); 
+  const connection = await connectToDatabase();
 
   try {
-    console.log("🔹 Starting payment completion for appointment:", appoint_id);
-    
     await connection.beginTransaction();
 
-    //  Get appointment
+    // 1️⃣ Get appointment details
     const [appoint] = await connection.query(
-      `SELECT total_charged, p_fname, p_mname, p_lname, procedure_type 
+      `SELECT total_charged, p_fname, p_mname, p_lname, procedure_type,  appoint_id 
        FROM appointment 
        WHERE appoint_id = ?`,
       [appoint_id]
@@ -1599,24 +1600,22 @@ router.post("/complete/:appoint_id", async (req, res) => {
       return res.status(404).json({ message: "Appointment not found." });
     }
 
-     const { total_charged, p_fname, p_mname, p_lname, procedure_type } = appoint[0];
-     const patient_name = `${p_fname} ${p_mname ? p_mname + " " : ""}${p_lname}`;
+    const { total_charged, p_fname, p_mname, p_lname, procedure_type } = appoint[0];
+    const patient_name = `${p_fname} ${p_mname ? p_mname + " " : ""}${p_lname}`;
 
-    //  Get accounts
+    // 2️⃣ Get required accounts (Cash & Service Income)
     const [accounts] = await connection.query(
-      "SELECT account_id, account_name FROM chartofaccounts WHERE account_name IN ('Cash', 'Service Income')"
+      "SELECT account_id, account_name, account_type FROM chartofaccounts WHERE account_name IN ('Cash', 'Service Income')"
     );
 
     const incomeAcc = accounts.find(
-    (a) => a.account_name.trim().toLowerCase() === "service income"
+      (a) => a.account_name.trim().toLowerCase() === "service income"
     );
-
     const cashAcc = accounts.find(
       (a) => a.account_name.trim().toLowerCase() === "cash"
     );
 
     if (!cashAcc || !incomeAcc) {
-      console.log("Missing Cash or Service Income account record");
       await connection.rollback();
       return res
         .status(400)
@@ -1624,68 +1623,95 @@ router.post("/complete/:appoint_id", async (req, res) => {
     }
 
     const date = new Date();
-    const description = `Payment received from ${patient_name}`;
+    const description = `Payment received from ${patient_name} appointment no. ${appoint_id} `;
     const fullDescription = `${procedure_type} - ${patient_name}`;
-    const subAccountId = 0; 
+    const subAccountId = 0;
 
-    // 3️⃣ Insert Journal Entries
-    console.log("Inserting journal entries...");
+
+    // Debit: Cash
     const [debitEntry] = await connection.query(
-      `INSERT INTO journalentry (\`date\`, description, account_id, id, debit, credit, comment)
-       VALUES (?, ?, ?, ?, ?, 0, 'Payment Received')`,
-      [date, description, cashAcc.account_id, subAccountId, total_charged]
-    );
-    console.log(" Debit journal entry inserted:", debitEntry.insertId);
+      `INSERT INTO journalentry (\`date\`, description, account_id, id, debit, credit, comment, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, fullDescription, cashAcc.account_id, subAccountId, total_charged, 0, description, total_charged ]
+    ); 
 
+    // Credit: Service Income
     const [creditEntry] = await connection.query(
-      `INSERT INTO journalentry (\`date\`, description, account_id, id, debit, credit, comment)
-       VALUES (?, ?, ?, ?, 0, ?, 'Service Income Recorded')`,
-      [date, description, incomeAcc.account_id, subAccountId, total_charged]
-    );
-    console.log("Credit journal entry inserted:", creditEntry.insertId);
-
-    // 4️⃣ Insert into General Ledger
-    console.log("Inserting general ledger...");
-    await connection.query(
-      `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, \`date\`)
-       VALUES (?, ?, ?, 0, ?, ?)`,
-      [debitEntry.insertId, cashAcc.account_id, total_charged, fullDescription , date]
+      `INSERT INTO journalentry (\`date\`, description, account_id, id, debit, credit, comment, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, fullDescription, incomeAcc.account_id, subAccountId, 0, total_charged, description, total_charged ]
     );
 
-    await connection.query(
-      `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, \`date\`)
-       VALUES (?, ?, 0, ?, ?, ?)`,
-      [creditEntry.insertId, incomeAcc.account_id, total_charged, fullDescription , date]
-    );
-    console.log(" General ledger entries inserted");
 
-    // 5️⃣ Update appointment
-    console.log(" Updating appointment...");
+    // Debit Cash
     await connection.query(
-       "UPDATE appointment SET payment_confirmation = 'Complete', payment_status = 'Paid' WHERE appoint_id = ?",
+      `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, \`date\`, total_amount)
+       VALUES (?, ?, ?, 0, ?, ?, ?)`,
+      [debitEntry.insertId, cashAcc.account_id, total_charged, fullDescription, date, total_charged]
+    );
+
+    // Credit Service Income
+    await connection.query(
+      `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, \`date\`, total_amount)
+       VALUES (?, ?, 0, ?, ?, ?, ?)`,
+      [creditEntry.insertId, incomeAcc.account_id, total_charged, fullDescription, date, total_charged]
+    );
+
+    //  updating balance 
+    const updateBalanceForAccount = async (account_id) => {
+      await connection.query(
+        `UPDATE general_ledger g
+         JOIN (
+           SELECT gl.account_id,
+                  SUM(
+                    CASE 
+                      WHEN a.account_type IN ('Asset', 'Expense') THEN (debit - credit)
+                      ELSE (credit - debit)
+                    END
+                  ) AS new_balance
+           FROM general_ledger gl
+           JOIN chartofaccounts a ON gl.account_id = a.account_id
+           WHERE gl.account_id = ?
+         ) t ON g.account_id = t.account_id
+         SET g.balance = t.new_balance
+         WHERE g.account_id = ?`,
+        [account_id, account_id]
+      );
+    };
+
+    await updateBalanceForAccount(cashAcc.account_id);
+    await updateBalanceForAccount(incomeAcc.account_id);
+
+
+    // 6️⃣ Update appointment as paid
+    console.log("🩺 Updating appointment record...");
+    await connection.query(
+      `UPDATE appointment 
+       SET payment_confirmation = 'Complete', payment_status = 'Paid'
+       WHERE appoint_id = ?`,
       [appoint_id]
     );
-    console.log("Appointment marked as Complete");
 
     await connection.commit();
-    console.log(" Transaction committed successfully.");
-
     res.status(200).json({
       message: "Payment completed successfully.",
       appoint_id,
       patient_name,
       total_charged,
     });
+
   } catch (error) {
     await connection.rollback();
-    console.error(" ERROR completing payment:", error.message);
-    console.error("🔍 Full stack:", error);
+    console.error("ERROR completing payment:", error.message);
+    console.error("Full stack:", error);
     res.status(500).json({
       message: "Internal server error.",
       error: error.message,
     });
-  } 
+  }
 });
+
+
 
 // 📌 For Refunds
 const refundStorage = multer.diskStorage({
@@ -2272,7 +2298,7 @@ router.get("/coa/:id", async (req, res) => {
 // Add a new Chart of Account -> admincoaadd
 router.post("/coa", authenticateToken, async (req, res) => {
   // ✅ Get COA data from request
-  const { account_name, account_type } = req.body;
+  const { account_name, account_type, description } = req.body;
 
   if (!account_name || !account_type) {
     return res.status(400).json({ message: "All fields required" });
@@ -2283,8 +2309,8 @@ router.post("/coa", authenticateToken, async (req, res) => {
 
     // 1️⃣ Insert into chartofaccounts
     await db.query(
-      "INSERT INTO chartofaccounts (account_name, account_type, status) VALUES (?, ?, ?)",
-      [account_name, account_type, 'Active']
+      "INSERT INTO chartofaccounts (account_name, account_type, status,description) VALUES (?, ?, ?, ?)",
+      [account_name, account_type, 'Active' , description ]
     );
 
     // 2️⃣ Get logged-in user info
@@ -2738,7 +2764,7 @@ router.post("/subsidiaryReceivable", async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // 1️⃣ Get appointment + user info
+    //  Get appointment + user info
     const [appointmentRows] = await connection.query(
       `SELECT a.user_name, u.user_id, u.fname, u.lname, a.total_charged
        FROM appointment a
@@ -2758,7 +2784,20 @@ router.post("/subsidiaryReceivable", async (req, res) => {
     const currentAmount = Number(amount);
     const totalCharged = Number(user.total_charged);
 
-    // 2️⃣ Get previous payments (credit total)
+    //get total_amount
+     const [existingPayment] = await connection.query(
+    `SELECT total_amount FROM sub_receivable WHERE invoice_no = ?`,
+      [invoice_no]
+    );
+
+    let total_amount;
+    if (existingPayment.length > 0) {
+      total_amount = Number(existingPayment[0].total_amount);
+    } else {
+      total_amount = totalCharged; 
+    }
+
+    // Get previous payments (credit total)
     const [prevPayments] = await connection.query(
       `SELECT SUM(credit) AS totalPaid FROM sub_receivable WHERE appoint_id = ?`,
       [appoint_id]
@@ -2767,7 +2806,7 @@ router.post("/subsidiaryReceivable", async (req, res) => {
     const totalPaid = Number(prevPayments[0].totalPaid || 0);
     const newBalance = totalCharged - (totalPaid + currentAmount);
 
-    // 3️⃣ Get Cash and A/R account IDs
+    //  Get Cash and A/R account IDs
     const [coaRows] = await connection.query(
       `SELECT account_id, account_name FROM chartofaccounts 
        WHERE account_name IN ('Cash', 'Account Receivable')`
@@ -2780,22 +2819,22 @@ router.post("/subsidiaryReceivable", async (req, res) => {
       throw new Error("Missing Cash or Account Receivable in chart of accounts");
     }
 
-    // 4️⃣ Insert Journal Entries
+    // Insert Journal Entries
     const [journalCash] = await connection.query(
       `INSERT INTO journalentry 
-         (date, description, account_id, id, debit, credit, comment)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [date, description, cashAccount.account_id, 0, currentAmount, 0, comment]
+         (date, description, account_id, id, debit, credit, comment, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, cashAccount.account_id, 0, currentAmount, 0, comment, currentAmount]
     );
 
     const [journalAR] = await connection.query(
       `INSERT INTO journalentry 
-         (date, description, account_id, id, debit, credit, comment)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [date, description, receivableAccount.account_id, 0, 0, currentAmount, comment]
+         (date, description, account_id, id, debit, credit, comment, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, receivableAccount.account_id, 0, 0, currentAmount, comment, currentAmount]
     );
 
-    // 5️⃣ Get last balances for general ledger accounts
+    // Get last balances for general ledger accounts
     const [lastCashBalanceRows] = await connection.query(
       `SELECT balance FROM general_ledger 
        WHERE account_id = ? 
@@ -2814,33 +2853,33 @@ router.post("/subsidiaryReceivable", async (req, res) => {
     const lastARBalance = lastARBalanceRows.length ? Number(lastARBalanceRows[0].balance) : 0;
     const newARBalance = lastARBalance - currentAmount;
 
-    // 6️⃣ Insert into General Ledger
+    // Insert into General Ledger
     await connection.query(
       `INSERT INTO general_ledger 
-         (account_id, entry_id, date, debit, credit, balance, description)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [cashAccount.account_id, journalCash.insertId, date, currentAmount, 0, newCashBalance, description]
+         (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [cashAccount.account_id, journalCash.insertId, date, currentAmount, 0, newCashBalance, description, currentAmount]
     );
 
     await connection.query(
       `INSERT INTO general_ledger 
-         (account_id, entry_id, date, debit, credit, balance, description)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [receivableAccount.account_id, journalAR.insertId, date, 0, currentAmount, newARBalance, description]
+         (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [receivableAccount.account_id, journalAR.insertId, date, 0, currentAmount, newARBalance, description, total_amount]
     );
 
-    // 7️⃣ Insert into subsidiary receivable
+    // Insert into subsidiary receivable
     await connection.query(
       `INSERT INTO sub_receivable 
-         (date, particulars, invoice_no, debit, credit, balance, appoint_id, user_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [date, description, invoice_no, 0, currentAmount, newBalance, appoint_id, user.user_id]
+         (date, particulars, invoice_no, debit, credit, balance, appoint_id, user_id, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, invoice_no, 0, currentAmount, newBalance, appoint_id, user.user_id, total_amount]
     );
 
-    // 8️⃣ Update appointment if fully paid
+    // Update appointment if fully paid
     if (newBalance <= 0) {
       await connection.query(
-        `UPDATE appointment SET status = 'paid' WHERE appoint_id = ?`,
+        `UPDATE appointment SET payment_status = 'paid' , payment_confirmation = 'complete' WHERE appoint_id = ?`,
         [appoint_id]
       );
     }
@@ -3047,199 +3086,196 @@ router.post("/subsidiary", async (req, res) => {
 
 
 /// Insert into subsidiary+general+journal for account payable
-    router.post("/subsidiary1", async (req, res) => {
-      try {
-        const db = await connectToDatabase();
-        const {
-          date,
-          name,         
-          invoice_no,
-          debit,
-          credit,
-          account_id,
-          expense_id,
-          items,
-          day_agreement,
-          due_date,
-          amount
-        } = req.body;
+router.post("/subsidiary1", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const {
+      date,
+      name,         
+      invoice_no,
+      debit,
+      credit,
+      account_id,
+      expense_id,
+      items,
+      day_agreement,
+      due_date,
+      amount
+    } = req.body;
 
-          // Validate required fields
-          if (!date || !name || !invoice_no || !account_id || !items || !day_agreement ||!due_date ) {
-            return res.status(400).json({
-              error: "Missing required fields: date, name, invoice_no, account_id",
-            });
-          }
+    // 🔸 Validate required fields
+    if (!date || !name || !invoice_no || !account_id || !items || !day_agreement || !due_date) {
+      return res.status(400).json({
+        error: "Missing required fields: date, name, invoice_no, account_id",
+      });
+    }
 
-          // Split name
-          const nameParts = name;
-
-          // Find the user_id from suppliertable
-          const [userRows] = await db.query(
-            `SELECT supplier_id FROM supplier
-            WHERE supplier_name = ?
-            LIMIT 1`,
-            [nameParts]
-          );
-
-          if (userRows.length === 0) {
-            return res.status(404).json({ error: "Supplier not found with the given name" });
-          }
-
-        const supplier_id = userRows[0].supplier_id;
-
-        //find expense_id
-
-        const expense = expense_id;
-
-         const [expenseRows] = await db.query(
-            `SELECT account_name FROM chartofaccounts
-            WHERE account_id = ?
-            LIMIT 1`,
-            [expense]
-          );
-
-          if (expenseRows.length === 0) {
-            return res.status(404).json({ error: "account not found with the given name" });
-          }
-
-        const expensename = expenseRows[0].account_name;
-
-        // Parse debit/credit
-        const debitVal = parseFloat(debit) || 0;
-        const creditVal = parseFloat(credit) || 0;
-
-        if (debitVal > 0 && creditVal > 0) {
-          return res.status(400).json({
-            error: "Only one of debit or credit should be provided.",
-          });
-        }
-
-        // --- SUBSIDIARY LEDGER ---
-
-        // Get last balance for this supplier + account in subsidiary ledger
-        const [subsidiaryRows] = await db.query(
-          `SELECT balance
-          FROM sub_payable
-          WHERE supplier_id = ? and Invoice_no = ?
-          ORDER BY pay_id DESC
-          LIMIT 1`,
-          [ supplier_id, invoice_no]
-        );
-
-        const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
-        const newSubsidiaryBalance = lastSubsidiaryBalance - debitVal + creditVal;
-
-        // Insert into subsidiary ledger
-        const [subsidiaryResult] = await db.query(
-          `INSERT INTO sub_payable
-            (date, invoice_no, amount, particulars, debit, credit, balance, supplier_id, items, day_agreement, due_date )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [date, invoice_no, amount , `${name} - ${expensename}`, debitVal, creditVal, newSubsidiaryBalance, supplier_id, items, day_agreement, due_date ]
-        );
-
-        // --- JOURNAL ENTRY ---
-
-    const description = `${name} - ${expensename}`;
-
-    const [journalResult] = await db.query(
-      `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
-      VALUES (?, ?, ?, ?, ?, ?)`,
-      [date, description, account_id, debitVal, creditVal, expensename]
-    );
-        // --- GENERAL LEDGER ---
-
-        // Get last balance for this account in general ledger
-        const [ledgerRows] = await db.query(
-          `SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY date DESC, ledger_id DESC LIMIT 1`,
-          [account_id]
-        );
-
-        const lastLedgerBalance = ledgerRows.length > 0 ? parseFloat(ledgerRows[0].balance) || 0 : 0;
-        const newLedgerBalance = lastLedgerBalance - debitVal + creditVal;
-
-        // Insert into general ledger
-        const [ledgerResult] = await db.query(
-          `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [date, `${description} - ${expensename}`, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
-        );
-
-        //PARTNER ACCOUNT: Cash & Inventory==========
-
-        let partnerAccountName = null;
-        if (debitVal > 0) {
-
-        // AR is debited -> partner is Sales Revenue (credited)
-        partnerAccountName = 'Cash';
-      } else if (creditVal > 0) {
-        // AR is credited -> partner is Cash (debited)
-        partnerAccountName = expensename;
-      }
-
-      if (!partnerAccountName) {
-        return res.status(400).json({ error: "Either debit or credit must be provided." });
-      }
-
-      // Find partner account_id dynamically
-      const [partnerRows] = await db.query(
-        `SELECT account_id FROM chartofaccounts 
-        WHERE LOWER(account_name) = LOWER(?) 
-        LIMIT 1`,
-        [partnerAccountName]
-      );
-
-      if (partnerRows.length === 0) {
-      return res.status(500).json({ error: `${partnerAccountName} account not found in chart of accounts` });
-      }
-
-      const partnerAccountId = partnerRows[0].account_id;
-
-      // Partner debit/credit is the reverse of AR entry
-      const partnerDebit = creditVal;  
-      const partnerCredit = debitVal;  
-
-        // Insert partner journal entry
-      const [partnerJournalResult] = await db.query(
-        `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
-        VALUES (?, ?, ?, ?, ?, ?)`,
-        [date, description, partnerAccountId, partnerDebit, partnerCredit, expensename]
-      );
-
-       // Get last balance for partner account in general ledger
-      const [partnerLedgerRows] = await db.query(
-        `SELECT balance FROM general_ledger 
-        WHERE account_id = ? 
-        ORDER BY date DESC, ledger_id DESC 
-        LIMIT 1`,
-        [partnerAccountId]
-      );
-
-      const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
-      const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
-
-      // Insert partner entry into general ledger
-      await db.query(
-        `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId]
-      );
-
-        res.status(201).json({
-          message: "Subsidiary, journal entry, and general ledger records inserted successfully.",
-          subsidiaryId: subsidiaryResult.insertId,
-          journalEntryId: journalResult.insertId,
-          generalLedgerId: ledgerResult.insertId,
-          supplier_id,
-          newSubsidiaryBalance,
-          newLedgerBalance,
-        });
-
-      } catch (err) {
-        console.error("❌ Error inserting records:", err);
-        res.status(500).json({ error: "Internal server error: " + err.message });
-      }
+    if (parseFloat(credit) > 0) {
+  const [existingInvoice] = await db.query(
+    `SELECT 1 FROM sub_payable WHERE invoice_no = ? LIMIT 1`,
+    [invoice_no]
+  );
+  if (existingInvoice.length > 0) {
+    return res.status(400).json({
+      error: "Invoice number already exists.",
     });
+  }
+}
+    // 🔸 Get supplier_id from supplier table
+    const [userRows] = await db.query(
+      `SELECT supplier_id FROM supplier WHERE supplier_name = ? LIMIT 1`,
+      [name]
+    );
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: "Supplier not found with the given name" });
+    }
+    const supplier_id = userRows[0].supplier_id;
+
+    // 🔸 Get expense name (chart of accounts)
+    const [expenseRows] = await db.query(
+      `SELECT account_name FROM chartofaccounts WHERE account_id = ? LIMIT 1`,
+      [expense_id]
+    );
+    if (expenseRows.length === 0) {
+      return res.status(404).json({ error: "Account not found with the given ID" });
+    }
+    const expensename = expenseRows[0].account_name;
+
+    // 🔸 Parse debit/credit values
+    const debitVal = parseFloat(debit) || 0;
+    const creditVal = parseFloat(credit) || 0;
+    if (debitVal > 0 && creditVal > 0) {
+      return res.status(400).json({ error: "Only one of debit or credit should be provided." });
+    }
+
+    // 🔸 Get total amount for this invoice
+    const [existingSub] = await db.query(
+      `SELECT total_amount FROM sub_payable WHERE invoice_no = ?`,
+      [invoice_no]
+    );
+    const total_amount = existingSub.length > 0
+      ? parseFloat(existingSub[0].total_amount)
+      : parseFloat(amount) || 0;
+
+    // =====================================================
+    // 🧾 SUBSIDIARY LEDGER (Liability account)
+    // =====================================================
+    const [subsidiaryRows] = await db.query(
+      `SELECT balance FROM sub_payable
+       WHERE supplier_id = ? AND invoice_no = ?
+       ORDER BY pay_id DESC
+       LIMIT 1`,
+      [supplier_id, invoice_no]
+    );
+
+    const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
+
+    // ✅ Liabilities: Credit ↑ increases balance, Debit ↓ decreases balance
+    const newSubsidiaryBalance = lastSubsidiaryBalance + creditVal - debitVal;
+
+    await db.query(
+      `INSERT INTO sub_payable
+        (date, invoice_no, amount, particulars, debit, credit, balance, supplier_id, items, day_agreement, due_date, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, invoice_no, amount, `${name} - ${expensename}`, debitVal, creditVal, newSubsidiaryBalance, supplier_id, items, day_agreement, due_date, total_amount]
+    );
+
+    // =====================================================
+    // 📘 JOURNAL ENTRY
+    // =====================================================
+    const description = `${name} - ${expensename}`;
+    const [journalResult] = await db.query(
+      `INSERT INTO journalentry (date, description, account_id, debit, credit, comment, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, account_id, debitVal, creditVal, expensename, total_amount]
+    );
+
+    // =====================================================
+    // 📙 GENERAL LEDGER (Main)
+    // =====================================================
+    const [ledgerRows] = await db.query(
+      `SELECT balance FROM general_ledger 
+       WHERE account_id = ? 
+       ORDER BY date DESC, ledger_id DESC 
+       LIMIT 1`,
+      [account_id]
+    );
+
+    const lastLedgerBalance = ledgerRows.length > 0 ? parseFloat(ledgerRows[0].balance) || 0 : 0;
+
+    // ✅ Same rule for liabilities
+    const newLedgerBalance = lastLedgerBalance + creditVal - debitVal;
+
+    const [ledgerResult] = await db.query(
+      `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId, total_amount]
+    );
+
+    // =====================================================
+    // 🔁 PARTNER ACCOUNT (Cash or Expense)
+    // =====================================================
+    // If debit (payment made), partner is Cash (credit)
+    // If credit (new payable), partner is Expense (debit)
+    let partnerAccountName = debitVal > 0 ? "Cash" : expensename;
+    const partnerDebit = creditVal;
+    const partnerCredit = debitVal;
+
+    // For reporting total only (not invoice total)
+    const partnerTotalAmount = debitVal > 0 ? debitVal : creditVal;
+
+    // Get partner account id
+    const [partnerRows] = await db.query(
+      `SELECT account_id FROM chartofaccounts WHERE LOWER(account_name) = LOWER(?) LIMIT 1`,
+      [partnerAccountName]
+    );
+    if (partnerRows.length === 0) {
+      return res.status(500).json({ error: `${partnerAccountName} account not found in chart of accounts` });
+    }
+    const partnerAccountId = partnerRows[0].account_id;
+
+    // Journal entry for partner account
+    const [partnerJournalResult] = await db.query(
+      `INSERT INTO journalentry (date, description, account_id, debit, credit, comment, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, partnerAccountId, partnerDebit, partnerCredit, expensename, partnerTotalAmount]
+    );
+
+    // Get partner ledger balance
+    const [partnerLedgerRows] = await db.query(
+      `SELECT balance FROM general_ledger 
+       WHERE account_id = ? 
+       ORDER BY date DESC, ledger_id DESC 
+       LIMIT 1`,
+      [partnerAccountId]
+    );
+
+    const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
+
+    // ✅ Assets (like Cash): Debit ↑ increases, Credit ↓ decreases
+    const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
+
+    // Insert partner ledger entry
+    await db.query(
+      `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId, partnerTotalAmount]
+    );
+
+    res.status(201).json({
+      message: "Subsidiary, journal entry, and general ledger records inserted successfully.",
+      supplier_id,
+      newSubsidiaryBalance,
+      newLedgerBalance,
+      total_amount
+    });
+
+  } catch (err) {
+    console.error("❌ Error inserting records:", err);
+    res.status(500).json({ error: "Internal server error: " + err.message });
+  }
+});
+
 
 //get subsidiary of payable
 router.get("/subsidiaryPayable", async (req, res) => {
@@ -3247,7 +3283,7 @@ router.get("/subsidiaryPayable", async (req, res) => {
     const db = await connectToDatabase();
 
     const [rows] = await db.query(
-      `SELECT sp.date, sp.invoice_no, sp.day_agreement, sp.amount,
+      `SELECT sp.date, sp.invoice_no, sp.day_agreement, sp.amount, sp.total_amount,
        sp.due_date, sp.items, sp.balance, sp. debit , sp.credit, sp.pay_id ,s.supplier_name, sp.particulars
        FROM sub_payable sp
        LEFT JOIN supplier s ON sp.supplier_id = s.supplier_id`
@@ -3265,8 +3301,16 @@ router.get("/subsidiaryReceivable", async (req, res) => {
     const db = await connectToDatabase();
 
     const [rows] = await db.query(
-      `SELECT *
-       FROM sub_receivable `
+      `SELECT 
+  a.procedure_type,
+  a.pref_date,
+  a.total_service_charged,
+  a.total_charged,
+  CONCAT(a.p_fname, ' ', a.p_mname, ' ', a.p_lname) AS patient_name,
+  sr.*
+FROM sub_receivable sr
+JOIN appointment a ON sr.appoint_id = a.appoint_id;
+ `
     );
 
     res.json(rows);
@@ -3299,10 +3343,10 @@ router.get("/consultationReceivale", async (req, res) => {
       try {
         const db = await connectToDatabase();
         const [rows] =  await db.query(`
-            SELECT g.date, c.account_name AS account, c.account_type, g.debit, g.credit, g.balance
-      FROM general_ledger g
-      JOIN chartofaccounts c ON g.account_id = c.account_id
-      ORDER BY g.date, g.ledger_id
+            SELECT g.date, c.account_name AS account, c.account_type, g.debit, g.credit, g.balance, g.description,g.total_amount
+              FROM general_ledger g
+              JOIN chartofaccounts c ON g.account_id = c.account_id
+              ORDER BY g.date, g.ledger_id
         `);
         return res.json(rows); // Send back as JSON array
       } catch (err) {
