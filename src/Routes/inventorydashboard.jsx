@@ -81,37 +81,37 @@ function InventoryDashboard() {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-    {/* Sidebar (desktop) */}
+      {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
-    {/* Dashboard Dropdown */}
-      <button
-        onClick={() => setOpenDashboard(!openDashboard)}
-        className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
-      >
-        <span className="flex items-center gap-2">
-          <BarChart3 size={18} /> Dashboard
-        </span>
-        {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-      </button>
+          {/* Dashboard Dropdown */}
+          <button
+            onClick={() => setOpenDashboard(!openDashboard)}
+            className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+          >
+            <span className="flex items-center gap-2">
+              <BarChart3 size={18} /> Dashboard
+            </span>
+            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
 
-      {openDashboard && (
-        <div className="ml-6 flex flex-col gap-1 text-sm">
-          <Link
-            to="/admindashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            Admin Dashboard
-          </Link>
-          <Link
-            to="/inventorydashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            Inventory Dashboard
-          </Link>
-        </div>
-      )}
+          {openDashboard && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+              >
+                Inventory Dashboard
+              </Link>
+            </div>
+          )}
 
 
           {/* Ledger with dropdown */}
@@ -341,7 +341,7 @@ function InventoryDashboard() {
             {/* Low Stock Table */}
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
               <h2 className="text-lg font-semibold mb-4 flex items-center gap-2 text-red-600">
-                <AlertTriangle size={20} /> Low Stock Items 
+                <AlertTriangle size={20} /> Low Stock Items
               </h2>
 
               {inventory.filter((item) => Number(item.inv_quantity) <= 50).length > 0 ? (

@@ -123,9 +123,8 @@ const CancelAppointment = () => {
         {/* ✅ Popup Notification (same as ProfileChange) */}
         {popup.show && (
           <div
-            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
-              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
-            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+              } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
             style={{ zIndex: 9999 }}
           >
             {popup.message}

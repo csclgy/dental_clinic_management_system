@@ -38,7 +38,7 @@ const Navbar = () => {
     <nav className="bg-white shadow-lg" style={{ color: "#00458B" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
-          
+
           {/* Left: Logo */}
           <div className="flex items-center space-x-8">
             <div>
@@ -90,7 +90,7 @@ const Navbar = () => {
                       {role === "patient" && (
                         <Link to="/transmed" className="block px-4 py-2 hover:bg-gray-100">Transaction History</Link>
                       )}
-                      {(role === "admin" || role === "inventory") && (
+                      {(role === "admin" || role === "inventory" || role === "receptionist" || role === "dentist") && (
                         <Link to="/admindashboard" className="block px-4 py-2 hover:bg-gray-100">Main Dashboard</Link>
                       )}
                       <Link to="/notification" className="block px-4 py-2 hover:bg-gray-100">Notifications</Link>
@@ -131,12 +131,16 @@ const Navbar = () => {
               <>
                 <Link to="/login" className="block px-3 py-2 rounded">Login</Link>
                 <Link to="/register" className="block px-3 py-2 rounded">Register</Link>
+                <br></br>
               </>
             ) : (
               <div className="border-t pt-4">
                 <Link to="/profilelogin" className="block px-4 py-2 hover:bg-gray-100 rounded">Profile</Link>
                 {role === "patient" && (
                   <Link to="/transmed" className="block px-4 py-2 hover:bg-gray-100 rounded">Transaction History</Link>
+                )}
+                {(role === "admin" || role === "inventory" || role === "receptionist" || role === "dentist") && (
+                  <Link to="/admindashboard" className="block px-4 py-2 hover:bg-gray-100">Main Dashboard</Link>
                 )}
                 <Link to="/notification" className="block px-4 py-2 hover:bg-gray-100 rounded">Notifications</Link>
                 <button

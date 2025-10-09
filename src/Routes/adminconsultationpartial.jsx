@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, X } from "lucide-react";
+import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp } from "lucide-react";
 
 const AdminConsultationPartial = () => {
   const { appointId } = useParams();
@@ -18,6 +18,8 @@ const AdminConsultationPartial = () => {
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const [cancelInfo, setCancelInfo] = useState(null);
   const [dentists, setDentists] = useState([]);
+  const role = localStorage.getItem("role");
+  const [openDashboard, setOpenDashboard] = useState(false);
 
   useEffect(() => {
     const fetchConsultation = async () => {
@@ -77,31 +79,31 @@ const AdminConsultationPartial = () => {
   if (!consultation) return <p>Loading consultation...</p>;
 
   const handleComplete = async () => {
-  try {
-    
-    const totalCharged =  consultation.total_charged
-    const appoint_id = appointId; 
-    // Combine patient name fields
-    const patientName = `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`;
+    try {
 
-    const res = await axios.post(`http://localhost:3000/auth/complete/${appoint_id}`, {
-      appoint_id: consultation.appoint_id,
-      total_charged: totalCharged,
-      patient_name: patientName,
-      description: `Payment received from ${patientName}`,
-    });
+      const totalCharged = consultation.total_charged
+      const appoint_id = appointId;
+      // Combine patient name fields
+      const patientName = `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`;
 
-    if (res.data.success) {
-      alert("Payment completed successfully and journal entries recorded!");
-      navigate("/admincashier");
-    } else {
-      alert(res.data.message || "Failed to complete payment.");
+      const res = await axios.post(`http://localhost:3000/auth/complete/${appoint_id}`, {
+        appoint_id: consultation.appoint_id,
+        total_charged: totalCharged,
+        patient_name: patientName,
+        description: `Payment received from ${patientName}`,
+      });
+
+      if (res.data.success) {
+        alert("Payment completed successfully and journal entries recorded!");
+        navigate("/admincashier");
+      } else {
+        alert(res.data.message || "Failed to complete payment.");
+      }
+    } catch (err) {
+      console.error("Error completing payment:", err);
+      alert("An error occurred while completing payment.");
     }
-  } catch (err) {
-    console.error("Error completing payment:", err);
-    alert("An error occurred while completing payment.");
-  }
-};
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -109,75 +111,140 @@ const AdminConsultationPartial = () => {
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
-          <Link
-            to="/admindashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <BarChart3 size={18} /> Dashboard
-          </Link>
-
+          {/* Dashboard Dropdown */}
           <button
-            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+            onClick={() => setOpenDashboard(!openDashboard)}
+            className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
           >
             <span className="flex items-center gap-2">
-              <i className="fa fa-book"></i> Ledger
+              <BarChart3 size={18} /> Dashboard
             </span>
-            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
-          {isLedgerOpen && (
+
+          {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="hover:bg-white hover:text-[#00458B]">
-                Chart of Accounts
-              </Link>
-              <Link to="/adminjournal" className="hover:bg-white hover:text-[#00458B]">
-                Journal Entries
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
               </Link>
               <Link
-                to="/adminsubsidiaryreceivable"
-                className="hover:bg-white hover:text-[#00458B]"
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
               >
-                Subsidiary
-              </Link>
-              <Link to="/admingeneral" className="hover:bg-white hover:text-[#00458B]">
-                General Ledger
-              </Link>
-              <Link to="/admintrial" className="hover:bg-white hover:text-[#00458B]">
-                Trial Balance
+                Inventory Dashboard
               </Link>
             </div>
           )}
 
-          <Link
-            to="/adminusers"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <Users size={18} /> Users
-          </Link>
-          <Link
-            to="/admininventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <i className="fa fa-archive"></i> Inventory
-          </Link>
-          <Link
-            to="/adminpatients"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <i className="fa fa-user-plus"></i> Patients
-          </Link>
-          <Link
-            to="/adminschedule"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <Calendar size={18} /> Schedules
-          </Link>
-          <Link
-            to="/adminaudit"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <i className="fa fa-eye"></i> Audit Trail
-          </Link>
+          {/* Ledger dropdown */}
+          {role === "admin" && (
+            <>
+              <button
+                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <span className="flex items-center gap-2">
+                  <i className="fa fa-book"></i> Ledger
+                </span>
+                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+              </button>
+
+              {isLedgerOpen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link
+                    to="/admincoa"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Chart of Accounts
+                  </Link>
+                  <Link
+                    to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Journal Entries
+                  </Link>
+                  <Link
+                    to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Subsidiary
+                  </Link>
+                  <Link
+                    to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    General Ledger
+                  </Link>
+                  <Link
+                    to="/admintrial"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Trial Balance
+                  </Link>
+                </div>
+              )}
+
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Users size={18} /> Users
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "inventory") && (
+            <>
+              <Link
+                to="/admininventory"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-archive"></i> Inventory
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "dentist" || role === "receptionist") && (
+            <>
+              <Link
+                to="/adminpatients"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-user-plus"></i> Patients
+              </Link>
+              <Link
+                to="/adminschedule"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Schedules
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "receptionist") && (
+            <>
+              <Link
+                to="/admincashier"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Cashier
+              </Link>
+            </>
+          )}
+
+          {role === "admin" && (
+            <>
+              <Link
+                to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-eye"></i> Audit Trail
+              </Link>
+            </>
+          )}
         </nav>
       </aside>
 
@@ -212,7 +279,7 @@ const AdminConsultationPartial = () => {
 
       {/* Main content vertical */}
       <div className="flex-1 flex flex-col overflow-y-auto">
-        
+
         <main className="p-6 space-y-8">
           <div
             className="p-10 rounded-lg shadow-lg border border-[#01D5C4] bg-white"
@@ -257,22 +324,22 @@ const AdminConsultationPartial = () => {
                 <p className="font-bold text-2xl">Consultation Details</p>
                 <hr />
                 <div className="row">
-                    <div className="col-sm-6">
-                        <p className="font-bold mt-2">Date of Visit:</p>
-                        <p> {consultation.pref_date} | {consultation.pref_time}</p>
-                        <p className="font-bold mt-2">Attending Dentist:</p>
-                        <p>{consultation.attending_dentist}</p>
-                        <p className="font-bold mt-2">Diagnosis:</p>
-                        <p>{consultation.p_diagnosis}</p>
-                    </div>
-                    <div className="col-sm-6">
-                        <p className="font-bold mt-2">Services:</p>
-                        <p>{consultation.procedure_type}</p>
-                        <p className="font-bold mt-2">Follow-Up:</p>
-                        <p>{consultation.pref_date}</p>
-                        <p className="font-bold mt-2">Consultation Completed:</p>
-                        <p>{consultation.p_date_completed || "N/A"}</p>
-                    </div>
+                  <div className="col-sm-6">
+                    <p className="font-bold mt-2">Date of Visit:</p>
+                    <p> {consultation.pref_date} | {consultation.pref_time}</p>
+                    <p className="font-bold mt-2">Attending Dentist:</p>
+                    <p>{consultation.attending_dentist}</p>
+                    <p className="font-bold mt-2">Diagnosis:</p>
+                    <p>{consultation.p_diagnosis}</p>
+                  </div>
+                  <div className="col-sm-6">
+                    <p className="font-bold mt-2">Services:</p>
+                    <p>{consultation.procedure_type}</p>
+                    <p className="font-bold mt-2">Follow-Up:</p>
+                    <p>{consultation.pref_date}</p>
+                    <p className="font-bold mt-2">Consultation Completed:</p>
+                    <p>{consultation.p_date_completed || "N/A"}</p>
+                  </div>
                 </div>
                 <div className="mt-4">
                   <p className="font-bold">Images Uploaded:</p>
@@ -304,8 +371,8 @@ const AdminConsultationPartial = () => {
                 </p>
                 <hr />
                 {consultation.appointment_status !== "incomplete" &&
-                consultation.appointment_status !== "done" &&
-                consultation.appointment_status !== "cancelled" ? (
+                  consultation.appointment_status !== "done" &&
+                  consultation.appointment_status !== "cancelled" ? (
                   <button
                     className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg mt-4"
                     onClick={() =>
@@ -314,7 +381,7 @@ const AdminConsultationPartial = () => {
                   >
                     Edit Billing
                   </button>
-                  
+
                 ) : (
                   <div
                     className="p-4 rounded-lg shadow-md mt-4 border border-[#01D5C4]"
@@ -329,10 +396,10 @@ const AdminConsultationPartial = () => {
                       <b>Payment Status:</b> {consultation.payment_status}
                     </p>
                     <p>
-                        <b>HMO No:</b> {consultation.hmo_number}
+                      <b>HMO No:</b> {consultation.hmo_number}
                     </p>
                     <p>
-                        <b>PWD No:</b> {consultation.pwd_number}
+                      <b>PWD No:</b> {consultation.pwd_number}
                     </p>
                     <hr className="my-2" />
                     <p className="font-bold mb-1">Charged Service:</p>
@@ -365,50 +432,50 @@ const AdminConsultationPartial = () => {
               </div>
 
               <div className="mt-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center mt-3 gap-3">
-                <p className="font-bold text-2xl text-[#00458B]">
-                Payments:
-                </p>
-                <button
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-full w-full sm:w-auto"
-                onClick={() =>
-                    navigate(`/adminconsultationpartialpay/${appointId}`, {
-                    state: {
-                        patientName: `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`,
-                        invoiceNo: consultation.or_num || "", // or consultation.invoice_no if that's your column
-                    },
-                    })
-                }
-                >
-                Add Payment
-                </button>
-            </div>
-            <br />
-            <hr />
-            
-            {/* Responsive wrapper for horizontal scroll on small devices */}
-            <div className="overflow-x-auto mt-4">
-                <table className="w-full min-w-[600px] table-auto border-collapse border border-gray-300">
-                <thead>
-                    <tr className="bg-gray-100 text-[#00458B]">
-                    <th className="border border-gray-300 px-4 py-2 text-center">Date</th>
-                    <th className="border border-gray-300 px-4 py-2 text-center">Description</th>
-                    <th className="border border-gray-300 px-4 py-2 text-center">Amount</th>
-                    <th className="border border-gray-300 px-4 py-2 text-center">Balance</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {/* Empty row */}
-                    <tr>
-                    <td className="border border-gray-300 px-4 py-2">&nbsp;</td>
-                    <td className="border border-gray-300 px-4 py-2">&nbsp;</td>
-                    <td className="border border-gray-300 px-4 py-2 text-right">&nbsp;</td>
-                    <td className="border border-gray-300 px-4 py-2 text-right">&nbsp;</td>
-                    </tr>
-                </tbody>
-                </table>
-            </div>
-            </div>
+                <div className="flex flex-col sm:flex-row justify-between items-center mt-3 gap-3">
+                  <p className="font-bold text-2xl text-[#00458B]">
+                    Payments:
+                  </p>
+                  <button
+                    className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-full w-full sm:w-auto"
+                    onClick={() =>
+                      navigate(`/adminconsultationpartialpay/${appointId}`, {
+                        state: {
+                          patientName: `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`,
+                          invoiceNo: consultation.or_num || "", // or consultation.invoice_no if that's your column
+                        },
+                      })
+                    }
+                  >
+                    Add Payment
+                  </button>
+                </div>
+                <br />
+                <hr />
+
+                {/* Responsive wrapper for horizontal scroll on small devices */}
+                <div className="overflow-x-auto mt-4">
+                  <table className="w-full min-w-[600px] table-auto border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-gray-100 text-[#00458B]">
+                        <th className="border border-gray-300 px-4 py-2 text-center">Date</th>
+                        <th className="border border-gray-300 px-4 py-2 text-center">Description</th>
+                        <th className="border border-gray-300 px-4 py-2 text-center">Amount</th>
+                        <th className="border border-gray-300 px-4 py-2 text-center">Balance</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Empty row */}
+                      <tr>
+                        <td className="border border-gray-300 px-4 py-2">&nbsp;</td>
+                        <td className="border border-gray-300 px-4 py-2">&nbsp;</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right">&nbsp;</td>
+                        <td className="border border-gray-300 px-4 py-2 text-right">&nbsp;</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
 
               {/* Downpayment Proof */}
               {consultation.downpayment_proof && (
@@ -471,11 +538,10 @@ const AdminConsultationPartial = () => {
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-end">
                 <button
                   disabled={consultation.appointment_status !== "done"}
-                  className={`px-6 py-2 rounded-full font-semibold border w-full sm:w-auto ${
-                    consultation.appointment_status === "done"
+                  className={`px-6 py-2 rounded-full font-semibold border w-full sm:w-auto ${consultation.appointment_status === "done"
                       ? "bg-white text-[#00c3b8] border-[#00458b] hover:bg-gray-100 cursor-pointer"
                       : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
-                  }`}
+                    }`}
                   onClick={() => {
                     if (consultation.appointment_status === "done") {
                       navigate("/");
@@ -491,10 +557,10 @@ const AdminConsultationPartial = () => {
                   Back to List
                 </button>
                 <button
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-full w-full sm:w-auto"
-                onClick={handleComplete}
+                  className="bg-green-600 hover:bg-green-700 text-white font-semibold px-6 py-2 rounded-full w-full sm:w-auto"
+                  onClick={handleComplete}
                 >
-                Complete
+                  Complete
                 </button>
               </div>
             </div>

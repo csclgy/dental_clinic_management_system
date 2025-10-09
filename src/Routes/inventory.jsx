@@ -142,11 +142,10 @@ function Inventory() {
                     <td className="px-4 py-2 text-center">{item.inv_item_type}</td>
                     <td className="px-4 py-2 text-center">{item.inv_quantity}</td>
                     <td
-                      className={`px-4 py-2 text-center font-bold ${
-                        Number(item.inv_quantity) <= 50
+                      className={`px-4 py-2 text-center font-bold ${Number(item.inv_quantity) <= 50
                           ? "text-red-600"
                           : "text-green-600"
-                      }`}
+                        }`}
                     >
                       {Number(item.inv_quantity) <= 50 ? "Low" : "OK"}
                     </td>

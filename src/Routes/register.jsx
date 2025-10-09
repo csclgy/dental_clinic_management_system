@@ -26,13 +26,14 @@ const Register = () => {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
       style={{
-      backgroundImage:
-        "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center"}}
+        backgroundImage:
+          "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      }}
     >
       <br></br>
       <div className="w-full max-w-md bg-white p-6 sm:p-10 rounded-lg shadow-lg text-center">
@@ -99,24 +100,24 @@ const Register = () => {
           />
         </div>
 
-      {/* Contact No */}
-      <div className="mb-4 text-left">
-        <label className="block text-[#00458b] font-semibold mb-1">
-          Contact Number
-        </label>
-        <input
-          type="tel"
-          value={registerData.contact_no || ""}
-          onChange={(e) =>
-            setRegisterData({ ...registerData, contact_no: e.target.value })
-          }
-          className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-[#00c3b8]"
-          pattern="\d{11}" // only allows exactly 11 digits
-          maxLength={11}   // prevents typing more than 11 digits
-          required
-          placeholder="Enter 11-digit number"
-        />
-      </div>
+        {/* Contact No */}
+        <div className="mb-4 text-left">
+          <label className="block text-[#00458b] font-semibold mb-1">
+            Contact Number
+          </label>
+          <input
+            type="tel"
+            value={registerData.contact_no || ""}
+            onChange={(e) =>
+              setRegisterData({ ...registerData, contact_no: e.target.value })
+            }
+            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-[#00c3b8]"
+            pattern="\d{11}" // only allows exactly 11 digits
+            maxLength={11}   // prevents typing more than 11 digits
+            required
+            placeholder="Enter 11-digit number"
+          />
+        </div>
 
         {/* Agreement Checkbox */}
         <div className="flex items-center text-left mb-4">

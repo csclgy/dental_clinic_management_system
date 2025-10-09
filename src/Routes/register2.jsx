@@ -32,13 +32,14 @@ const Register2 = () => {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
       style={{
-      backgroundImage:
-        "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center"}}
+        backgroundImage:
+          "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      }}
     >
       <br />
       <div className="w-full max-w-4xl bg-white p-6 sm:p-10 rounded-lg shadow-lg text-center">
@@ -194,31 +195,31 @@ const Register2 = () => {
               />
             </div>
 
-                                                            <div class="mb-4 text-left">
-                                                    <label className="block text-[#00458b] font-semibold mb-1">
-                                                        Blood Type
-                                                    </label>
-                                                    <select
-                                                        className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                                                        value={registerData.blood_type || ""}
-                                                        onChange={(e) => updateFormData("blood_type", e.target.value)}
-                                                    >
-                                                        <option value="">-- Select Blood Type --</option>
-                                                        <option value="O">O</option>
-                                                        <option value="O+">O+</option>
-                                                        <option value="O-">O-</option>
-                                                        <option value="A">A</option>
-                                                        <option value="A+">A+</option>
-                                                        <option value="A-">A-</option>
-                                                        <option value="B">B</option>
-                                                        <option value="B+">B+</option>
-                                                        <option value="B-">B-</option>
-                                                        <option value="AB">AB</option>
-                                                        <option value="AB+">AB+</option>
-                                                        <option value="AB-">AB-</option>
-                                                        <option value="Unknown">Unknown</option>
-                                                    </select>
-                                                </div>
+            <div class="mb-4 text-left">
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Blood Type
+              </label>
+              <select
+                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                value={registerData.blood_type || ""}
+                onChange={(e) => updateFormData("blood_type", e.target.value)}
+              >
+                <option value="">-- Select Blood Type --</option>
+                <option value="O">O</option>
+                <option value="O+">O+</option>
+                <option value="O-">O-</option>
+                <option value="A">A</option>
+                <option value="A+">A+</option>
+                <option value="A-">A-</option>
+                <option value="B">B</option>
+                <option value="B+">B+</option>
+                <option value="B-">B-</option>
+                <option value="AB">AB</option>
+                <option value="AB+">AB+</option>
+                <option value="AB-">AB-</option>
+                <option value="Unknown">Unknown</option>
+              </select>
+            </div>
           </div>
         </div>
 

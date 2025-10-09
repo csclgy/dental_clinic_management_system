@@ -8,6 +8,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { authenticateToken } from "../middleware/authMiddleware.js";
 import bodyParser from "body-parser";
+import { decode } from 'punycode';
+import { create } from 'domain';
+import { act } from 'react';
 
 dotenv.config();
 
@@ -66,7 +69,7 @@ router.post('/login', async (req, res) => {
 
     return res.json({
       token,
-      user: { user_id: user.user_id, user_name: user.user_name, email: user.email, role: user.role, fname:user.fname }
+      user: { user_id: user.user_id, user_name: user.user_name, email: user.email, role: user.role, fname: user.fname }
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -106,12 +109,25 @@ router.put("/update", async (req, res) => {
     const { user_name, email, contact_no, gcash_num } = req.body;
 
     const db = await connectToDatabase();
+
+    // ✅ 1️⃣ Update user info
     await db.query(
       "UPDATE users SET user_name = ?, email = ?, contact_no = ?, gcash_num = ? WHERE user_id = ?",
       [user_name, email, contact_no, gcash_num, decoded.user_id]
     );
 
-    return res.json({ message: "Profile updated successfully" });
+    // ✅ 2️⃣ Insert Audit Trail Entry
+    const action = "Update Profile";
+    const description = `Updated profile information for ${user_name}`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    // ✅ 3️⃣ Send response
+    return res.json({ message: "Profile updated successfully and audit logged." });
   } catch (err) {
     console.error("Update user error:", err);
     return res.status(500).json({ message: "Internal server error" });
@@ -127,15 +143,44 @@ router.put("/updateinfo", async (req, res) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    const { fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation } = req.body;
+    const {
+      fname,
+      mname,
+      lname,
+      date_birth,
+      gender,
+      age,
+      religion,
+      nationality,
+      home_address,
+      city,
+      province,
+      occupation
+    } = req.body;
 
     const db = await connectToDatabase();
+
+    // ✅ 1️⃣ Update user's personal info
     await db.query(
-      "UPDATE users SET fname = ?,  mname = ?, lname = ?, date_birth = ?, gender = ?, age = ?, religion = ?, nationality = ?, home_address = ?, city = ?, province = ?, occupation = ? WHERE user_id = ?",
+      `UPDATE users 
+       SET fname = ?, mname = ?, lname = ?, date_birth = ?, gender = ?, age = ?, 
+           religion = ?, nationality = ?, home_address = ?, city = ?, province = ?, occupation = ?
+       WHERE user_id = ?`,
       [fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, decoded.user_id]
     );
 
-    return res.json({ message: "Profile updated successfully" });
+    // ✅ 2️⃣ Insert into audit trail
+    const action = "Update Personal Info";
+    const description = `Updated personal details for ${fname} ${lname}`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    // ✅ 3️⃣ Send response
+    return res.json({ message: "Personal info updated successfully and audit logged." });
   } catch (err) {
     console.error("Update user error:", err);
     return res.status(500).json({ message: "Internal server error" });
@@ -148,24 +193,39 @@ router.put("/change-password", async (req, res) => {
   if (!token) return res.status(401).json({ message: "No token provided" });
 
   const { currentPassword, newPassword } = req.body;
-  if (!currentPassword || !newPassword) return res.status(400).json({ message: "All fields are required" });
+  if (!currentPassword || !newPassword)
+    return res.status(400).json({ message: "All fields are required" });
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const db = await connectToDatabase();
-    const [rows] = await db.query("SELECT user_password FROM users WHERE user_id = ?", [decoded.user_id]);
 
+    // ✅ 1️⃣ Verify user exists
+    const [rows] = await db.query("SELECT user_password FROM users WHERE user_id = ?", [decoded.user_id]);
     if (rows.length === 0) return res.status(404).json({ message: "User not found" });
 
+    // ✅ 2️⃣ Verify current password
     const isMatch = await bcrypt.compare(currentPassword, rows[0].user_password);
     if (!isMatch) return res.status(401).json({ message: "Current password is incorrect" });
 
+    // ✅ 3️⃣ Hash and update new password
     const hashedNewPassword = await bcrypt.hash(newPassword, 10);
     await db.query("UPDATE users SET user_password = ? WHERE user_id = ?", [hashedNewPassword, decoded.user_id]);
 
-    return res.json({ message: "Password changed successfully" });
+    // ✅ 4️⃣ Insert into audit trail
+    const action = "Change Password";
+    const description = `User ${decoded.user_name} changed their account password.`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    // ✅ 5️⃣ Return success response
+    return res.json({ message: "Password changed successfully and audit logged." });
   } catch (err) {
-    console.error(err);
+    console.error("Change password error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -296,23 +356,23 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
 
     // --- NEW: Insert notification with expiry ---
     await db.query(
-      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
-      VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))`,
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
+      VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'appointment'))`,
       [
-        req.user.user_id, 
+        req.user.user_id,
         "Appointment Submitted",
         `Your appointment for ${procedure_type} on ${pref_date} at ${pref_time} has been submitted and is under review.`,
       ]
     );
 
     const [staffRows] = await db.query(
-    `SELECT user_id FROM users WHERE role IN ('admin', 'receptionist')`
+      `SELECT user_id FROM users WHERE role IN ('admin', 'receptionist')`
     );
 
     for (const staff of staffRows) {
       await db.query(
-        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
-        VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))`,
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
+        VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'appointment')`,
         [
           staff.user_id,
           "New Appointment Submitted",
@@ -420,11 +480,16 @@ router.get("/viewmyconsultation/:appointId", async (req, res) => {
 router.post('/adduser', async (req, res) => {
   const { user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age } = req.body;
 
-  if (!user_name || !email ||!user_password) {
+  if (!user_name || !email || !user_password) {
     return res.status(400).json({ message: "Username and password are required" });
   }
 
   try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "No token provided" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
     const db = await connectToDatabase();
     const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
     if (rows.length > 0) return res.status(409).json({ message: "User already exists" });
@@ -435,6 +500,16 @@ router.post('/adduser', async (req, res) => {
       (user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age, user_status) 
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "active")`,
       [user_name, hashedPassword, role, email, contact_no, fname, mname, lname, date_birth, gender, age]
+    );
+
+    // Insert into audit trail
+    const action = "Add New User";
+    const auditDescription = `Added new user account: ${user_name} (${email})`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
     );
 
     return res.status(201).json({ message: "User created successfully" });
@@ -526,6 +601,17 @@ router.put("/updateuserinfo/:id", async (req, res) => {
 
     await db.query(query, params);
 
+    // Insert into audit trail
+    const action = "Update User Information";
+    const auditDescription = `Updated user info for ${fname} ${lname} (${email}) — Role: ${role}, Status: ${user_status}`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
+
+
     return res.json({ message: "User updated successfully" });
   } catch (err) {
     console.error("Update user error:", err);
@@ -587,7 +673,7 @@ router.get('/displayusers', async (req, res) => {
   }
 });
 
-//for adminusers.jsx (DELETE USER)
+// Deactivate (not delete) user
 router.delete("/deleteuserinfo/:id", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -596,7 +682,7 @@ router.delete("/deleteuserinfo/:id", async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // 🔒 Only admin can delete users
+    // 🔒 Only admin can deactivate users
     if (decoded.role !== "admin") {
       return res.status(403).json({ message: "Access denied" });
     }
@@ -604,43 +690,122 @@ router.delete("/deleteuserinfo/:id", async (req, res) => {
     const { id } = req.params;
     const db = await connectToDatabase();
 
-    // Delete user
-    const [result] = await db.query("DELETE FROM users WHERE user_id = ?", [id]);
+    // ✅ Instead of deleting, mark as inactive
+    const [result] = await db.query(
+      "UPDATE users SET user_status = 'inactive' WHERE user_id = ?",
+      [id]
+    );
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json({ message: "User deleted successfully" });
+    // Insert into audit trail
+    const action = "Deactivate User";
+    const auditDescription = `Deactivated user account with ID ${id}`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
+
+    res.json({ message: "User deactivated successfully" });
   } catch (err) {
-    console.error("Error deleting user:", err);
-    res.status(500).json({ error: "Failed to delete user" });
+    console.error("Error deactivating user:", err);
+    res.status(500).json({ error: "Failed to deactivate user" });
   }
 });
 
-// for adminuserpatient.jsx (ADD NEW PATIENT)
+// ADD NEW PATIENT (with audit trail)
 router.post('/addpatient', async (req, res) => {
-  const { user_name, user_password, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation, blood_type } = req.body;
+  const {
+    user_name,
+    user_password,
+    email,
+    contact_no,
+    gcash_num,
+    fname,
+    mname,
+    lname,
+    date_birth,
+    gender,
+    age,
+    religion,
+    nationality,
+    home_address,
+    province,
+    city,
+    occupation,
+    blood_type
+  } = req.body;
 
   if (!user_name || !email || !user_password) {
-    return res.status(400).json({ message: "Username and password are required" });
+    return res.status(400).json({ message: "Username, email, and password are required" });
   }
 
   try {
     const db = await connectToDatabase();
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length > 0) return res.status(409).json({ message: "User already exists" });
 
+    // ✅ Step 1: Authenticate and verify role
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "No token provided" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // ✅ Step 2: Check if user already exists
+    const [existing] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+    if (existing.length > 0) {
+      return res.status(409).json({ message: "User already exists" });
+    }
+
+    // ✅ Step 3: Hash password and insert new patient
     const hashedPassword = await bcrypt.hash(user_password, 10);
-    await db.query(
+    const [result] = await db.query(
       `INSERT INTO users 
-      (user_name, user_password, role, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation, blood_type) 
-      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [user_name, hashedPassword, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation, blood_type]
+      (user_name, user_password, role, email, contact_no, gcash_num, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, province, city, occupation, blood_type, user_status) 
+      VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')`,
+      [
+        user_name,
+        hashedPassword,
+        email,
+        contact_no,
+        gcash_num,
+        fname,
+        mname,
+        lname,
+        date_birth,
+        gender,
+        age,
+        religion,
+        nationality,
+        home_address,
+        province,
+        city,
+        occupation,
+        blood_type
+      ]
     );
 
+    // ✅ Step 4: Insert into audit trail
+    const action = "Add New Patient";
+    const description = `Added new patient "${fname} ${lname}" with username "${user_name}" and email "${email}"`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    // ✅ Step 5: Return success
     return res.status(201).json({ message: "Patient created successfully" });
+
   } catch (err) {
-    console.error("Add Patient error:", err);
+    console.error("❌ Add Patient error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -654,16 +819,21 @@ router.get('/displaypatients', async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    if (decoded.role !== "admin") {
+    // ✅ Allow only admin, dentist, and receptionist
+    if (
+      decoded.role !== "admin" &&
+      decoded.role !== "dentist" &&
+      decoded.role !== "receptionist"
+    ) {
       return res.status(403).json({ message: "Access denied" });
     }
 
     const db = await connectToDatabase();
     const [rows] = await db.query("SELECT * FROM users WHERE role = 'patient'");
 
-    return res.json(rows); 
+    return res.json(rows);
   } catch (err) {
-    console.error("Display users error:", err);
+    console.error("Display patients error:", err);
     return res.status(401).json({ message: "Invalid token" });
   }
 });
@@ -677,7 +847,11 @@ router.get('/displayconsultations', async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    if (decoded.role !== "admin") {
+    if (
+      decoded.role !== "admin" &&
+      decoded.role !== "dentist" &&
+      decoded.role !== "receptionist"
+    ) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -709,7 +883,11 @@ router.get('/displaypatient/:id', async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    if (decoded.role !== "admin") {
+    if (
+      decoded.role !== "admin" &&
+      decoded.role !== "dentist" &&
+      decoded.role !== "receptionist"
+    ) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -735,14 +913,14 @@ router.get('/displaypatient/:id', async (req, res) => {
               total_charged, appointment_status 
        FROM appointment WHERE user_name = ? 
        ORDER BY pref_date DESC`,
-      [patient.user_name] 
+      [patient.user_name]
     );
 
     return res.json({
       patient,
       consultations: appointmentRows
     });
-    
+
   } catch (err) {
     console.error("Display patient error:", err);
     return res.status(500).json({ message: "Server error" });
@@ -779,7 +957,7 @@ router.get("/displayconsultation/:appointId", async (req, res) => {
       [appointId]
     );
 
-   const [photos] = await db.query(
+    const [photos] = await db.query(
       "SELECT * FROM uploadedphotos WHERE appoint_id = ?",
       [appointId]
     );
@@ -800,7 +978,10 @@ router.get('/displayconsultations1', async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    if (decoded.role !== "admin") {
+    if (
+      decoded.role !== "admin" &&
+      decoded.role !== "receptionist"
+    ) {
       return res.status(403).json({ message: "Access denied" });
     }
 
@@ -956,6 +1137,16 @@ router.post("/createconsultation", authenticateToken, async (req, res) => {
     );
 
     const appoint_id = appointmentResult.insertId;
+
+    // ✅ Insert into Audit Trail
+    const action = "Create Consultation";
+    const description = `Created a new consultation for patient ${p_fname} ${p_lname} (${procedure_type}) on ${pref_date} at ${pref_time}`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [req.user.user_name, req.user.role, action, description, created_at]
+    );
 
     res.status(201).json({ message: "Consultation added successfully!", appoint_id });
   } catch (err) {
@@ -1123,9 +1314,9 @@ router.post(
         or_num,   // optional
         payment_status,   // optional
         total_service_charged, // optional (manual override)
-        pwd_number,       // NEW
-        hmo_number,
-        billing_date 
+        // pwd_number,       
+        // hmo_number,
+        billing_date
       } = req.body;
 
       const gcashProof = req.file ? req.file.filename : null;
@@ -1196,14 +1387,14 @@ router.post(
         updateParams.push(or_num);
       }
 
-      if (pwd_number != null) {
-        updateQuery += `, pwd_number = ?`;
-        updateParams.push(pwd_number);
-      }
-      if (hmo_number != null) {
-        updateQuery += `, hmo_number = ?`;
-        updateParams.push(hmo_number);
-      }
+      // if (pwd_number != null) {
+      //   updateQuery += `, pwd_number = ?`;
+      //   updateParams.push(pwd_number);
+      // }
+      // if (hmo_number != null) {
+      //   updateQuery += `, hmo_number = ?`;
+      //   updateParams.push(hmo_number);
+      // }
 
       if (billing_date != null) {
         updateQuery += `, billing_date = ?`;
@@ -1221,10 +1412,22 @@ router.post(
       // Fetch updated appointment
       const [updatedAppRows] = await db.query(
         `SELECT payment_method, payment_status, total_service_charged, total_charged, 
-                appointment_status, downpayment_proof, pwd_number, hmo_number, billing_date
+                appointment_status, downpayment_proof, billing_date
         FROM appointment
         WHERE appoint_id = ?`,
         [appointId]
+      );
+
+      // ✅ Insert into Audit Trail
+      const action = insertRes ? "Add Charge & Update Billing" : "Update Billing";
+      const description = insertRes
+        ? `Added a new ${ci_type || "item/service"} "${ci_item_name}" (Qty: ${ci_quantity || 1}, Amount: ₱${ci_amount || 0}) and updated billing for appointment ID: ${appointId}.`
+        : `Updated billing details for appointment ID: ${appointId}. Method: ${payment_method || "N/A"}, Status: ${payment_status || "N/A"}, Total Charged: ₱${total_charged}.`;
+      const created_at = new Date();
+
+      await db.query(
+        "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+        [req.user.user_name, req.user.role, action, description, created_at]
       );
 
       res.status(insertRes ? 201 : 200).json({
@@ -1255,7 +1458,7 @@ router.post(
   }
 );
 
-// (UPDATE PATIENT INFO)
+// UPDATE PATIENT INFO (with audit trail)
 router.put("/updatepatientinfo/:id", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
@@ -1264,7 +1467,7 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
 
-    // only admins can update other patients
+    // ✅ Only admins can update patients
     if (decoded.role !== "admin") {
       return res.status(403).json({ message: "Access denied" });
     }
@@ -1289,7 +1492,7 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
 
     const db = await connectToDatabase();
 
-    // Build the fields dynamically so password update is optional
+    // ✅ Build the fields dynamically so password update is optional
     let fields = [
       "email = ?",
       "contact_no = ?",
@@ -1322,7 +1525,7 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
       user_status,
     ];
 
-    // If password is provided, hash and update it
+    // ✅ If password is provided, hash and update it
     if (user_password && user_password.trim() !== "") {
       const bcrypt = require("bcrypt");
       const hashedPassword = await bcrypt.hash(user_password, 10);
@@ -1338,20 +1541,46 @@ router.put("/updatepatientinfo/:id", async (req, res) => {
       WHERE user_id = ? AND role = 'patient'
     `;
 
-    await db.query(sql, values);
+    const [result] = await db.query(sql, values);
 
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Patient not found or not a patient role" });
+    }
+
+    // ✅ Insert into audit trail
+    const action = "Update Patient Info";
+    const description = `Updated patient "${fname} ${lname}" (User ID: ${id}) profile information`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    // ✅ Success response
     return res.json({ message: "Patient profile updated successfully" });
+
   } catch (err) {
-    console.error("Update patient error:", err);
+    console.error("❌ Update patient error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
 
-
 // Mark consultation as DONE or INCOMPLETE + save selected teeth
-router.put("/completeconsultation/:appointId", async (req, res) => {
+router.put("/completeconsultation/:appointId", authenticateToken, async (req, res) => {
   const { appointId } = req.params;
-  const { attending_dentist, p_diagnosis, appointment_status, payment_confirmation, selected_teeth } = req.body;
+  const {
+    attending_dentist,
+    p_diagnosis,
+    appointment_status,
+    payment_confirmation,
+    selected_teeth
+  } = req.body;
+
+  // Get the user performing the action
+  const userId = req.user?.user_id;
+  const userRole = req.user?.role || "Unknown";
+  const userName = req.user?.user_name;
 
   // Validate status
   if (!["done", "incomplete"].includes(appointment_status)) {
@@ -1372,7 +1601,7 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
           p_date_completed = NOW()
       WHERE appoint_id = ?
       `,
-      [attending_dentist, p_diagnosis, appointment_status, payment_confirmation , appointId]
+      [attending_dentist, p_diagnosis, appointment_status, payment_confirmation, appointId]
     );
 
     if (result.affectedRows === 0) {
@@ -1398,19 +1627,33 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
         [appointId]
       );
 
-       // ✅ Send notification to patient
+      // ✅ Send notification to patient
       await db.query(
-        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
-        SELECT u.user_id, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY)
-        FROM appointment a
-        JOIN users u ON u.user_name = a.user_name
-        WHERE a.appoint_id = ?`,
+        `INSERT INTO notifications (
+      user_id,
+      ntf_subject,
+      ntf_description,
+      ntf_created_at,
+      ntf_expires_at,
+      category
+   )
+   SELECT 
+      u.user_id, 
+      ?, 
+      ?, 
+      NOW(), 
+      DATE_ADD(NOW(), INTERVAL 30 DAY), 
+      'appointment'
+   FROM appointment a
+   JOIN users u ON u.user_name = a.user_name
+   WHERE a.appoint_id = ?`,
         [
           "Appointment Completed",
           `Your appointment (ID: ${appointId}) has been completed. Please check your records for details.`,
           appointId,
         ]
       );
+
     }
 
     // 3) Insert selected teeth (if any)
@@ -1424,10 +1667,27 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
       }
     }
 
+    // ✅ 4) Insert Audit Trail Log
+    const actionType =
+      appointment_status === "done"
+        ? "Complete Consultation"
+        : "Incomplete Consultation";
+    const description =
+      appointment_status === "done"
+        ? `Appointment ID ${appointId} marked as DONE by ${userRole} (Diagnosis: ${p_diagnosis || "N/A"}).`
+        : `Appointment ID ${appointId} marked as INCOMPLETE by ${userRole}.`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [userName, userRole, actionType, description, created_at]
+    );
+
     res.json({
-      message: `Consultation marked as ${appointment_status}, items ${
-        appointment_status === "done" ? "charged & inventory updated" : "left pending"
-      }, teeth recorded if provided.`
+      message: `Consultation marked as ${appointment_status}, items ${appointment_status === "done"
+        ? "charged & inventory updated"
+        : "left pending"
+        }, teeth recorded if provided.`
     });
   } catch (error) {
     console.error("Error updating appointment:", error);
@@ -1437,11 +1697,11 @@ router.put("/completeconsultation/:appointId", async (req, res) => {
 
 router.post("/complete/:appoint_id", async (req, res) => {
   const { appoint_id } = req.params;
-  const connection = await connectToDatabase(); 
+  const connection = await connectToDatabase();
 
   try {
     console.log("🔹 Starting payment completion for appointment:", appoint_id);
-    
+
     await connection.beginTransaction();
 
     //  Get appointment
@@ -1457,8 +1717,8 @@ router.post("/complete/:appoint_id", async (req, res) => {
       return res.status(404).json({ message: "Appointment not found." });
     }
 
-     const { total_charged, p_fname, p_mname, p_lname, procedure_type } = appoint[0];
-     const patient_name = `${p_fname} ${p_mname ? p_mname + " " : ""}${p_lname}`;
+    const { total_charged, p_fname, p_mname, p_lname, procedure_type } = appoint[0];
+    const patient_name = `${p_fname} ${p_mname ? p_mname + " " : ""}${p_lname}`;
 
     //  Get accounts
     const [accounts] = await connection.query(
@@ -1466,7 +1726,7 @@ router.post("/complete/:appoint_id", async (req, res) => {
     );
 
     const incomeAcc = accounts.find(
-    (a) => a.account_name.trim().toLowerCase() === "service income"
+      (a) => a.account_name.trim().toLowerCase() === "service income"
     );
 
     const cashAcc = accounts.find(
@@ -1484,7 +1744,7 @@ router.post("/complete/:appoint_id", async (req, res) => {
     const date = new Date();
     const description = `Payment received from ${patient_name}`;
     const fullDescription = `${procedure_type} - ${patient_name}`;
-    const subAccountId = 0; 
+    const subAccountId = 0;
 
     // 3️⃣ Insert Journal Entries
     console.log("Inserting journal entries...");
@@ -1507,20 +1767,20 @@ router.post("/complete/:appoint_id", async (req, res) => {
     await connection.query(
       `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, \`date\`)
        VALUES (?, ?, ?, 0, ?, ?)`,
-      [debitEntry.insertId, cashAcc.account_id, total_charged, fullDescription , date]
+      [debitEntry.insertId, cashAcc.account_id, total_charged, fullDescription, date]
     );
 
     await connection.query(
       `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, \`date\`)
        VALUES (?, ?, 0, ?, ?, ?)`,
-      [creditEntry.insertId, incomeAcc.account_id, total_charged, fullDescription , date]
+      [creditEntry.insertId, incomeAcc.account_id, total_charged, fullDescription, date]
     );
     console.log(" General ledger entries inserted");
 
     // 5️⃣ Update appointment
     console.log(" Updating appointment...");
     await connection.query(
-       "UPDATE appointment SET payment_confirmation = 'Complete', payment_status = 'Paid' WHERE appoint_id = ?",
+      "UPDATE appointment SET payment_confirmation = 'Complete', payment_status = 'Paid' WHERE appoint_id = ?",
       [appoint_id]
     );
     console.log("Appointment marked as Complete");
@@ -1542,7 +1802,7 @@ router.post("/complete/:appoint_id", async (req, res) => {
       message: "Internal server error.",
       error: error.message,
     });
-  } 
+  }
 });
 
 // 📌 For Refunds
@@ -1594,8 +1854,8 @@ router.post(
 
       // Insert notification for the user
       await db.query(
-        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
-        SELECT u.user_id, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY)
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
+        SELECT u.user_id, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'appointment')
         FROM appointment a
         JOIN users u ON u.user_name = a.user_name
         WHERE a.appoint_id = ?`,
@@ -1643,10 +1903,17 @@ router.post("/processRefund/:appointId", upload.single("refund_photo"), async (r
       [appointId]
     );
 
-    // Send notification to patient
+    // ✅ Fixed SQL syntax for notifications
     await db.query(
-      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
-       SELECT u.user_id, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY)
+      `INSERT INTO notifications 
+        (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
+       SELECT 
+         u.user_id,
+         ?,
+         ?,
+         NOW(),
+         DATE_ADD(NOW(), INTERVAL 30 DAY),
+         'appointment'
        FROM appointment a
        JOIN users u ON u.user_name = a.user_name
        WHERE a.appoint_id = ?`,
@@ -1657,12 +1924,27 @@ router.post("/processRefund/:appointId", upload.single("refund_photo"), async (r
       ]
     );
 
+    // ✅ Insert into Audit Trail
+    const action = "Process Cancellation";
+    const description = `Cancelled appointment ID: ${appointId}. Method: ${refund_method || "N/A"}. Notes: ${cc_notes || "None"}.`;
+    const created_at = new Date();
+
+    // fallback in case req.user is missing
+    const user_name = req.user?.user_name || "System";
+    const role = req.user?.role || "Admin";
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [user_name, role, action, description, created_at]
+    );
+
     res.json({ message: "Refund processed and appointment cancelled." });
   } catch (error) {
     console.error("Refund process error:", error);
     res.status(500).json({ message: "Failed to process refund" });
   }
 });
+
 
 router.get("/dentists", async (req, res) => {
   const db = await connectToDatabase();
@@ -1691,6 +1973,12 @@ router.post('/additem', async (req, res) => {
   }
 
   try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "No token provided" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+
     const db = await connectToDatabase();
 
     // Check if item already exists
@@ -1712,22 +2000,33 @@ router.post('/additem', async (req, res) => {
       [inv_item_type, inv_item_name, inv_price_per_item, inv_quantity || null, inv_ml || null, inv_exp_date || null, status, supplier_id]
     );
 
-     // --- Send notification to all admins ---
+    // --- Send notification to all admins ---
     const [adminRows] = await db.query(
       `SELECT user_id FROM users WHERE role = 'admin'`
     );
 
     for (const admin of adminRows) {
       await db.query(
-        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
-        VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))`,
+        `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
+        VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
         [
           admin.user_id,
           "New Inventory Item Added",
           `A new inventory item "${inv_item_name}" has been added by staff and is pending approval.`,
+          "inventory"
         ]
       );
     }
+
+    // Insert into audit trail
+    const action = "Add New Inventory Item";
+    const auditDescription = `Added new inventory item: ${inv_item_name} (${inv_item_type})`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
 
     return res.status(201).json({ message: "Item created successfully" });
   } catch (err) {
@@ -1745,13 +2044,14 @@ router.put("/edititem/:id", async (req, res) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const { 
-      inv_item_name, 
-      inv_item_type, 
-      inv_quantity, 
-      inv_price_per_item, 
-      inv_ml, 
-      inv_exp_date 
+    const {
+      inv_item_name,
+      inv_item_type,
+      inv_quantity,
+      inv_price_per_item,
+      inv_ml,
+      inv_exp_date,
+      inv_item_status
     } = req.body;
 
     const { id } = req.params;
@@ -1764,14 +2064,25 @@ router.put("/edititem/:id", async (req, res) => {
            inv_quantity = ?, 
            inv_price_per_item = ?, 
            inv_ml = ?, 
-           inv_exp_date = ? 
+           inv_exp_date = ?,
+           inv_item_status = ?
        WHERE inv_id = ?`,
-      [inv_item_name, inv_item_type, inv_quantity, inv_price_per_item, inv_ml, inv_exp_date, id]
+      [inv_item_name, inv_item_type, inv_quantity, inv_price_per_item, inv_ml, inv_exp_date, inv_item_status, id]
     );
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Item not found" });
     }
+
+    // Insert into audit trail
+    const action = "Edit Inventory Item";
+    const auditDescription = `Edited inventory item: ${inv_item_name} (ID: ${id})`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
 
     return res.json({ message: "Item updated successfully" });
   } catch (err) {
@@ -1780,8 +2091,8 @@ router.put("/edititem/:id", async (req, res) => {
   }
 });
 
-// (DELETE ITEM)
-router.delete("/deleteitem/:id", async (req, res) => {
+// (REJECT ITEM)
+router.put("/rejectitem/:id", async (req, res) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   if (!token) return res.status(401).json({ message: "No token provided" });
@@ -1796,15 +2107,30 @@ router.delete("/deleteitem/:id", async (req, res) => {
     const { id } = req.params;
     const db = await connectToDatabase();
 
-    const [result] = await db.query("DELETE FROM inventory WHERE inv_id = ?", [id]);
+    // 🟡 Instead of deleting, update the status
+    const [result] = await db.query(
+      "UPDATE inventory SET inv_item_status = 'rejected' WHERE inv_id = ?",
+      [id]
+    );
+
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Item not found" });
     }
 
-    res.json({ message: "Item deleted successfully" });
+    // 🧾 Insert into audit trail
+    const action = "Reject Inventory Item";
+    const auditDescription = `Rejected inventory item with ID: ${id}`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
+
+    res.json({ message: "Item rejected successfully" });
   } catch (err) {
-    console.error("Error deleting item:", err);
-    res.status(500).json({ error: "Failed to delete Item" });
+    console.error("Error rejecting item:", err);
+    res.status(500).json({ error: "Failed to reject item" });
   }
 });
 
@@ -1909,6 +2235,16 @@ router.get("/pendingitems", async (req, res) => {
 // Approve item
 router.put("/approveitem/:id", async (req, res) => {
   try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "No token provided" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     const { id } = req.params;
     const db = await connectToDatabase();
 
@@ -1923,6 +2259,16 @@ router.put("/approveitem/:id", async (req, res) => {
       return res.status(404).json({ message: "Item not found" });
     }
 
+    // 🧾 Insert into audit trail
+    const action = "Approve Inventory Item";
+    const auditDescription = `Approved inventory item with ID: ${id}`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
+
     res.json({ message: "Item approved successfully" });
   } catch (err) {
     console.error("Approve item error:", err);
@@ -1933,6 +2279,16 @@ router.put("/approveitem/:id", async (req, res) => {
 // Approve item
 router.put("/inactiveitem/:id", async (req, res) => {
   try {
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "No token provided" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
     const { id } = req.params;
     const db = await connectToDatabase();
 
@@ -1946,6 +2302,16 @@ router.put("/inactiveitem/:id", async (req, res) => {
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Item not found" });
     }
+
+    // 🧾 Insert into audit trail
+    const action = "Deactivate Inventory Item";
+    const auditDescription = `Set inventory item with ID: ${id} to inactive`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
 
     res.json({ message: "Item Inactive successfully" });
   } catch (err) {
@@ -1968,8 +2334,18 @@ router.get("/suppliers", async (req, res) => {
 
 //add new supplier
 router.post("/newsupplier", async (req, res) => {
-  const { supplier_name, contact_person,contact_no,description } = req.body;
+  const { supplier_name, contact_person, contact_no, description } = req.body;
   const db = await connectToDatabase();
+
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  const decoded = jwt.verify(token, JWT_SECRET);
+
+  if (decoded.role !== "admin") {
+    return res.status(403).json({ message: "Access denied" });
+  }
 
   if (!supplier_name) {
     return res.status(400).json({ error: "Subaccount name is required" });
@@ -1987,8 +2363,18 @@ router.post("/newsupplier", async (req, res) => {
 
     // insert
     const [result] = await db.query(
-      "INSERT INTO supplier (supplier_name, contact_person, contact_no, description) VALUES (?, ?, ?, ?)",
-      [supplier_name, contact_person,contact_no,description ]
+      "INSERT INTO supplier (supplier_name, contact_person, contact_no, description, supplier_status) VALUES (?, ?, ?, ?, 'active')",
+      [supplier_name, contact_person, contact_no, description]
+    );
+
+    // 🧾 Insert into audit trail
+    const action = "Add Supplier";
+    const auditDescription = `Added new supplier: ${supplier_name}`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
     );
 
     return res.status(201).json({
@@ -2032,8 +2418,18 @@ router.get("/supplier/:id", async (req, res) => {
 
 // Update supplier by ID
 router.put("/supplier/:id", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  const decoded = jwt.verify(token, JWT_SECRET);
+
+  if (decoded.role !== "admin") {
+    return res.status(403).json({ message: "Access denied" });
+  }
+
   const { id } = req.params;
-  const { supplier_name, contact_person, contact_no, description } = req.body;
+  const { supplier_name, contact_person, contact_no, description, supplier_status } = req.body;
   const db = await connectToDatabase();
 
   if (!supplier_name || !contact_person || !contact_no || !description) {
@@ -2049,8 +2445,18 @@ router.put("/supplier/:id", async (req, res) => {
 
     // Update supplier
     await db.query(
-      "UPDATE supplier SET supplier_name = ?, contact_person = ?, contact_no = ?, description = ? WHERE supplier_id = ?",
-      [supplier_name, contact_person, contact_no, description, id]
+      "UPDATE supplier SET supplier_name = ?, contact_person = ?, contact_no = ?, description = ?, supplier_status = ? WHERE supplier_id = ?",
+      [supplier_name, contact_person, contact_no, description, supplier_status, id]
+    );
+
+    // 🧾 Insert into audit trail
+    const action = "Update Supplier";
+    const auditDescription = `Updated supplier "${supplier_name}" (ID: ${id})`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
     );
 
     return res.json({ message: "Supplier updated successfully" });
@@ -2063,15 +2469,52 @@ router.put("/supplier/:id", async (req, res) => {
   }
 });
 
-// delete supplier
+// Deactivate supplier instead of deleting
 router.delete("/suppliers/:id", async (req, res) => {
   try {
     const db = await connectToDatabase();
     const { id } = req.params;
-    await db.query("DELETE FROM supplier WHERE supplier_id = ?", [id]);
-    return res.json({ message: "Supplier deleted successfully" });
+
+    // ✅ Step 1: Authenticate user and verify role
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "No token provided" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    // ✅ Step 2: Check if supplier exists
+    const [existing] = await db.query("SELECT * FROM supplier WHERE supplier_id = ?", [id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: "Supplier not found" });
+    }
+
+    const supplierName = existing[0].supplier_name;
+
+    // ✅ Step 3: Deactivate supplier
+    await db.query(
+      "UPDATE supplier SET supplier_status = 'inactive' WHERE supplier_id = ?",
+      [id]
+    );
+
+    // ✅ Step 4: Insert into audit trail
+    const action = "Deactivate Supplier";
+    const auditDescription = `Deactivated supplier "${supplierName}" (ID: ${id})`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
+
+    // ✅ Step 5: Return success response
+    return res.json({ message: "Supplier marked as inactive successfully" });
+
   } catch (err) {
-    console.error("Delete supplier error:", err);
+    console.error("Deactivate supplier error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -2166,17 +2609,23 @@ router.post("/coa", authenticateToken, async (req, res) => {
   }
 });
 
-// Update account by ID
+// ✅ Update Chart of Account by ID (with Audit Trail)
 router.put("/coa/:id", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
   try {
+    const decoded = jwt.verify(token, JWT_SECRET);
     const { id } = req.params;
     const { account_name, account_type, status } = req.body;
 
     const db = await connectToDatabase();
 
-    // Update record
+    // ✅ 1️⃣ Update the Chart of Account record
     const [result] = await db.query(
-      "UPDATE chartofaccounts SET account_name = ?, account_type = ? , status = ?  WHERE account_id = ?",
+      "UPDATE chartofaccounts SET account_name = ?, account_type = ?, status = ? WHERE account_id = ?",
       [account_name, account_type, status, id]
     );
 
@@ -2184,62 +2633,113 @@ router.put("/coa/:id", async (req, res) => {
       return res.status(404).json({ message: "Account not found" });
     }
 
-    return res.json({ message: "Account updated successfully" });
+    // ✅ 2️⃣ Insert into audit trail
+    const action = "Update COA";
+    const description = `Updated COA: ${account_name} (${account_type})`;
+    const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    // ✅ 3️⃣ Return success response
+    return res.json({ message: "Account updated successfully." });
   } catch (err) {
     console.error("Update COA error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
 
-
-//delete chart of accounts
+// ✅ Mark Chart of Account as inactive (instead of deleting)
 router.delete("/coa/:id", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
   try {
+    const decoded = jwt.verify(token, JWT_SECRET);
     const { id } = req.params;
     const db = await connectToDatabase();
 
-    const [result] = await db.query("DELETE FROM chartofaccounts WHERE account_id = ?", [id]);
+    // ✅ Fetch existing account for audit trail details
+    const [existing] = await db.query(
+      "SELECT account_name FROM chartofaccounts WHERE account_id = ?",
+      [id]
+    );
+
+    if (existing.length === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    const accountName = existing[0].account_name;
+
+    // ✅ Instead of DELETE, update the status
+    const [result] = await db.query(
+      "UPDATE chartofaccounts SET status = 'Inactive' WHERE account_id = ?",
+      [id]
+    );
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: "Account not found" });
     }
 
-    return res.json({ message: "Account deleted successfully" });
+    // ✅ Insert audit trail record
+    const at_action = "Update Chart of Account Status";
+    const at_description = `User "${decoded.user_name}" marked the Chart of Account "${accountName}" as Inactive.`;
+    const created_at = new Date();
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, at_action, at_description, created_at]
+    );
+
+    return res.json({ message: "Account marked as inactive successfully" });
   } catch (err) {
-    console.error("Delete COA error:", err);
+    console.error("Error updating COA status:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 //========== SUB ACCOUNTS ==========
 
 //get subaccount by sub id ->
-router.get("/subacc/:id", async (req, res) => { 
-  try { 
-    const { id } = req.params; 
+router.get("/subacc/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
     const db = await connectToDatabase();
     const [result] = await db.query
-    ( "SELECT * FROM subaccount WHERE id = ?", 
-      [id] ); 
-      
-      if (result.length === 0) 
-        { return res.status(404).json({ message: "Account not found" }); 
-      } 
-      res.json(result[0]);
-     } catch (err) { 
-      console.error("Fetch COA error:", err);
-       return res.status(500).json({ message: "Internal server error" }); } });
+      ("SELECT * FROM subaccount WHERE id = ?",
+        [id]);
 
-  //add new sub account ->admincoaviewadd
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+    res.json(result[0]);
+  } catch (err) {
+    console.error("Fetch COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// ✅ Add new subaccount -> admincoaviewadd (with audit trail)
 router.post("/coa/:id/subaccounts", async (req, res) => {
-  const { id } = req.params; 
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token provided" });
+
+  const { id } = req.params;
   const { account_name } = req.body;
-  const db = await connectToDatabase();
 
   if (!account_name) {
     return res.status(400).json({ error: "Subaccount name is required" });
   }
-  //if subacount already exists
+
   try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const db = await connectToDatabase();
+
+    // ✅ Check if subaccount already exists
     const [existing] = await db.query(
       "SELECT * FROM subaccount WHERE account_id = ? AND account_name = ?",
       [id, account_name]
@@ -2249,10 +2749,21 @@ router.post("/coa/:id/subaccounts", async (req, res) => {
       return res.status(400).json({ error: "Subaccount name already exists" });
     }
 
-    // insert
+    // ✅ Insert new subaccount
     const [result] = await db.query(
-      "INSERT INTO subaccount (account_id, account_name) VALUES (?, ?)",
+      "INSERT INTO subaccount (account_id, account_name, account_status) VALUES (?, ?, 'active')",
       [id, account_name]
+    );
+
+    // ✅ Insert audit trail record
+    const at_action = "Add Subaccount";
+    const at_description = `User "${decoded.user_name}" added a new subaccount "${account_name}" under COA ID: ${id}.`;
+    const created_at = new Date();
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, at_action, at_description, created_at]
     );
 
     return res.status(201).json({
@@ -2272,7 +2783,7 @@ router.post("/coa/:id/subaccounts", async (req, res) => {
   }
 });
 
-  // get subaccounts by account_id -> admincoaview.jsx
+// get subaccounts by account_id -> admincoaview.jsx
 router.get("/coa/:id/subaccounts", async (req, res) => {
   try {
     const { id } = req.params;
@@ -2295,12 +2806,15 @@ router.get("/coa/:id/subaccounts", async (req, res) => {
 });
 
 
-// edit subaccount ->admincoaviewedit
- router.put("/sub/:id", async (req, res) => {
+router.put("/sub/:id", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
   const { id } = req.params;
-  const { account_name } = req.body;
+  const { account_name, account_status } = req.body;
 
   try {
+    const decoded = jwt.verify(token, JWT_SECRET);
     const db = await connectToDatabase();
 
     const [existing] = await db.query(
@@ -2312,10 +2826,26 @@ router.get("/coa/:id/subaccounts", async (req, res) => {
       return res.status(400).json({ message: "Account name already exists" });
     }
 
+    const [oldRecord] = await db.query("SELECT account_name, account_status FROM subaccount WHERE id = ?", [id]);
+    if (oldRecord.length === 0) {
+      return res.status(404).json({ message: "Subaccount not found" });
+    }
+
+    const oldName = oldRecord[0].account_name;
+    const oldStatus = oldRecord[0].account_status;
 
     await db.query(
-      "UPDATE subaccount SET account_name = ? WHERE id = ?",
-      [account_name, id]
+      "UPDATE subaccount SET account_name = ?, account_status = ? WHERE id = ?",
+      [account_name, account_status, id]
+    );
+
+    const at_action = "Edit Subaccount";
+    const at_description = `User "${decoded.user_name}" updated subaccount "${oldName}" (${oldStatus}) to "${account_name}" (${account_status}).`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, at_action, at_description, created_at]
     );
 
     res.json({ message: "Account updated successfully!" });
@@ -2345,24 +2875,30 @@ router.get("/subaccs/:id", async (req, res) => {
     console.error("Fetch Subaccounts error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
-}); 
+});
 
-// ✅ DELETE a subaccount by ID
-router.delete("/coa/sub/:id", async (req, res) => {
+// ✅ Inactivate a subaccount by ID (soft delete)
+router.put("/coa/sub/:id", async (req, res) => {
   const { id } = req.params;
 
   try {
     const db = await connectToDatabase();
-    const sql = "DELETE FROM subaccount WHERE id = ?";
-    await db.query(sql, [id]);
 
-    res.status(200).json({ message: "Subaccount deleted successfully!" });
+    // Update the account_status instead of deleting
+    const sql = "UPDATE subaccount SET account_status = 'inactive' WHERE id = ?";
+    const [result] = await db.query(sql, [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Subaccount not found" });
+    }
+
+    res.status(200).json({ message: "Subaccount set to inactive successfully!" });
   } catch (err) {
-    console.error("Error deleting subaccount:", err);
-    res.status(500).json({ message: "Failed to delete subaccount." });
+    console.error("Error inactivating subaccount:", err);
+    res.status(500).json({ message: "Failed to inactivate subaccount." });
   }
 });
-      
+
 //=================================== JOURNAL ENTRY & GENERAL LEDGER ====================================
 
 // get journal entry (for adminjournal)
@@ -2394,8 +2930,11 @@ LEFT JOIN chartofaccounts ca
   }
 });
 
-// Add a new journal entry + insert general ledfer
+// ✅ Add a new journal entry + insert general ledger (with audit trail)
 router.post("/journal", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
   const { date, description, account_id, subaccount_id, debit, credit, comment } = req.body;
 
   const debitAmount = parseFloat(debit) || 0;
@@ -2406,6 +2945,7 @@ router.post("/journal", async (req, res) => {
   }
 
   try {
+    const decoded = jwt.verify(token, JWT_SECRET);
     const db = await connectToDatabase();
 
     // 1️⃣ Insert into journalentry
@@ -2418,7 +2958,7 @@ router.post("/journal", async (req, res) => {
 
     // 2️⃣ Get account type
     const [accountRows] = await db.query(
-      "SELECT account_type FROM chartofaccounts WHERE account_id = ?",
+      "SELECT account_type, account_name FROM chartofaccounts WHERE account_id = ?",
       [account_id]
     );
 
@@ -2427,6 +2967,7 @@ router.post("/journal", async (req, res) => {
     }
 
     const accountType = accountRows[0].account_type;
+    const accountName = accountRows[0].account_name;
 
     // 3️⃣ Get last balance for this account
     const [lastBalanceRows] = await db.query(
@@ -2440,7 +2981,8 @@ router.post("/journal", async (req, res) => {
     let newBalance;
     if (accountType === "Asset" || accountType === "Expense") {
       newBalance = lastBalance + debitAmount - creditAmount;
-    } else { // Liability, Equity, Revenue
+    } else {
+      // Liability, Equity, Revenue
       newBalance = lastBalance + creditAmount - debitAmount;
     }
 
@@ -2450,13 +2992,27 @@ router.post("/journal", async (req, res) => {
       [entryId, account_id, description, debitAmount, creditAmount, newBalance, date]
     );
 
-    return res.status(201).json({ message: "Journal entry and general ledger updated successfully!" });
+    // 6️⃣ Insert audit trail
+    const action = "Add Journal Entry";
+    const auditDescription = `Added journal entry for ${accountName} (${accountType}) — Debit: ₱${debitAmount.toFixed(
+      2
+    )}, Credit: ₱${creditAmount.toFixed(2)}, Description: "${description}"`;
+    const created_at = new Date();
 
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
+
+    return res
+      .status(201)
+      .json({ message: "Journal entry and general ledger updated successfully!" });
   } catch (err) {
     console.error("Journal insert error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 //get general ledger f
 router.get("/auth/general_ledger", async (req, res) => {
   try {
@@ -2476,7 +3032,7 @@ router.get("/auth/general_ledger", async (req, res) => {
 
 //get general ledger filter
 router.get("/general_ledger1", async (req, res) => {
-  const { account_id } = req.query; 
+  const { account_id } = req.query;
   try {
     const db = await connectToDatabase();
     const [rows] = await db.query(
@@ -2500,7 +3056,7 @@ router.get("/general_ledger1", async (req, res) => {
 // Get only  Payable
 router.get("/accountPayable", async (req, res) => {
   try {
-      const db = await connectToDatabase();
+    const db = await connectToDatabase();
     const [rows] = await db.query(`
       SELECT account_id, account_name
       FROM chartofaccounts
@@ -2516,7 +3072,7 @@ router.get("/accountPayable", async (req, res) => {
 // Get only Receivable
 router.get("/accountReceivable", async (req, res) => {
   try {
-      const db = await connectToDatabase();
+    const db = await connectToDatabase();
     const [rows] = await db.query(`
       SELECT account_id, account_name
       FROM chartofaccounts
@@ -2532,7 +3088,7 @@ router.get("/accountReceivable", async (req, res) => {
 //Get Inventory
 router.get("/accountInventory", async (req, res) => {
   try {
-      const db = await connectToDatabase();
+    const db = await connectToDatabase();
     const [rows] = await db.query(`
       SELECT account_id, account_name
       FROM chartofaccounts
@@ -2546,31 +3102,31 @@ router.get("/accountInventory", async (req, res) => {
 });
 
 // Search patients by  name
-    router.get('/patients/search', async (req, res) => {
-      try {
-        const { name } = req.query;
+router.get('/patients/search', async (req, res) => {
+  try {
+    const { name } = req.query;
 
-        if (!name) {
-          return res.status(400).json({ error: 'Name query parameter is required' });
-        }
+    if (!name) {
+      return res.status(400).json({ error: 'Name query parameter is required' });
+    }
 
-        const db = await connectToDatabase();
-        const [rows] = await db.query(
-          `SELECT user_id, fname, mname, lname,
+    const db = await connectToDatabase();
+    const [rows] = await db.query(
+      `SELECT user_id, fname, mname, lname,
                   CONCAT(fname, ' ', mname, ' ', lname) AS full_name
           FROM users 
           WHERE LOWER(role) = 'patient'
             AND CONCAT(fname, ' ', mname, ' ', lname) LIKE ?
           LIMIT 10`,
-          [`%${name}%`]
-        );
+      [`%${name}%`]
+    );
 
-        res.json(rows);
-      } catch (err) {
-        console.error('Error searching patients:', err.message);
-        res.status(500).json({ error: err.message });
-      }
-    });
+    res.json(rows);
+  } catch (err) {
+    console.error('Error searching patients:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 //get supplier
 router.get('/supplier', async (req, res) => {
@@ -2601,6 +3157,11 @@ router.post("/subsidiary", async (req, res) => {
       credit,
       account_id,
     } = req.body;
+
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return res.status(401).json({ message: "No token provided" });
+
+    const decoded = jwt.verify(token, JWT_SECRET);
 
     // Validate required fields
     if (!date || !name || !invoice_no || !account_id) {
@@ -2674,7 +3235,7 @@ router.post("/subsidiary", async (req, res) => {
     // Insert main journal entry (for the provided account)
     const [journalResult] = await db.query(
       `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [date, description, account_id, debitVal, creditVal, 'n/a']
     );
 
@@ -2697,63 +3258,73 @@ router.post("/subsidiary", async (req, res) => {
     );
 
     // --- PARTNER ACCOUNT: Service Income ---
-      let partnerAccountName = null;
+    let partnerAccountName = null;
 
-      if (debitVal > 0) {
-        // AR is debited -> partner is Sales Revenue (credited)
-        partnerAccountName = 'Service Income';
-      } else if (creditVal > 0) {
-        // AR is credited -> partner is Cash (debited)
-        partnerAccountName = 'Cash';
-      }
+    if (debitVal > 0) {
+      // AR is debited -> partner is Sales Revenue (credited)
+      partnerAccountName = 'Service Income';
+    } else if (creditVal > 0) {
+      // AR is credited -> partner is Cash (debited)
+      partnerAccountName = 'Cash';
+    }
 
-      if (!partnerAccountName) {
-        return res.status(400).json({ error: "Either debit or credit must be provided." });
-      }
+    if (!partnerAccountName) {
+      return res.status(400).json({ error: "Either debit or credit must be provided." });
+    }
 
-      // Find partner account_id dynamically
-      const [partnerRows] = await db.query(
-        `SELECT account_id FROM chartofaccounts 
+    // Find partner account_id dynamically
+    const [partnerRows] = await db.query(
+      `SELECT account_id FROM chartofaccounts 
         WHERE LOWER(account_name) = LOWER(?) 
         LIMIT 1`,
-        [partnerAccountName]
-      );
+      [partnerAccountName]
+    );
 
-      if (partnerRows.length === 0) {
-        return res.status(500).json({ error: `${partnerAccountName} account not found in chart of accounts` });
-      }
+    if (partnerRows.length === 0) {
+      return res.status(500).json({ error: `${partnerAccountName} account not found in chart of accounts` });
+    }
 
-      const partnerAccountId = partnerRows[0].account_id;
+    const partnerAccountId = partnerRows[0].account_id;
 
-      // Partner debit/credit is the reverse of AR entry
-      const partnerDebit = creditVal;  
-      const partnerCredit = debitVal;  
+    // Partner debit/credit is the reverse of AR entry
+    const partnerDebit = creditVal;
+    const partnerCredit = debitVal;
 
-      // Insert partner journal entry
-      const [partnerJournalResult] = await db.query(
-        `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
+    // Insert partner journal entry
+    const [partnerJournalResult] = await db.query(
+      `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [date, description, partnerAccountId, partnerDebit, partnerCredit, 'Partner entry']
-      );
+      [date, description, partnerAccountId, partnerDebit, partnerCredit, 'Partner entry']
+    );
 
-      // Get last balance for partner account in general ledger
-      const [partnerLedgerRows] = await db.query(
-        `SELECT balance FROM general_ledger 
+    // Get last balance for partner account in general ledger
+    const [partnerLedgerRows] = await db.query(
+      `SELECT balance FROM general_ledger 
         WHERE account_id = ? 
         ORDER BY date DESC, ledger_id DESC 
         LIMIT 1`,
-        [partnerAccountId]
-      );
+      [partnerAccountId]
+    );
 
-      const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
-      const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
+    const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
+    const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
 
-      // Insert partner entry into general ledger
-      await db.query(
-        `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+    // Insert partner entry into general ledger
+    await db.query(
+      `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId]
-      );
+      [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId]
+    );
+
+    // 6️⃣ Insert into audit trail
+    const action = "Add Subsidiary Entry";
+    const auditDescription = `Added subsidiary entry for ${name} (Invoice No: ${invoice_no}) — Account Receivable: ₱${debitVal.toFixed(2)} / ₱${creditVal.toFixed(2)} | Partner: ${partnerAccountName}`;
+    const created_at = new Date();
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+    );
 
     res.status(201).json({
       message: "Subsidiary, journal entry, general ledger, and partner entries inserted successfully.",
@@ -2775,195 +3346,195 @@ router.post("/subsidiary", async (req, res) => {
 
 
 /// Insert into subsidiary+general+journal for account payable
-    router.post("/subsidiary1", async (req, res) => {
-      try {
-        const db = await connectToDatabase();
-        const {
-          date,
-          name,         
-          invoice_no,
-          debit,
-          credit,
-          account_id,
-          expense_id,
-        } = req.body;
+router.post("/subsidiary1", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const {
+      date,
+      name,
+      invoice_no,
+      debit,
+      credit,
+      account_id,
+      expense_id,
+    } = req.body;
 
-          // Validate required fields
-          if (!date || !name || !invoice_no || !account_id) {
-            return res.status(400).json({
-              error: "Missing required fields: date, name, invoice_no, account_id",
-            });
-          }
+    // Validate required fields
+    if (!date || !name || !invoice_no || !account_id) {
+      return res.status(400).json({
+        error: "Missing required fields: date, name, invoice_no, account_id",
+      });
+    }
 
-          // Split name
-          const nameParts = name;
+    // Split name
+    const nameParts = name;
 
-          // Find the user_id from suppliertable
-          const [userRows] = await db.query(
-            `SELECT supplier_id FROM supplier
+    // Find the user_id from suppliertable
+    const [userRows] = await db.query(
+      `SELECT supplier_id FROM supplier
             WHERE supplier_name = ?
             LIMIT 1`,
-            [nameParts]
-          );
+      [nameParts]
+    );
 
-          if (userRows.length === 0) {
-            return res.status(404).json({ error: "Supplier not found with the given name" });
-          }
+    if (userRows.length === 0) {
+      return res.status(404).json({ error: "Supplier not found with the given name" });
+    }
 
-        const supplier_id = userRows[0].supplier_id;
+    const supplier_id = userRows[0].supplier_id;
 
-        //find expense_id
+    //find expense_id
 
-        const expense = expense_id;
+    const expense = expense_id;
 
-         const [expenseRows] = await db.query(
-            `SELECT account_name FROM chartofaccounts
+    const [expenseRows] = await db.query(
+      `SELECT account_name FROM chartofaccounts
             WHERE account_id = ?
             LIMIT 1`,
-            [expense]
-          );
+      [expense]
+    );
 
-          if (expenseRows.length === 0) {
-            return res.status(404).json({ error: "account not found with the given name" });
-          }
+    if (expenseRows.length === 0) {
+      return res.status(404).json({ error: "account not found with the given name" });
+    }
 
-        const expensename = expenseRows[0].account_name;
+    const expensename = expenseRows[0].account_name;
 
-        // Parse debit/credit
-        const debitVal = parseFloat(debit) || 0;
-        const creditVal = parseFloat(credit) || 0;
+    // Parse debit/credit
+    const debitVal = parseFloat(debit) || 0;
+    const creditVal = parseFloat(credit) || 0;
 
-        if (debitVal > 0 && creditVal > 0) {
-          return res.status(400).json({
-            error: "Only one of debit or credit should be provided.",
-          });
-        }
+    if (debitVal > 0 && creditVal > 0) {
+      return res.status(400).json({
+        error: "Only one of debit or credit should be provided.",
+      });
+    }
 
-        // --- SUBSIDIARY LEDGER ---
+    // --- SUBSIDIARY LEDGER ---
 
-        // Get last balance for this supplier + account in subsidiary ledger
-        const [subsidiaryRows] = await db.query(
-          `SELECT balance
+    // Get last balance for this supplier + account in subsidiary ledger
+    const [subsidiaryRows] = await db.query(
+      `SELECT balance
           FROM subsidiary
           WHERE account_id = ? AND patient_id = ?
           ORDER BY sub_id DESC
           LIMIT 1`,
-          [account_id, supplier_id]
-        );
+      [account_id, supplier_id]
+    );
 
-        const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
-        const newSubsidiaryBalance = lastSubsidiaryBalance - debitVal + creditVal;
+    const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
+    const newSubsidiaryBalance = lastSubsidiaryBalance - debitVal + creditVal;
 
-        // Insert into subsidiary ledger
-        const [subsidiaryResult] = await db.query(
-          `INSERT INTO subsidiary 
+    // Insert into subsidiary ledger
+    const [subsidiaryResult] = await db.query(
+      `INSERT INTO subsidiary 
             (date, name, invoice_no, debit, credit, balance, account_id, patient_id)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [date, `${name} - ${expensename}`, invoice_no, debitVal, creditVal, newSubsidiaryBalance, account_id, supplier_id, expensename]
-        );
+      [date, `${name} - ${expensename}`, invoice_no, debitVal, creditVal, newSubsidiaryBalance, account_id, supplier_id, expensename]
+    );
 
-        // --- JOURNAL ENTRY ---
+    // --- JOURNAL ENTRY ---
 
-        const description = name;
+    const description = name;
 
     const [journalResult] = await db.query(
       `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
       VALUES (?, ?, ?, ?, ?, ?)`,
       [date, description, account_id, debitVal, creditVal, expensename]
     );
-        // --- GENERAL LEDGER ---
+    // --- GENERAL LEDGER ---
 
-        // Get last balance for this account in general ledger
-        const [ledgerRows] = await db.query(
-          `SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY date DESC, ledger_id DESC LIMIT 1`,
-          [account_id]
-        );
+    // Get last balance for this account in general ledger
+    const [ledgerRows] = await db.query(
+      `SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY date DESC, ledger_id DESC LIMIT 1`,
+      [account_id]
+    );
 
-        const lastLedgerBalance = ledgerRows.length > 0 ? parseFloat(ledgerRows[0].balance) || 0 : 0;
-        const newLedgerBalance = lastLedgerBalance - debitVal + creditVal;
+    const lastLedgerBalance = ledgerRows.length > 0 ? parseFloat(ledgerRows[0].balance) || 0 : 0;
+    const newLedgerBalance = lastLedgerBalance - debitVal + creditVal;
 
-        // Insert into general ledger
-        const [ledgerResult] = await db.query(
-          `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+    // Insert into general ledger
+    const [ledgerResult] = await db.query(
+      `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
           VALUES (?, ?, ?, ?, ?, ?, ?)`,
-          [date, `${description} - ${expensename}`, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
-        );
+      [date, `${description} - ${expensename}`, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId]
+    );
 
-        //PARTNER ACCOUNT: Cash & Inventory==========
+    //PARTNER ACCOUNT: Cash & Inventory==========
 
-        let partnerAccountName = null;
-        if (debitVal > 0) {
+    let partnerAccountName = null;
+    if (debitVal > 0) {
 
-        // AR is debited -> partner is Sales Revenue (credited)
-        partnerAccountName = 'Cash';
-      } else if (creditVal > 0) {
-        // AR is credited -> partner is Cash (debited)
-        partnerAccountName = expensename;
-      }
+      // AR is debited -> partner is Sales Revenue (credited)
+      partnerAccountName = 'Cash';
+    } else if (creditVal > 0) {
+      // AR is credited -> partner is Cash (debited)
+      partnerAccountName = expensename;
+    }
 
-      if (!partnerAccountName) {
-        return res.status(400).json({ error: "Either debit or credit must be provided." });
-      }
+    if (!partnerAccountName) {
+      return res.status(400).json({ error: "Either debit or credit must be provided." });
+    }
 
-      // Find partner account_id dynamically
-      const [partnerRows] = await db.query(
-        `SELECT account_id FROM chartofaccounts 
+    // Find partner account_id dynamically
+    const [partnerRows] = await db.query(
+      `SELECT account_id FROM chartofaccounts 
         WHERE LOWER(account_name) = LOWER(?) 
         LIMIT 1`,
-        [partnerAccountName]
-      );
+      [partnerAccountName]
+    );
 
-      if (partnerRows.length === 0) {
+    if (partnerRows.length === 0) {
       return res.status(500).json({ error: `${partnerAccountName} account not found in chart of accounts` });
-      }
+    }
 
-      const partnerAccountId = partnerRows[0].account_id;
+    const partnerAccountId = partnerRows[0].account_id;
 
-      // Partner debit/credit is the reverse of AR entry
-      const partnerDebit = creditVal;  
-      const partnerCredit = debitVal;  
+    // Partner debit/credit is the reverse of AR entry
+    const partnerDebit = creditVal;
+    const partnerCredit = debitVal;
 
-        // Insert partner journal entry
-      const [partnerJournalResult] = await db.query(
-        `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
+    // Insert partner journal entry
+    const [partnerJournalResult] = await db.query(
+      `INSERT INTO journalentry (date, description, account_id, debit, credit, comment)
         VALUES (?, ?, ?, ?, ?, ?)`,
-        [date, description, partnerAccountId, partnerDebit, partnerCredit, expensename]
-      );
+      [date, description, partnerAccountId, partnerDebit, partnerCredit, expensename]
+    );
 
-       // Get last balance for partner account in general ledger
-      const [partnerLedgerRows] = await db.query(
-        `SELECT balance FROM general_ledger 
+    // Get last balance for partner account in general ledger
+    const [partnerLedgerRows] = await db.query(
+      `SELECT balance FROM general_ledger 
         WHERE account_id = ? 
         ORDER BY date DESC, ledger_id DESC 
         LIMIT 1`,
-        [partnerAccountId]
-      );
+      [partnerAccountId]
+    );
 
-      const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
-      const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
+    const lastPartnerLedgerBalance = partnerLedgerRows.length > 0 ? parseFloat(partnerLedgerRows[0].balance) || 0 : 0;
+    const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
 
-      // Insert partner entry into general ledger
-      await db.query(
-        `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
+    // Insert partner entry into general ledger
+    await db.query(
+      `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id)
         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId]
-      );
+      [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId]
+    );
 
-        res.status(201).json({
-          message: "Subsidiary, journal entry, and general ledger records inserted successfully.",
-          subsidiaryId: subsidiaryResult.insertId,
-          journalEntryId: journalResult.insertId,
-          generalLedgerId: ledgerResult.insertId,
-          supplier_id,
-          newSubsidiaryBalance,
-          newLedgerBalance,
-        });
-
-      } catch (err) {
-        console.error("❌ Error inserting records:", err);
-        res.status(500).json({ error: "Internal server error: " + err.message });
-      }
+    res.status(201).json({
+      message: "Subsidiary, journal entry, and general ledger records inserted successfully.",
+      subsidiaryId: subsidiaryResult.insertId,
+      journalEntryId: journalResult.insertId,
+      generalLedgerId: ledgerResult.insertId,
+      supplier_id,
+      newSubsidiaryBalance,
+      newLedgerBalance,
     });
+
+  } catch (err) {
+    console.error("❌ Error inserting records:", err);
+    res.status(500).json({ error: "Internal server error: " + err.message });
+  }
+});
 
 
 router.get("/subsidiary", async (req, res) => {
@@ -2993,21 +3564,21 @@ router.get("/subsidiary", async (req, res) => {
 
 
 //get general_ledger
-    router.get("/general", async (req, res) => {
-      try {
-        const db = await connectToDatabase();
-        const [rows] =  await db.query(`
+router.get("/general", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
             SELECT g.date, c.account_name AS account, c.account_type, g.debit, g.credit, g.balance
       FROM general_ledger g
       JOIN chartofaccounts c ON g.account_id = c.account_id
       ORDER BY g.date, g.ledger_id
         `);
-        return res.json(rows); // Send back as JSON array
-      } catch (err) {
-      console.error("Insert Error:", err); // full error object
-      res.status(500).json({ error: err.message, details: err });
-    }
-    });
+    return res.json(rows); // Send back as JSON array
+  } catch (err) {
+    console.error("Insert Error:", err); // full error object
+    res.status(500).json({ error: err.message, details: err });
+  }
+});
 
 router.get("/trial", async (req, res) => {
   try {
@@ -3196,7 +3767,7 @@ router.get("/appointments/all", async (req, res) => {
       FROM appointment
       ORDER BY pref_date ASC
     `);
-    
+
     return res.json(rows);
   } catch (err) {
     console.error("Fetch all appointments error:", err);
@@ -3290,8 +3861,8 @@ router.post("/followup/:appointId", async (req, res) => {
 
     // Insert notification
     await db.query(
-      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at)
-      VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY))`,
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
+      VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'appointment')`,
       [user_id, "Appointment Follow-up", message]
     );
 

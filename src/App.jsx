@@ -21,7 +21,7 @@ import Transviewmed from "./Routes/transviewmed";
 import Transappointment from "./Routes/transappointment";
 import Admincoa from "./Routes/admincoa";
 import Admincoaadd from "./Routes/admincoaadd";
-import AdminCoaEdit from "./Routes/admincoaedit"; 
+import AdminCoaEdit from "./Routes/admincoaedit";
 import Adminjournal from "./Routes/adminjournal";
 import Adminjournaladd from "./Routes/adminjournaladd";
 import Admingeneral from "./Routes/admingeneral";
@@ -56,11 +56,11 @@ import AdminCoaViewEdit from "./Routes/admincoaviewedit";
 import InventoryDashboard from "./Routes/inventorydashboard";
 import Inventory from "./Routes/inventory";
 import InventoryEdit from "./Routes/inventoryedit";
-import InventoryAdd from "./Routes/inventoryadd"; 
+import InventoryAdd from "./Routes/inventoryadd";
 import AdminDashboard from "./Routes/admindashboard";
 import AdminSubsidiary from "./Routes/adminsubsidiary";
 import AdminSubsidiaryadd from "./Routes/adminsubsidiaryadd";
-import  Adminsubsidiaryreceivable from "./Routes/adminsubsidiaryreceivable";
+import Adminsubsidiaryreceivable from "./Routes/adminsubsidiaryreceivable";
 import AdminSubsidiarypayable from "./Routes/adminsubsidiaryPayable";
 import Adminsubsidiarypayableadd from "./Routes/adminsubsidiaryaddpayable";
 import Adminsupplier from "./Routes/adminsupplier";
@@ -90,7 +90,8 @@ function App() {
             <Route path="/registergcash" element={<Registergcash />} />
             <Route path="/presubmit" element={<Presubmit />} />
 
-            {/* Appointment routes (protected) */}
+            {/* ------------------ Patient's Routes ------------------ */}
+            {/* APPOINTMENT ROUTES */}
             <Route
               path="/appointment"
               element={
@@ -116,7 +117,7 @@ function App() {
               }
             />
 
-            {/* Profile routes */}
+            {/* PROFILE ROUTES */}
             <Route
               path="/profilelogin"
               element={
@@ -142,7 +143,7 @@ function App() {
               }
             />
 
-            {/* Transaction routes */}
+            {/* TRANSACTION ROUTES */}
             <Route
               path="/transmed"
               element={
@@ -176,58 +177,432 @@ function App() {
               }
             />
 
-            {/* Admin routes */}
-            <Route path="/admincoa" element={<Admincoa />} />
-            <Route path="/admincoaadd" element={<Admincoaadd />} />
-            <Route path="/adminjournal" element={<Adminjournal />} />
-            <Route path="/adminjournaladd" element={<Adminjournaladd />} />
-            <Route path="/admingeneral" element={<Admingeneral />} />
-            <Route path="/admintrial" element={<Admintrial />} />
-            <Route path="/adminusers" element={<Adminusers />} />
-            <Route path="/adminusersadd" element={<Adminusersadd />} />
-            <Route path="/adminusersaddpatient" element={<Adminusersaddpatient />} />
-            <Route path="/adminusersedit/:id" element={<AdminUsersEdit />} />
-            <Route path="/admininventory" element={<Admininventory />} />
-            <Route path="/admininventoryadd" element={<Admininventoryadd />} />
-            <Route path="/admininventoryedit/:id" element={<Admininventoryedit />} />
-            <Route path="/adminaudit" element={<Adminaudit />} />
-            <Route path="/adminpatients" element={<Adminpatients />} />
-            <Route path="/adminpatientsview/:id" element={<Adminpatientsview />} />
-            <Route path="/adminpatientsedit/:id" element={<Adminpatientsedit />} />
-            <Route path="/adminconsultationview/:appointId" element={<Adminconsultationview />} />
-            <Route path="/adminconsultationadd" element={<Adminconsultationadd />} />
-            <Route path="/adminbillingedit/:appointId" element={<Adminbillingedit />} />
-            <Route path="/adminbillingedititem/:ci_id" element={<AdminBillingEditItem />} />  
-            <Route path="/notification" element={<Notification />} />
-            <Route path="/adminschedule" element={<Adminschedule />} />
-             <Route path="/admincoaedit/:id" element={<AdminCoaEdit />} />
-             <Route path="/adminschedulecancel/:appointId" element={<AdminScheduleCancel />} />
-             <Route path="/adminconsultationcomplete/:appointId" element={<Adminconsultationcomplete />} />
-             <Route path="/admininventorypending" element={<Admininventorypending />} />
-             <Route path="/admincoaview/:id" element={<AdminCoaView/>} />
-             <Route path="/admincoaviewadd/:id" element={<AdminCoaViewAdd/>} />
-             <Route path="/admincoaviewedit/:id" element={<AdminCoaViewEdit/>} />
-             <Route path="/admindashboard" element={<AdminDashboard />}/>
-            <Route path="/inventorydashboard" element={<InventoryDashboard />} />
-            <Route path="/inventory" element={<Inventory />} />
-            <Route path="/inventoryedit/:id" element={<InventoryEdit />} />
-            <Route path="/inventoryadd" element={<InventoryAdd />} />
-            <Route path="/adminsubsidiaryreceivable" element={<Adminsubsidiaryreceivable />}/>
-            <Route path="/adminsubsidiary" element={<AdminSubsidiary />}/>
-             <Route path="/adminsubsidiaryadd" element={<AdminSubsidiaryadd />}/>
-             <Route path="/adminsubsidiaryreceivable" element={<Adminsubsidiaryreceivable />}/>
-             <Route path="/adminsubsidiaryPayable" element={<AdminSubsidiarypayable />}/>
-             <Route path="/adminsubsidiaryaddpayable" element={<Adminsubsidiarypayableadd />}/>
-             <Route path="/adminsupplier" element={<Adminsupplier />}/>
-             <Route path="/adminsupplieradd" element={<AdminSupplierAdd />}/>
-             <Route path="/adminsupplieredit/:id" element={<AdminSupplierEdit />}/>
-             <Route path="/admininventoryview/:id" element={<AdminInventoryView />}/>
-             <Route path="/admincashier" element={<AdminCashier />}/>
-             <Route path="/adminconsultationpaid/:appointId" element={<AdminConsultationPaid />}/>
-             <Route path="/adminconsultationpartial/:appointId" element={<AdminConsultationPartial />}/>
-             <Route path="/adminconsultationpartialpay/:appointId" element={<AdminConsultationPartialPayment />}/>
-             <Route path="/admincashierpaid" element={<AdminCashierPaid />}/>
-             <Route path="/admincashierpartial" element={<AdminCashierPartial />}/>
+            {/* ------------------ Admin's Routes ------------------ */}
+            {/* LEDGER MANAGEMENT ROUTES */}
+            <Route
+              path="/admincoa"
+              element={
+                <ProtectedRoute>
+                  <Admincoa />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admincoaadd"
+              element={
+                <ProtectedRoute>
+                  <Admincoaadd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admincoaview/:id"
+              element={
+                <ProtectedRoute>
+                  <AdminCoaView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admincoaviewadd/:id"
+              element={
+                <ProtectedRoute>
+                  <AdminCoaViewAdd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admincoaviewedit/:id"
+              element={
+                <ProtectedRoute>
+                  <AdminCoaViewEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admincoaedit/:id"
+              element={
+                <ProtectedRoute>
+                  <AdminCoaEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminjournal"
+              element={
+                <ProtectedRoute>
+                  <Adminjournal />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminjournaladd"
+              element={
+                <ProtectedRoute>
+                  <Adminjournaladd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admingeneral"
+              element={
+                <ProtectedRoute>
+                  <Admingeneral />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminsubsidiaryreceivable"
+              element={
+                <ProtectedRoute>
+                  <Adminsubsidiaryreceivable />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminsubsidiary"
+              element={
+                <ProtectedRoute>
+                  <AdminSubsidiary />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminsubsidiaryadd"
+              element={
+                <ProtectedRoute>
+                  <AdminSubsidiaryadd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminsubsidiaryreceivable"
+              element={
+                <ProtectedRoute>
+                  <Adminsubsidiaryreceivable />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminsubsidiaryPayable"
+              element={
+                <ProtectedRoute>
+                  <AdminSubsidiarypayable />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminsubsidiaryaddpayable"
+              element={
+                <ProtectedRoute>
+                  <Adminsubsidiarypayableadd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admintrial"
+              element={
+                <ProtectedRoute>
+                  <Admintrial />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* USER MANAGEMENT ROUTES */}
+            <Route
+              path="/adminusers"
+              element={
+                <ProtectedRoute>
+                  <Adminusers />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminusersadd"
+              element={
+                <ProtectedRoute>
+                  <Adminusersadd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminusersedit/:id"
+              element={
+                <ProtectedRoute>
+                  <AdminUsersEdit />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* INVENTORY MANAGEMENT ROUTES */}
+            <Route
+              path="/admininventory"
+              element={
+                <ProtectedRoute>
+                  <Admininventory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admininventoryadd"
+              element={
+                <ProtectedRoute>
+                  <Admininventoryadd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admininventoryedit/:id"
+              element={
+                <ProtectedRoute>
+                  <Admininventoryedit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <ProtectedRoute>
+                  <Inventory />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventoryedit/:id"
+              element={
+                <ProtectedRoute>
+                  <InventoryEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventoryadd"
+              element={
+                <ProtectedRoute>
+                  <InventoryAdd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admininventorypending"
+              element={
+                <ProtectedRoute>
+                  <Admininventorypending />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminsupplier"
+              element={
+                <ProtectedRoute>
+                  <Adminsupplier />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminsupplieradd"
+              element={
+                <ProtectedRoute>
+                  <AdminSupplierAdd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminsupplieredit/:id"
+              element={
+                <ProtectedRoute>
+                  <AdminSupplierEdit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admininventoryview/:id"
+              element={
+                <ProtectedRoute>
+                  <AdminInventoryView />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* PATIENT RECORDS ROUTES */}
+            <Route
+              path="/adminpatients"
+              element={
+                <ProtectedRoute>
+                  <Adminpatients />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminpatientsview/:id"
+              element={
+                <ProtectedRoute>
+                  <Adminpatientsview />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminpatientsedit/:id"
+              element={
+                <ProtectedRoute>
+                  <Adminpatientsedit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminusersaddpatient"
+              element={
+                <ProtectedRoute>
+                  <Adminusersaddpatient />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* SCHEDULE MANAGEMENT ROUTES */}
+            <Route
+              path="/adminschedule"
+              element={
+                <ProtectedRoute>
+                  <Adminschedule />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminconsultationview/:appointId"
+              element={
+                <ProtectedRoute>
+                  <Adminconsultationview />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminconsultationadd"
+              element={
+                <ProtectedRoute>
+                  <Adminconsultationadd />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminbillingedit/:appointId"
+              element={
+                <ProtectedRoute>
+                  <Adminbillingedit />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminbillingedititem/:ci_id"
+              element={
+                <ProtectedRoute>
+                  <AdminBillingEditItem />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminschedulecancel/:appointId"
+              element={
+                <ProtectedRoute>
+                  <AdminScheduleCancel />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminconsultationcomplete/:appointId"
+              element={
+                <ProtectedRoute>
+                  <Adminconsultationcomplete />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* NOTIFICATION ROUTE */}
+            <Route
+              path="/notification"
+              element={
+                <ProtectedRoute>
+                  <Notification />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* CASHIER ROUTES */}
+            <Route
+              path="/admincashier"
+              element={
+                <ProtectedRoute>
+                  <AdminCashier />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminconsultationpaid/:appointId"
+              element={
+                <ProtectedRoute>
+                  <AdminConsultationPaid />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminconsultationpartial/:appointId"
+              element={
+                <ProtectedRoute>
+                  <AdminConsultationPartial />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminconsultationpartialpay/:appointId"
+              element={
+                <ProtectedRoute>
+                  <AdminConsultationPartialPayment />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admincashierpaid"
+              element={
+                <ProtectedRoute>
+                  <AdminCashierPaid />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admincashierpartial"
+              element={
+                <ProtectedRoute>
+                  <AdminCashierPartial />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* AUDIT TRAIL ROUTE */}
+            <Route
+              path="/adminaudit"
+              element={
+                <ProtectedRoute>
+                  <Adminaudit />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* DASHBOARD ROUTES */}
+            <Route
+              path="/admindashboard"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/inventorydashboard"
+              element={
+                <ProtectedRoute>
+                  <InventoryDashboard />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
         </AppointmentProvider>
       </RegisterProvider>

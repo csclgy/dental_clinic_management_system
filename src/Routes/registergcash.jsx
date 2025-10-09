@@ -43,13 +43,14 @@ const Registergcash = () => {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
       style={{
-      backgroundImage:
-        "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center"}}  
+        backgroundImage:
+          "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      }}
     >
       <div className="w-full max-w-md bg-white p-6 sm:p-10 rounded-lg shadow-lg text-center">
         <h2 className="text-[#00c3b8] text-2xl sm:text-3xl font-bold mb-2">SIGN UP</h2>
@@ -60,11 +61,10 @@ const Registergcash = () => {
         {/* Radio Buttons*/}
         <div className="flex justify-center gap-6 mb-4">
           <label
-            className={`px-6 py-2 rounded-full border font-semibold cursor-pointer transition ${
-              registerData.downpayment === "Yes"
+            className={`px-6 py-2 rounded-full border font-semibold cursor-pointer transition ${registerData.downpayment === "Yes"
                 ? "bg-[#00c3b8] text-white border-[#00c3b8]"
                 : "bg-white text-[#00458b] border-[#00458b]"
-            }`}
+              }`}
           >
             <input
               type="radio"
@@ -78,11 +78,10 @@ const Registergcash = () => {
           </label>
 
           <label
-            className={`px-6 py-2 rounded-full border font-semibold cursor-pointer transition ${
-              registerData.downpayment === "No"
+            className={`px-6 py-2 rounded-full border font-semibold cursor-pointer transition ${registerData.downpayment === "No"
                 ? "bg-[#00c3b8] text-white border-[#00c3b8]"
                 : "bg-white text-[#00458b] border-[#00458b]"
-            }`}
+              }`}
           >
             <input
               type="radio"
@@ -118,11 +117,10 @@ const Registergcash = () => {
         {/* Buttons */}
         <div className="flex flex-col gap-3 mt-6 w-full">
           <button
-            className={`px-6 py-2 rounded-full font-semibold w-full ${
-              canProceed
+            className={`px-6 py-2 rounded-full font-semibold w-full ${canProceed
                 ? "bg-[#00c3b8] text-white"
                 : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
+              }`}
             onClick={handleNext}
             disabled={!canProceed}
           >

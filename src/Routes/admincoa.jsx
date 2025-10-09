@@ -10,6 +10,8 @@ import {
   PlusCircle,
   Trash2,
   AlertTriangle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 const AdminCoa = () => {
@@ -20,6 +22,8 @@ const AdminCoa = () => {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const role = localStorage.getItem("role");
+  const [openDashboard, setOpenDashboard] = useState(false);
 
   // ✅ Popup state and fade animation (same as AdminCoaEdit)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -73,45 +77,56 @@ const AdminCoa = () => {
     );
   });
 
-   const handleDelete = async () => {
-    try {
-      await axios.delete(`http://localhost:3000/auth/coa/${confirmBox.accountId}`);
-      setAccounts(accounts.filter((a) => a.account_id !== confirmBox.accountId));
-      setConfirmBox({ show: false, accountId: null, accountName: "" });
-      showPopup("Account deleted successfully.", "success");
-    } catch (err) {
-      console.error("Error deleting account:", err);
-      showPopup("Failed to delete account.", "error");
+const handleDelete = async () => {
+  try {
+    const token = localStorage.getItem("token"); // or wherever you store your JWT
+    if (!token) {
+      showPopup("No token found. Please login again.", "error");
+      return;
     }
-  };
+
+    await axios.delete(`http://localhost:3000/auth/coa/${confirmBox.accountId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`, // <- include 'Bearer '
+      },
+    });
+
+    setAccounts(accounts.filter((a) => a.account_id !== confirmBox.accountId));
+    setConfirmBox({ show: false, accountId: null, accountName: "" });
+    showPopup("Account deleted successfully.", "success");
+  } catch (err) {
+    console.error("Error deleting account:", err);
+    showPopup("Failed to delete account.", "error");
+  }
+};
+
 
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
       {/* ✅ Popup Notification (same style as AdminCoaEdit) */}
       {popup.show && (
         <div
-          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
-            fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
-          } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
           style={{ zIndex: 9999 }}
         >
           {popup.message}
         </div>
       )}
 
-       {/* ✅ Delete Confirmation Modal */}
+      {/* ✅ Delete Confirmation Modal */}
       {confirmBox.show && (
         <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-[9998]">
           <div className="bg-white rounded-2xl shadow-lg w-[90%] max-w-md p-6 text-center relative animate-fadeIn">
             <AlertTriangle className="text-red-500 mx-auto mb-3" size={50} />
             <h2 className="text-lg font-bold text-gray-800 mb-2">
-              Are you sure you want to delete this account?
+              Are you sure you want to deactive this account?
             </h2>
             <p className="text-gray-600 mb-6">
               <span className="font-semibold text-[#00458B]">
                 {confirmBox.accountName}
               </span>{" "}
-              will be permanently removed.
+              will be inactive.
             </p>
             <div className="flex justify-center gap-4">
               <button
@@ -124,7 +139,7 @@ const AdminCoa = () => {
                 onClick={handleDelete}
                 className="px-5 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium flex items-center gap-2"
               >
-                <Trash2 size={16} /> Delete
+                Deactivate
               </button>
             </div>
           </div>
@@ -135,94 +150,140 @@ const AdminCoa = () => {
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
-          <Link
-            to="/admindashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <BarChart3 size={18} /> Dashboard
-          </Link>
-
-          {/* Ledger dropdown */}
+          {/* Dashboard Dropdown */}
           <button
-            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-            className="flex justify-between items-center p-2 bg-[white] text-[#00458B] rounded-lg"
+            onClick={() => setOpenDashboard(!openDashboard)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
-              <i className="fa fa-book"></i> Ledger
+              <BarChart3 size={18} /> Dashboard
             </span>
-            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
-          {isLedgerOpen && (
+
+          {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
               <Link
-                to="/admincoa"
-                className="bg-[white] text-[#00458B] flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Chart of Accounts
-              </Link>
-              <Link
-                to="/adminjournal"
+                to="/admindashboard"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
               >
-                Journal Entries
+                Admin Dashboard
               </Link>
               <Link
-                to="/adminsubsidiaryreceivable"
+                to="/inventorydashboard"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
               >
-                Subsidiary
-              </Link>
-              <Link
-                to="/admingeneral"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                General Ledger
-              </Link>
-              <Link
-                to="/admintrial"
-                className="flex items-center gap-2 p-2 hover:bg-[white] hover:text-[#00458B]"
-              >
-                Trial Balance
+                Inventory Dashboard
               </Link>
             </div>
           )}
 
-          <Link
-            to="/adminusers"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <Users size={18} /> Users
-          </Link>
-          <Link
-            to="/admininventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <i className="fa fa-archive"></i> Inventory
-          </Link>
-          <Link
-            to="/adminpatients"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <i className="fa fa-user-plus"></i> Patients
-          </Link>
-          <Link
-            to="/adminschedule"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <Calendar size={18} /> Schedules
-          </Link>
-          <Link
-            to="/admincashier"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <Calendar size={18} /> Cashier
-          </Link>
-          <Link
-            to="/adminaudit"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <i className="fa fa-eye"></i> Audit Trail
-          </Link>
+          {/* Ledger dropdown */}
+          {role === "admin" && (
+            <>
+              <button
+                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+              >
+                <span className="flex items-center gap-2">
+                  <i className="fa fa-book"></i> Ledger
+                </span>
+                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+              </button>
+
+              {isLedgerOpen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link
+                    to="/admincoa"
+                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                  >
+                    Chart of Accounts
+                  </Link>
+                  <Link
+                    to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Journal Entries
+                  </Link>
+                  <Link
+                    to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Subsidiary
+                  </Link>
+                  <Link
+                    to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    General Ledger
+                  </Link>
+                  <Link
+                    to="/admintrial"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Trial Balance
+                  </Link>
+                </div>
+              )}
+
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Users size={18} /> Users
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "inventory") && (
+            <>
+              <Link
+                to="/admininventory"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-archive"></i> Inventory
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "dentist" || role === "receptionist") && (
+            <>
+              <Link
+                to="/adminpatients"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-user-plus"></i> Patients
+              </Link>
+              <Link
+                to="/adminschedule"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Schedules
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "receptionist") && (
+            <>
+              <Link
+                to="/admincashier"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Cashier
+              </Link>
+            </>
+          )}
+
+          {role === "admin" && (
+            <>
+              <Link
+                to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-eye"></i> Audit Trail
+              </Link>
+            </>
+          )}
         </nav>
       </aside>
 
@@ -309,59 +370,83 @@ const AdminCoa = () => {
               </thead>
               <tbody>
                 {filteredAccounts.length > 0 ? (
-                  filteredAccounts.map((account) => (
-                    <tr
-                      key={account.account_id}
-                      className="border-b border-gray-200"
-                    >
-                      <td className="px-4 py-2 text-blue-700">
-                        {account.account_name}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {account.account_type}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {account.status}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        <Link to={`/admincoaview/${account.account_id}`}>
-                          <button className="bg-[#008CBA] text-white px-4 py-2 rounded-lg">
-                            View
-                          </button>
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2 text-center space-x-2">
-                        <Link to={`/admincoaedit/${account.account_id}`}>
-                          <button className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600">
-                            Edit
-                          </button>
-                        </Link>
+                  filteredAccounts.map((account) => {
+                    const isInactive = account.status?.toLowerCase() === "inactive";
+                    return (
+                      <tr
+                        key={account.account_id}
+                        className={`border-b border-gray-200 ${isInactive ? "bg-gray-100 text-gray-500" : ""
+                          }`}
+                      >
+                        <td className="px-4 py-2 text-blue-700">
+                          {account.account_name}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          {account.account_type}
+                        </td>
+                        <td
+                          className={`px-4 py-2 text-center font-semibold ${isInactive ? "text-red-500" : "text-green-600"
+                            }`}
+                        >
+                          {isInactive ? "Inactive" : "Active"}
+                        </td>
+
+                        <td className="px-4 py-2 text-center">
+                          {/* ✅ View button ALWAYS clickable */}
+                          <Link to={`/admincoaview/${account.account_id}`}>
+                            <button
+                              className={`px-4 py-2 rounded-lg text-white ${isInactive
+                                  ? "bg-[#008CBA] hover:bg-[#0077a6] opacity-80" // Slightly dimmer if inactive
+                                  : "bg-[#008CBA] hover:bg-[#0077a6]"
+                                }`}
+                            >
+                              View
+                            </button>
+                          </Link>
+                        </td>
+
+                        <td className="px-4 py-2 text-center space-x-2">
+                          {/* ✅ Edit button ALWAYS clickable */}
+                          <Link to={`/admincoaedit/${account.account_id}`}>
+                            <button className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600">
+                              Edit
+                            </button>
+                          </Link>
+
+                          {/* ❌ Deactivate button disabled if inactive */}
                           <button
+                            disabled={isInactive}
                             onClick={() => {
-                              setConfirmBox({
-                                show: true,
-                                accountId: account.account_id,
-                                accountName: account.account_name,
-                              });
+                              if (!isInactive) {
+                                setConfirmBox({
+                                  show: true,
+                                  accountId: account.account_id,
+                                  accountName: account.account_name,
+                                });
+                              }
                             }}
-                            className="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+                            className={`px-4 py-2 rounded-lg ${isInactive
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                : "bg-red-500 text-white hover:bg-red-600"
+                              }`}
                           >
-                            Delete
+                            {isInactive ? "Deactivate" : "Deactivate"}
                           </button>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+
+
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td
-                      colSpan="5"
-                      className="text-center text-gray-500 py-4"
-                    >
+                    <td colSpan="5" className="text-center text-gray-500 py-4">
                       No records found
                     </td>
                   </tr>
                 )}
               </tbody>
+
             </table>
           </div>
         )}

@@ -67,7 +67,7 @@ const ProfileLogin = () => {
     fetchUser();
   }, [navigate]);
 
-    const showPopup = (message, type) => {
+  const showPopup = (message, type) => {
     setPopup({ show: true, message, type });
     setFade(true);
 
@@ -124,12 +124,12 @@ const ProfileLogin = () => {
               </button>
             </Link>
             {user.role === "patient" && (
-                <Link to="/profileinfo">
-                  <button className="w-full text-left px-4 py-2 rounded-lg font-medium text-[#00458B] hover:bg-blue-100">
-                    <i className="fa fa-info-circle mr-2" /> User Information
-                  </button>
-                </Link>
-              )}
+              <Link to="/profileinfo">
+                <button className="w-full text-left px-4 py-2 rounded-lg font-medium text-[#00458B] hover:bg-blue-100">
+                  <i className="fa fa-info-circle mr-2" /> User Information
+                </button>
+              </Link>
+            )}
             <Link to="/profilechange">
               <button className="w-full text-left px-4 py-2 rounded-lg font-medium text-[#00458B] hover:bg-blue-100">
                 <i className="fa fa-lock mr-2" /> Change Password
@@ -141,11 +141,10 @@ const ProfileLogin = () => {
         {/* ✅ Popup Notification */}
         {popup.show && (
           <div
-            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
-              fade
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade
                 ? "opacity-100 translate-y-0"
                 : "opacity-0 -translate-y-3"
-            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+              } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
             style={{ zIndex: 9999 }}
           >
             {popup.message}
@@ -161,7 +160,7 @@ const ProfileLogin = () => {
           </div>
 
           {/* Form */}
-          <div className="p-6 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
+          <div className="p-6 rounded-lg shadow-lg" style={{ border: "solid", borderColor: "#01D5C4" }}>
             <div className="space-y-4">
               {user.role !== "patient" && (
                 <div>

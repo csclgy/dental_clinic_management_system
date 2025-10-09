@@ -6,6 +6,8 @@ import {
   Users,
   Calendar,
   X,
+  ChevronDown, 
+  ChevronUp,
 } from "lucide-react";
 
 const Adminconsultationview = () => {
@@ -27,6 +29,9 @@ const Adminconsultationview = () => {
   const [dentists, setDentists] = useState([]);
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const [cancelInfo, setCancelInfo] = useState(null);
+
+  const role = localStorage.getItem("role");
+  const [openDashboard, setOpenDashboard] = useState(false);
 
   useEffect(() => {
     const fetchConsultation = async () => {
@@ -97,7 +102,7 @@ const Adminconsultationview = () => {
 
     const totalAmount = consultation.total_service_charged + chargedItems.reduce((sum, i) => sum + i.ci_amount, 0);
 
-  printWindow.document.write(`
+    printWindow.document.write(`
         <!DOCTYPE html>
         <html>
         <head>
@@ -223,7 +228,7 @@ const Adminconsultationview = () => {
 
           <div class="patient-info">
             <div class="patient-name">${consultation.p_fname} ${consultation.p_mname} ${consultation.p_lname}</div>
-            <div class="patient-details">${consultation.p_gender} | ${consultation.p_age} years old | Born: ${new Date(consultation.p_date_birth).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</div>
+            <div class="patient-details">${consultation.p_gender} | ${consultation.p_age} years old | Born: ${new Date(consultation.p_date_birth).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
           </div>
 
           <div class="two-column">
@@ -258,7 +263,7 @@ const Adminconsultationview = () => {
                 <div class="section-title">Consultation Details</div>
                 <div class="info-row">
                   <span class="info-label">Date of Visit:</span>
-                  <span class="info-value">${new Date(consultation.pref_date).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</span>
+                  <span class="info-value">${new Date(consultation.pref_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Attending Dentist:</span>
@@ -274,7 +279,7 @@ const Adminconsultationview = () => {
                 </div>
                 <div class="info-row">
                   <span class="info-label">Follow-Up:</span>
-                  <span class="info-value">${new Date(consultation.pref_date).toLocaleDateString('en-US', {year: 'numeric', month: 'long', day: 'numeric'})}</span>
+                  <span class="info-value">${new Date(consultation.pref_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                 </div>
                 <div class="info-row">
                   <span class="info-label">Completed:</span>
@@ -287,11 +292,25 @@ const Adminconsultationview = () => {
           <div class="section">
             <div class="section-title">Billing Information</div>
             <div class="billing-section">
+              <div class="info-row">
+                <span class="info-label">OR Number:</span>
+                <span class="info-value">${consultation.or_num || "N/A"}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Payment Method:</span>
+                <span class="info-value">${consultation.payment_method || "N/A"}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Payment Status:</span>
+                <span class="info-value">${consultation.payment_status || "N/A"}</span>
+              </div>
+              <hr style="margin: 15px 0;" />
+
               <div class="billing-item">
                 <span><strong>Service:</strong> ${consultation.procedure_type}</span>
                 <span>₱${consultation.total_service_charged.toFixed(2)}</span>
               </div>
-              
+
               ${chargedItems.length > 0 ? `
                 <hr>
                 <div style="margin: 15px 0;"><strong>Additional Items:</strong></div>
@@ -335,13 +354,13 @@ const Adminconsultationview = () => {
         </html>
       `);
 
-      printWindow.document.close();
-      printWindow.focus();
+    printWindow.document.close();
+    printWindow.focus();
 
-      setTimeout(() => {
-        printWindow.print();
-      }, 250);
-    };
+    setTimeout(() => {
+      printWindow.print();
+    }, 250);
+  };
 
   if (error) return <p className="text-red-500">{error}</p>;
   if (!consultation) return <p>Loading consultation...</p>;
@@ -352,416 +371,439 @@ const Adminconsultationview = () => {
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
-          <Link
-            to="/admindashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <BarChart3 size={18} /> Dashboard
-          </Link>
-
-          {/* Ledger dropdown */}
+          {/* Dashboard Dropdown */}
           <button
-            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-            className="flex justify-between items-center p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+            onClick={() => setOpenDashboard(!openDashboard)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
-              <i className="fa fa-book"></i> Ledger
+              <BarChart3 size={18} /> Dashboard
             </span>
-            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
-          {isLedgerOpen && (
+
+          {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Chart of Accounts
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
               </Link>
-              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Journal Entries
-              </Link>
-              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Subsidiary
-              </Link>
-              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                General Ledger
-              </Link>
-              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Trial Balance
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
               </Link>
             </div>
           )}
 
-          <Link
-            to="/adminusers"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <Users size={18} /> Users
-          </Link>
-          <Link
-            to="/admininventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <i className="fa fa-archive"></i> Inventory
-          </Link>
-          <Link
-            to="/adminpatients"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <i className="fa fa-user-plus"></i> Patients
-          </Link>
-          <Link
-            to="/adminschedule"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <Calendar size={18} /> Schedules
-          </Link>
-          <Link
-            to="/admincashier"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <Calendar size={18} /> Cashier
-          </Link>
-          <Link
-            to="/adminaudit"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-          >
-            <i className="fa fa-eye"></i> Audit Trail
-          </Link>
-        </nav>
-      </aside>
-
-      {/* Sidebar (mobile) */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
-          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="self-end mb-6"
-            >
-              <X size={24} />
-            </button>
-            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
-            <nav className="flex flex-col gap-2">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+          {/* Ledger dropdown */}
+          {role === "admin" && (
+            <>
+              <button
+                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <BarChart3 size={18} /> Dashboard
-              </Link>
+                <span className="flex items-center gap-2">
+                  <i className="fa fa-book"></i> Ledger
+                </span>
+                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+              </button>
+
+              {isLedgerOpen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link
+                    to="/admincoa"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Chart of Accounts
+                  </Link>
+                  <Link
+                    to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Journal Entries
+                  </Link>
+                  <Link
+                    to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Subsidiary
+                  </Link>
+                  <Link
+                    to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    General Ledger
+                  </Link>
+                  <Link
+                    to="/admintrial"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Trial Balance
+                  </Link>
+                </div>
+              )}
+
               <Link
                 to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <Users size={18} /> Users
               </Link>
-              {/* add the rest of the links like desktop here */}
-            </nav>
-          </aside>
-        </div>
-      )}
+            </>
+          )}
+
+          {(role === "admin" || role === "inventory") && (
+            <>
+              <Link
+                to="/admininventory"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-archive"></i> Inventory
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "dentist" || role === "receptionist") && (
+            <>
+              <Link
+                to="/adminpatients"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-user-plus"></i> Patients
+              </Link>
+              <Link
+                to="/adminschedule"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Schedules
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "receptionist") && (
+            <>
+              <Link
+                to="/admincashier"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Cashier
+              </Link>
+            </>
+          )}
+
+          {role === "admin" && (
+            <>
+              <Link
+                to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-eye"></i> Audit Trail
+              </Link>
+            </>
+          )}
+        </nav>
+      </aside>
+
       <div className="flex-1 flex flex-col">
-                <main className="p-6 overflow-y-auto space-y-6">
-                  <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{border:"solid", borderColor:"#01D5C4"}}>
-                                <div className="col-sm-12">
-                                    <div className="row">
-                                        <div className="col-sm-9">
-                                            <h1 className="text-2xl font-bold" style={{color:"#00458B"}}>Patients Information</h1>
-                                        </div>
-                                    </div>
-                                </div>
-                                <br></br>
-                                <hr></hr>
-
-                                <div className="col-sm-12">
-                                        <br />
-                                    <p className="font-bold text-xl" style={{color:"#00c3b8"}}>{consultation.p_fname} {consultation.p_mname} {consultation.p_lname}</p>
-                                    <p style={{color:"#00458B"}}>{consultation.p_gender} | {consultation.p_age} | {consultation.p_date_birth}</p>
-                                        <br />
-                                        <br />
-                                        <br />
-                                <div className="row">
-                                    <div className="col-sm-6" style={{color:"#00458B"}}>
-                                        <p className="font-bold text-2xl">Address and Contact Information</p>
-                                        <hr></hr>
-                                        <br />
-                                        <p className="font-bold">Address:</p><p>{consultation.p_home_address}, {consultation.p_city}</p>
-                                        <br />
-                                        <p className="font-bold">Email Address:</p><p>{consultation.p_email}</p>
-                                        <br />
-                                        <p className="font-bold">Contact Number:</p><p>{consultation.p_contact_no}</p>
-                                    </div>
-
-                                    <div className="col-sm-6" style={{color:"#00458B"}}>
-                                        <p className="font-bold text-2xl">Health Information & Medical History</p>
-                                        <hr></hr>
-                                        <br />
-                                        <p className="font-bold">Blood Type:</p><p>{consultation.p_blood_type}</p>
-                                    </div>
-                                </div>
-                                </div>
-
-                               <br />
-                                    <br />
-                                    <p className="font-bold text-2xl" style={{color:"#00458B"}}>Consultation Details</p>
-                                    <hr></hr>
-                                    <br />
-                                    <div className="row">
-                                        <div className="col-sm-6" style={{color:"#00458B"}}>
-                                            <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date} | {consultation.pref_time}</p>
-                                            <br />
-                                            <p className="font-bold">Attending Dentist:</p><p>{consultation.attending_dentist}</p>
-                                            <br />
-                                            <p className="font-bold">Diagnosis:</p>{consultation.p_diagnosis}<p></p>
-                                            <br />
-                                            <p className="font-bold">Services:</p><p>{consultation.procedure_type}</p>
-                                            <br />
-                                            <p className="font-bold">Follow-Up:</p><p>{consultation.pref_date}</p>
-                                            <br />
-                                            <p className="font-bold">Consultation Completed:</p><p>{consultation.p_date_completed  || "N/A"}</p>
-                                            <br />
-                                            <div className="mt-2">
-                                              <p className="font-bold">Image Uploaded:</p>
-                                              {photos.length > 0 ? (
-                                                photos.map((photo, idx) => (
-                                                  <button
-                                                    key={idx}
-                                                    className="px-4 py-2 mt-1 mr-2 rounded-md bg-[#01D5C4] text-white font-semibold hover:bg-[#00b0a6]"
-                                                    onClick={() => window.open(`http://localhost:3000/uploads/appointments/${photo.up_url}`, "_blank")
-                                            }
-                                                  >
-                                                    View Image {idx + 1}
-                                                  </button>
-                                                ))
-                                              ) : (
-                                                <p className="text-gray-500">No image uploaded</p>
-                                              )}
-                                            </div>
-                                            <br></br>
-                                            <br></br>
-                                            <div className="col-sm-12">
-                                            {/* Hide Teeth Anatomy & Selected Teeth if appointment is cancelled */}
-                                            {consultation.appointment_status !== "cancelled" && (
-                                              <>
-                                                <div className="col-sm-12">
-                                                  <div className="col-sm-12">
-                                                    <p className="text-1xl font-bold" style={{ color: "#00458B" }}>
-                                                      Teeth Anatomy:
-                                                    </p>
-                                                    <img src="../teethmodel.png" style={{ width: "100%" }} alt="Teeth Model" />
-                                                  </div>
-                                                </div>
-
-                                                <div className="mt-6">
-                                                  <p className="font-bold text-1xl" style={{ color: "#00458B" }}>
-                                                    Selected Teeth:
-                                                  </p>
-                                                  <hr />
-                                                  <div
-                                                    className="mt-4 border rounded-lg shadow-inner p-3"
-                                                    style={{
-                                                      maxHeight: "300px",   // 🔹 scroll height
-                                                      overflowY: "auto",    // 🔹 vertical scroll
-                                                    }}
-                                                  >
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                      {selectedTeeth.length > 0 ? (
-                                                        selectedTeeth.map((tooth, idx) => (
-                                                          <div
-                                                            key={idx}
-                                                            className="flex items-center p-3 border rounded-lg shadow-sm"
-                                                            style={{ borderColor: "#01D5C4" }}
-                                                          >
-                                                            <div>
-                                                              <p className="font-semibold text-[#00458B]">
-                                                                Tooth {tooth.st_number}
-                                                              </p>
-                                                              <p className="text-sm text-gray-600">{tooth.st_name}</p>
-                                                            </div>
-                                                          </div>
-                                                        ))
-                                                      ) : (
-                                                        <p className="text-gray-500">No teeth selected</p>
-                                                      )}
-                                                    </div>
-                                                  </div>
-                                                </div>
-                                              </>
-                                            )}
-                                            </div>
-                                        </div>
-                                        <div className="col-sm-6" style={{color:"#00458B"}}>
-                                        <p className="font-bold text-xl">Billing Information</p>
-                                        <br />
-
-                                        {consultation.appointment_status !== "incomplete" && consultation.appointment_status !== "done"  && consultation.appointment_status !== "cancelled" ? (
-                                          <button
-                                            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
-                                            onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
-                                          >
-                                            Edit Billing
-                                          </button>
-                                        ) : (
-                                        <div
-                                          className="p-4 rounded-lg shadow-md"
-                                          style={{
-                                            border: "solid",
-                                            borderColor: "#01D5C4",
-                                            maxHeight: "350px",   // 🔹 fixed height
-                                            overflowY: "auto",    // 🔹 enables vertical scrolling
-                                          }}
-                                        >
-                                        <div className="col-sm-12 mb-2">
-                                          <p className="font-bold text-xl mb-2">Payment Details</p>
-                                          <div className="row">
-                                            <div className="col-sm-6">
-                                              <p className="font-bold">OR Number:</p>
-                                              <p>{consultation.or_num || "N/A"}</p>
-                                              <br />
-                                            </div>
-                                            <div className="col-sm-6">
-                                              <p className="font-bold">Payment Status:</p>
-                                              <p>{consultation.payment_status || "N/A"}</p>
-                                            </div>
-                                            <div className="col-sm-6">
-                                              <p className="font-bold">Payment Method:</p>
-                                              <p>{consultation.payment_method || "N/A"}</p>
-                                              <br />
-                                            </div>
-                                            <div className="col-sm-6">
-                                              <p className="font-bold">HMO No.:</p>
-                                              <p>{consultation.hmo_number || "N/A"}</p>
-                                            </div>
-                                            <div className="col-sm-6">
-                                              <p className="font-bold">Charged Date:</p>
-                                              <p>{consultation.billing_date || "N/A"}</p>
-                                            </div>
-                                            <div className="col-sm-6">
-                                              <p className="font-bold">PWD No.:</p>
-                                              <p>{consultation.pwd_number || "N/A"}</p>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                          <hr className="mb-2"></hr>
-                                          <p className="font-bold mb-2">Charged Service:</p>
-                                          <p>
-                                            {consultation.procedure_type} - ₱{consultation.total_service_charged.toFixed(2)}
-                                          </p>
-                                          <hr className="my-2" />
-                                          <p className="font-bold mb-2">Charged Items:</p>
-                                          {chargedItems.length > 0 ? (
-                                            chargedItems.map((item, idx) => (
-                                              <p key={idx}>
-                                                {item.ci_item_name} (x{item.ci_quantity}) - ₱{item.ci_amount.toFixed(2)}
-                                              </p>
-                                            ))
-                                          ) : (
-                                            <p>No additional items</p>
-                                          )}
-                                          <hr className="my-2" />
-                                          <p className="font-bold text-lg">
-                                            Total: ₱{(
-                                              consultation.total_service_charged +
-                                              chargedItems.reduce((sum, i) => sum + i.ci_amount, 0)
-                                            ).toFixed(2)}
-                                          </p>
-                                        </div>
-                                      )}
-                                      {/* Downpayment Proof Preview Button */}
-                                      {consultation.downpayment_proof && (
-                                        <div className="mt-4">
-                                          <p className="font-bold text-xl" style={{ color: "#00458B" }}>
-                                            Downpayment Proof
-                                          </p>
-                                          <hr className="my-2" />
-                                          <button
-                                            onClick={() =>
-                                              window.open(
-                                                `http://localhost:3000/uploads/appointments/${consultation.downpayment_proof}`,
-                                                "_blank"
-                                              )
-                                            }
-                                            className="bg-[#00c3b8] text-white px-4 py-2 rounded-lg shadow-md hover:bg-teal-600 transition"
-                                          >
-                                            Preview Proof
-                                          </button>
-                                        </div>
-                                      )}
-                                        <br></br>
-                                        {/* Cancelled Appointment Details (only show if cancelled) */}
-                                        {consultation.appointment_status === "cancelled" && cancelInfo && (
-                                          <>
-                                            <br />
-                                            <p className="font-bold text-xl" style={{ color: "#00458B" }}>
-                                              Cancelled Appointment Details:
-                                            </p>
-                                            <hr />
-                                            <br />
-                                            <p className="font-bold">Reason of Cancellation:</p>
-                                            <p>{cancelInfo.cc_reason || "N/A"}</p>
-
-                                            <p className="font-bold">Notes:</p>
-                                            <p>{cancelInfo.cc_notes || "N/A"}</p>
-
-                                            <p className="font-bold">Date Cancelled:</p>
-                                            <p>{cancelInfo.cc_date ? new Date(cancelInfo.cc_date).toLocaleDateString() : "N/A"}</p>
-
-                                            <p className="font-bold">Refund Method:</p>
-                                            <p>{cancelInfo.refund_method || "N/A"}</p>
-
-                                            <p className="font-bold">Refund Photo:</p>
-                                            {cancelInfo.refund_photo ? (
-                                              <button
-                                                onClick={() =>
-                                                  window.open(
-                                                    `http://localhost:3000/uploads/appointments/${cancelInfo.refund_photo}`,
-                                                    "_blank"
-                                                  )
-                                                }
-                                                className="bg-[#00458B] text-white px-4 py-2 rounded-full font-semibold hover:bg-[#009a90]"
-                                              >
-                                                Preview Refund Photo
-                                              </button>
-                                            ) : (
-                                              <p>No refund proof uploaded</p>
-                                            )}
-                                            <br />
-                                          </>
-                                        )}
-                                        <br></br>
-                                      </div>
-                                    </div>
-                            <br></br>
-                            <br></br>
-                            <div className="col-sm-12">
-                                <div className="row">
-                                    <div className="col-sm-9">
-                                    </div>
-                                        <div className="col-sm-3">
-                                            <div className="row">
-                                              <div className="col-sm-12">
-                                                <button
-                                                  disabled={consultation.appointment_status !== "done"}
-                                                  className={`px-6 py-2 rounded-lg font-semibold w-full mb-4 border ${
-                                                    consultation.appointment_status === "done"
-                                                      ? "bg-white text-[#00c3b8] border-[#00458b] hover:bg-gray-100 cursor-pointer"
-                                                      : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
-                                                  }`}
-                                                  onClick={() => {
-                                                    if (consultation.appointment_status === "done") {
-                                                      handlePrintReport();
-                                                    }
-                                                  }}
-                                                >
-                                                  Print
-                                                </button>
-                                              </div>
-                                            </div>
-                                        </div>
-                                </div>
-                                </div>
-                                </div>
-                                    </main>
-                            </div>
+        <main className="p-6 overflow-y-auto space-y-6">
+          <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{ border: "solid", borderColor: "#01D5C4" }}>
+            <div className="col-sm-12">
+              <div className="row">
+                <div className="col-sm-9">
+                  <h1 className="text-2xl font-bold" style={{ color: "#00458B" }}>Patients Information</h1>
+                </div>
+              </div>
             </div>
+            <br></br>
+            <hr></hr>
+
+            <div className="col-sm-12">
+              <br />
+              <p className="font-bold text-xl" style={{ color: "#00c3b8" }}>{consultation.p_fname} {consultation.p_mname} {consultation.p_lname}</p>
+              <p style={{ color: "#00458B" }}>{consultation.p_gender} | {consultation.p_age} | {consultation.p_date_birth}</p>
+              <br />
+              <br />
+              <br />
+              <div className="row">
+                <div className="col-sm-6" style={{ color: "#00458B" }}>
+                  <p className="font-bold text-2xl">Address and Contact Information</p>
+                  <hr></hr>
+                  <br />
+                  <p className="font-bold">Address:</p><p>{consultation.p_home_address}, {consultation.p_city}</p>
+                  <br />
+                  <p className="font-bold">Email Address:</p><p>{consultation.p_email}</p>
+                  <br />
+                  <p className="font-bold">Contact Number:</p><p>{consultation.p_contact_no}</p>
+                </div>
+
+                <div className="col-sm-6" style={{ color: "#00458B" }}>
+                  <p className="font-bold text-2xl">Health Information & Medical History</p>
+                  <hr></hr>
+                  <br />
+                  <p className="font-bold">Blood Type:</p><p>{consultation.p_blood_type}</p>
+                </div>
+              </div>
+            </div>
+
+            <br />
+            <br />
+            <p className="font-bold text-2xl" style={{ color: "#00458B" }}>Consultation Details</p>
+            <hr></hr>
+            <br />
+            <div className="row">
+              <div className="col-sm-6" style={{ color: "#00458B" }}>
+                <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date} | {consultation.pref_time}</p>
+                <br />
+                <p className="font-bold">Attending Dentist:</p><p>{consultation.attending_dentist}</p>
+                <br />
+                <p className="font-bold">Diagnosis:</p>{consultation.p_diagnosis}<p></p>
+                <br />
+                <p className="font-bold">Services:</p><p>{consultation.procedure_type}</p>
+                <br />
+                <p className="font-bold">Follow-Up:</p><p>{consultation.pref_date}</p>
+                <br />
+                <p className="font-bold">Consultation Completed:</p><p>{consultation.p_date_completed || "N/A"}</p>
+                <br />
+                <div className="mt-2">
+                  <p className="font-bold">Image Uploaded:</p>
+                  {photos.length > 0 ? (
+                    photos.map((photo, idx) => (
+                      <button
+                        key={idx}
+                        className="px-4 py-2 mt-1 mr-2 rounded-md bg-[#01D5C4] text-white font-semibold hover:bg-[#00b0a6]"
+                        onClick={() => window.open(`http://localhost:3000/uploads/appointments/${photo.up_url}`, "_blank")
+                        }
+                      >
+                        View Image {idx + 1}
+                      </button>
+                    ))
+                  ) : (
+                    <p className="text-gray-500">No image uploaded</p>
+                  )}
+                </div>
+                <br></br>
+                <br></br>
+                <div className="col-sm-12">
+                  {/* Hide Teeth Anatomy & Selected Teeth if appointment is cancelled */}
+                  {consultation.appointment_status !== "cancelled" && (
+                    <>
+                      <div className="col-sm-12">
+                        <div className="col-sm-12">
+                          <p className="text-1xl font-bold" style={{ color: "#00458B" }}>
+                            Teeth Anatomy:
+                          </p>
+                          <img src="../teethmodel.png" style={{ width: "100%" }} alt="Teeth Model" />
+                        </div>
+                      </div>
+
+                      <div className="mt-6">
+                        <p className="font-bold text-1xl" style={{ color: "#00458B" }}>
+                          Selected Teeth:
+                        </p>
+                        <hr />
+                        <div
+                          className="mt-4 border rounded-lg shadow-inner p-3"
+                          style={{
+                            maxHeight: "300px",   // 🔹 scroll height
+                            overflowY: "auto",    // 🔹 vertical scroll
+                          }}
+                        >
+                          <div className="grid grid-cols-2 gap-4">
+                            {selectedTeeth.length > 0 ? (
+                              selectedTeeth.map((tooth, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center p-3 border rounded-lg shadow-sm"
+                                  style={{ borderColor: "#01D5C4" }}
+                                >
+                                  <div>
+                                    <p className="font-semibold text-[#00458B]">
+                                      Tooth {tooth.st_number}
+                                    </p>
+                                    <p className="text-sm text-gray-600">{tooth.st_name}</p>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <p className="text-gray-500">No teeth selected</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="col-sm-6" style={{ color: "#00458B" }}>
+                <p className="font-bold text-xl">Billing Information</p>
+                <br />
+
+                {consultation.appointment_status !== "incomplete" && consultation.appointment_status !== "done" && consultation.appointment_status !== "cancelled" ? (
+                  <button
+                    className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
+                    onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
+                  >
+                    Edit Billing
+                  </button>
+                ) : (
+                  <div
+                    className="p-4 rounded-lg shadow-md"
+                    style={{
+                      border: "solid",
+                      borderColor: "#01D5C4",
+                      maxHeight: "350px",   // 🔹 fixed height
+                      overflowY: "auto",    // 🔹 enables vertical scrolling
+                    }}
+                  >
+                    <div className="col-sm-12 mb-2">
+                      <p className="font-bold text-xl mb-2">Payment Details</p>
+                      <div className="row">
+                        <div className="col-sm-6">
+                          <p className="font-bold">OR Number:</p>
+                          <p>{consultation.or_num || "N/A"}</p>
+                          <br />
+                        </div>
+                        <div className="col-sm-6">
+                          <p className="font-bold">Payment Status:</p>
+                          <p>{consultation.payment_status || "N/A"}</p>
+                        </div>
+                        <div className="col-sm-6">
+                          <p className="font-bold">Payment Method:</p>
+                          <p>{consultation.payment_method || "N/A"}</p>
+                          <br />
+                        </div>
+                        <div className="col-sm-6">
+                          <p className="font-bold">Charged Date:</p>
+                          <p>{consultation.billing_date || "N/A"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <hr className="mb-2"></hr>
+                    <p className="font-bold mb-2">Charged Service:</p>
+                    <p>
+                      {consultation.procedure_type} - ₱{consultation.total_service_charged.toFixed(2)}
+                    </p>
+                    <hr className="my-2" />
+                    <p className="font-bold mb-2">Charged Items:</p>
+                    {chargedItems.length > 0 ? (
+                      chargedItems.map((item, idx) => (
+                        <p key={idx}>
+                          {item.ci_item_name} (x{item.ci_quantity}) - ₱{item.ci_amount.toFixed(2)}
+                        </p>
+                      ))
+                    ) : (
+                      <p>No additional items</p>
+                    )}
+                    <hr className="my-2" />
+                    <p className="font-bold text-lg">
+                      Total: ₱{(
+                        consultation.total_service_charged +
+                        chargedItems.reduce((sum, i) => sum + i.ci_amount, 0)
+                      ).toFixed(2)}
+                    </p>
+                  </div>
+                )}
+                {/* Downpayment Proof Preview Button */}
+                {consultation.downpayment_proof && (
+                  <div className="mt-4">
+                    <p className="font-bold text-xl" style={{ color: "#00458B" }}>
+                      Downpayment Proof
+                    </p>
+                    <hr className="my-2" />
+                    <button
+                      onClick={() =>
+                        window.open(
+                          `http://localhost:3000/uploads/appointments/${consultation.downpayment_proof}`,
+                          "_blank"
+                        )
+                      }
+                      className="bg-[#00c3b8] text-white px-4 py-2 rounded-lg shadow-md hover:bg-teal-600 transition"
+                    >
+                      Preview Proof
+                    </button>
+                  </div>
+                )}
+                <br></br>
+                {/* Cancelled Appointment Details (only show if cancelled) */}
+                {consultation.appointment_status === "cancelled" && cancelInfo && (
+                  <>
+                    <br />
+                    <p className="font-bold text-xl" style={{ color: "#00458B" }}>
+                      Cancelled Appointment Details:
+                    </p>
+                    <hr />
+                    <br />
+                    <p className="font-bold">Reason of Cancellation:</p>
+                    <p>{cancelInfo.cc_reason || "N/A"}</p>
+
+                    <p className="font-bold">Notes:</p>
+                    <p>{cancelInfo.cc_notes || "N/A"}</p>
+
+                    <p className="font-bold">Date Cancelled:</p>
+                    <p>{cancelInfo.cc_date ? new Date(cancelInfo.cc_date).toLocaleDateString() : "N/A"}</p>
+
+                    <p className="font-bold">Refund Method:</p>
+                    <p>{cancelInfo.refund_method || "N/A"}</p>
+
+                    <p className="font-bold">Refund Photo:</p>
+                    {cancelInfo.refund_photo ? (
+                      <button
+                        onClick={() =>
+                          window.open(
+                            `http://localhost:3000/uploads/appointments/${cancelInfo.refund_photo}`,
+                            "_blank"
+                          )
+                        }
+                        className="bg-[#00458B] text-white px-4 py-2 rounded-full font-semibold hover:bg-[#009a90]"
+                      >
+                        Preview Refund Photo
+                      </button>
+                    ) : (
+                      <p>No refund proof uploaded</p>
+                    )}
+                    <br />
+                  </>
+                )}
+                <br></br>
+              </div>
+            </div>
+            <br></br>
+            <br></br>
+            <div className="col-sm-12">
+              <div className="row">
+                <div className="col-sm-9">
+                </div>
+                <div className="col-sm-3">
+                  <div className="row">
+                    <div className="col-sm-12">
+                      <button
+                        disabled={consultation.appointment_status !== "done"}
+                        className={`px-6 py-2 rounded-lg font-semibold w-full mb-4 border ${consultation.appointment_status === "done"
+                          ? "bg-white text-[#00c3b8] border-[#00458b] hover:bg-gray-100 cursor-pointer"
+                          : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
+                          }`}
+                        onClick={() => {
+                          if (consultation.appointment_status === "done") {
+                            handlePrintReport();
+                          }
+                        }}
+                      >
+                        Print
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
   );
 };
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const TransAppointment = () => {
-   const location = useLocation();
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [records, setRecords] = useState([]);
@@ -12,24 +12,24 @@ const TransAppointment = () => {
   // Fetch appointments from API
   // Fetch records from API
   useEffect(() => {
-  const fetchRecords = async () => {
-    try {
-      const token = localStorage.getItem("token"); // or however you store it
-      const res = await axios.get("http://localhost:3000/auth/myappointmenthistory", {
-        headers: {
-          Authorization: `Bearer ${token}`, // 👈 send token
-        },
-        withCredentials: true,
-      });
-      setRecords(res.data);
-    } catch (error) {
-      console.error("Error fetching records:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchRecords();
-}, []);
+    const fetchRecords = async () => {
+      try {
+        const token = localStorage.getItem("token"); // or however you store it
+        const res = await axios.get("http://localhost:3000/auth/myappointmenthistory", {
+          headers: {
+            Authorization: `Bearer ${token}`, // 👈 send token
+          },
+          withCredentials: true,
+        });
+        setRecords(res.data);
+      } catch (error) {
+        console.error("Error fetching records:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecords();
+  }, []);
 
   // Scroll to section if state.scrollTo is passed
   useEffect(() => {
@@ -43,14 +43,14 @@ const TransAppointment = () => {
     }
   }, [location]);
 
-   // Print Report function
-    const handlePrintReport = () => {
-      const printWindow = window.open('', '_blank');
-      const currentDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+  // Print Report function
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
 
     printWindow.document.write(`
           <!DOCTYPE html>
@@ -140,10 +140,10 @@ const TransAppointment = () => {
                   <!-fix after->
                     <td>
                       ${new Date(record.pref_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })}
                     </td>     
                     <td>${record.pref_time}</td>
                     <td>${record.procedure_type}</td>
@@ -175,25 +175,25 @@ const TransAppointment = () => {
           </html>
         `);
 
-        printWindow.document.close();
-        printWindow.focus();
+    printWindow.document.close();
+    printWindow.focus();
 
-        setTimeout(() => {
-          printWindow.print();
+    setTimeout(() => {
+      printWindow.print();
 
-          setTimeout(() => {
-            if (!printWindow.closed) {
-              printWindow.addEventListener('focus', () => {
-                setTimeout(() => {
-                  if (!printWindow.closed) {
-                    printWindow.close();
-                  }
-                }, 1000);
-              });
-            }
-          }, 500);
-        }, 250);
-    };
+      setTimeout(() => {
+        if (!printWindow.closed) {
+          printWindow.addEventListener('focus', () => {
+            setTimeout(() => {
+              if (!printWindow.closed) {
+                printWindow.close();
+              }
+            }, 1000);
+          });
+        }
+      }, 500);
+    }, 250);
+  };
 
   // Filter records by search and status
   const filteredRecords = records.filter(record => {
@@ -249,17 +249,17 @@ const TransAppointment = () => {
             {/* Search Bar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div className="my-4">
-              <label className="mr-2 font-semibold">Filter by Status:</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 border rounded-md bg-white text-gray-700"
-              >
-                <option value="all">All</option>
-                <option value="done">Done</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
+                <label className="mr-2 font-semibold">Filter by Status:</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="px-3 py-2 border rounded-md bg-white text-gray-700"
+                >
+                  <option value="all">All</option>
+                  <option value="done">Done</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
 
               <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-full sm:w-64">
                 <input
@@ -302,11 +302,11 @@ const TransAppointment = () => {
                         <td className="px-4 py-2">Dr. {record.attending_dentist}</td>
                         <td className="px-4 py-2">{record.appointment_status}</td>
                         <td className="px-4 py-2 text-center">
-                            <button 
+                          <button
                             onClick={() => navigate(`/transviewmed/${record.appoint_id}`)}
                             className="bg-[#008CBA] text-white px-4 py-1 rounded-lg w-full sm:w-auto hover:bg-[#008CBA]">
-                              View
-                            </button>
+                            View
+                          </button>
                         </td>
                       </tr>
                     ))

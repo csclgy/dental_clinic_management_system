@@ -8,6 +8,8 @@ import {
   Calendar,
   Menu,
   X,
+  ChevronDown, 
+  ChevronUp,
 } from "lucide-react";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
@@ -26,6 +28,8 @@ const AdminSchedule = () => {
   const [viewMode, setViewMode] = useState("table"); // table | calendar
   const [view, setView] = useState("week");
   const [date, setDate] = useState(new Date());
+  const role = localStorage.getItem("role");
+  const [openDashboard, setOpenDashboard] = useState(false);
 
   // ✅ Popup state and fade animation
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -124,124 +128,154 @@ const AdminSchedule = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-      {/* Sidebar Desktop */}
+      {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
-          <Link
-            to="/admindashboard"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <BarChart3 size={18} /> Dashboard
-          </Link>
-
-          {/* Ledger dropdown */}
+          {/* Dashboard Dropdown */}
           <button
-            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            onClick={() => setOpenDashboard(!openDashboard)}
             className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
-              <i className="fa fa-book"></i> Ledger
+              <BarChart3 size={18} /> Dashboard
             </span>
-            <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </button>
-          {isLedgerOpen && (
+
+          {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Chart of Accounts
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
               </Link>
-              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Journal Entries
-              </Link>
-              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Subsidiary
-              </Link>
-              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                General Ledger
-              </Link>
-              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Trial Balance
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
               </Link>
             </div>
           )}
 
-          <Link
-            to="/adminusers"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <Users size={18} /> Users
-          </Link>
-          <Link
-            to="/admininventory"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <i className="fa fa-archive"></i> Inventory
-          </Link>
-          <Link
-            to="/adminpatients"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <i className="fa fa-user-plus"></i> Patients
-          </Link>
-          <Link
-            to="/adminschedule"
-            className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <Calendar size={18} /> Schedules
-          </Link>
-          <Link
-            to="/admincashier"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <Calendar size={18} /> Cashier
-          </Link>
-          <Link
-            to="/adminaudit"
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <i className="fa fa-eye"></i> Audit Trail
-          </Link>
-        </nav>
-      </aside>
-
-      {/* Sidebar Mobile */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
-          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="self-end mb-6"
-            >
-              <X size={24} />
-            </button>
-            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
-            <nav className="flex flex-col gap-2">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+          {/* Ledger dropdown */}
+          {role === "admin" && (
+            <>
+              <button
+                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <BarChart3 size={18} /> Dashboard
-              </Link>
+                <span className="flex items-center gap-2">
+                  <i className="fa fa-book"></i> Ledger
+                </span>
+                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+              </button>
+
+              {isLedgerOpen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link
+                    to="/admincoa"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Chart of Accounts
+                  </Link>
+                  <Link
+                    to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Journal Entries
+                  </Link>
+                  <Link
+                    to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Subsidiary
+                  </Link>
+                  <Link
+                    to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    General Ledger
+                  </Link>
+                  <Link
+                    to="/admintrial"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Trial Balance
+                  </Link>
+                </div>
+              )}
+
               <Link
                 to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <Users size={18} /> Users
               </Link>
-              {/* add other links as needed */}
-            </nav>
-          </aside>
-        </div>
-      )}
+            </>
+          )}
+
+          {(role === "admin" || role === "inventory") && (
+            <>
+              <Link
+                to="/admininventory"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-archive"></i> Inventory
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "dentist" || role === "receptionist") && (
+            <>
+              <Link
+                to="/adminpatients"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-user-plus"></i> Patients
+              </Link>
+              <Link
+                to="/adminschedule"
+                className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Schedules
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "receptionist") && (
+            <>
+              <Link
+                to="/admincashier"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Cashier
+              </Link>
+            </>
+          )}
+
+          {role === "admin" && (
+            <>
+              <Link
+                to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-eye"></i> Audit Trail
+              </Link>
+            </>
+          )}
+        </nav>
+      </aside>
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
         {/* ✅ Popup Notification */}
         {popup.show && (
           <div
-            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${
-              fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
-            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+              } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
             style={{ zIndex: 9999 }}
           >
             {popup.message}
@@ -262,21 +296,19 @@ const AdminSchedule = () => {
           <div>
             <button
               onClick={() => setViewMode("table")}
-              className={`px-4 py-2 font-bold rounded-lg mr-2 ${
-                viewMode === "table"
-                  ? "bg-[#00c3b8] text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
+              className={`px-4 py-2 font-bold rounded-lg mr-2 ${viewMode === "table"
+                ? "bg-[#00c3b8] text-white"
+                : "bg-gray-200 text-gray-700"
+                }`}
             >
               Table View
             </button>
             <button
               onClick={() => setViewMode("calendar")}
-              className={`px-4 py-2 rounded-lg font-bold ${
-                viewMode === "calendar"
-                  ? "bg-[#00c3b8] text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
+              className={`px-4 py-2 rounded-lg font-bold ${viewMode === "calendar"
+                ? "bg-[#00c3b8] text-white"
+                : "bg-gray-200 text-gray-700"
+                }`}
             >
               Calendar View
             </button>
@@ -312,7 +344,7 @@ const AdminSchedule = () => {
             </div>
 
             {/* Table */}
-            <table className="w-full border-collapse border border-gray-200">
+            <table className="w-full border-collapse border border-gray-200 text-center">
               <thead>
                 <tr className="bg-gray-100 text-[#00458B]">
                   <th className="px-4 py-2">Visit Date</th>
@@ -355,43 +387,40 @@ const AdminSchedule = () => {
                               record.appointment_status === "cancel with refund request"
                             )
                           }
-                          className={`px-4 py-2 rounded-lg ${
-                            record.appointment_status === "incomplete" ||
+                          className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" ||
                             record.appointment_status === "pending" ||
                             record.appointment_status === "cancel with refund request"
-                              ? "bg-gray-200 hover:bg-gray-300 text-black"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                          }`}
+                            ? "bg-gray-200 hover:bg-gray-300 text-black"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            }`}
                         >
                           Cancel
                         </button>
                       </td>
                       <td className="px-2 py-3 whitespace-nowrap">
-                      <button
-                        disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending")}
-                        onClick={() => handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)}
-                        className={`px-4 py-2 rounded-lg ${
-                          record.appointment_status === "incomplete" || record.appointment_status === "pending"
+                        <button
+                          disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending")}
+                          onClick={() => handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)}
+                          className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" || record.appointment_status === "pending"
                             ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
                             : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        }`}
-                      >
-                        + Follow Up
-                      </button>
+                            }`}
+                        >
+                          + Follow Up
+                        </button>
                       </td>
-                       <td className="px-2 py-3 whitespace-nowrap">
-                                      <button
-                                        onClick={() => navigate(`/adminconsultationcomplete/${record.appoint_id}`)}
-                                        disabled={record.appointment_status !== "incomplete"}
-                                        className={`px-4 py-2 rounded-full transition font-semibold ${
-                                          record.appointment_status === "incomplete"
-                                            ? "bg-green-600 hover:bg-green-700 text-white"
-                                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                        }`}
-                                      >
-                                        Complete
-                                      </button>
-                                  </td>
+                      <td className="px-2 py-3 whitespace-nowrap">
+                        <button
+                          onClick={() => navigate(`/adminconsultationcomplete/${record.appoint_id}`)}
+                          disabled={record.appointment_status !== "incomplete"}
+                          className={`px-4 py-2 rounded-lg transition font-semibold ${record.appointment_status === "incomplete"
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                            }`}
+                        >
+                          Complete
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (

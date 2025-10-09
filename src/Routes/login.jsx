@@ -5,57 +5,58 @@ const Login = () => {
   const [user_password, setUserPassword] = useState("");
   const [error, setError] = useState("");
 
-const handleLogin = async () => {
-  setError(""); // clear old error
-  try {
-    const res = await fetch("http://localhost:3000/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_name, user_password }),
-    });
-
-    let data = {}; 
+  const handleLogin = async () => {
+    setError(""); // clear old error
     try {
-      data = await res.json();
-    } catch {
-      // backend sent no JSON
-    }
+      const res = await fetch("http://localhost:3000/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_name, user_password }),
+      });
 
-    if (res.ok) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("userName", data.user.user_name);
-      localStorage.setItem("role", data.user.role); // 👈 save the role
+      let data = {};
+      try {
+        data = await res.json();
+      } catch {
+        // backend sent no JSON
+      }
 
-      // 🔑 redirect based on role
-      if (data.user.role === "admin") {
-        window.location.href = "/admindashboard"; 
-      } else if (data.user.role === "dentist") {
-        window.location.href = "/adminpatients";
-      } else if (data.user.role === "inventory") {
-        window.location.href = "/admininventory";
-      } else if (data.user.role === "receptionist") {
-        window.location.href = "/adminschedule";
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userName", data.user.user_name);
+        localStorage.setItem("role", data.user.role); // 👈 save the role
+
+        // 🔑 redirect based on role
+        if (data.user.role === "admin") {
+          window.location.href = "/admindashboard";
+        } else if (data.user.role === "dentist") {
+          window.location.href = "/adminpatients";
+        } else if (data.user.role === "inventory") {
+          window.location.href = "/admininventory";
+        } else if (data.user.role === "receptionist") {
+          window.location.href = "/adminschedule";
+        }
+        else {
+          window.location.href = "/";
+        }
+      } else {
+        setError(data.error || "Login failed. Please check your credentials.");
       }
-      else {
-        window.location.href = "/"; 
-      }
-    } else {
-      setError(data.error || "Login failed. Please check your credentials.");
+    } catch (err) {
+      console.error(err);
+      setError("No response from server. Please try again later.");
     }
-  } catch (err) {
-    console.error(err);
-    setError("No response from server. Please try again later.");
-  }
-};
+  };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4]"
       style={{
-      backgroundImage:
-        "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center"}}
+        backgroundImage:
+          "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      }}
     >
       <div className="w-[400px] bg-white p-10 rounded-lg shadow-lg text-center">
         <h2 className="text-[#00c3b8] text-2xl font-bold mb-2">LOGIN NOW</h2>

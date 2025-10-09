@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const TransMed = () => {
-   const location = useLocation();
+  const location = useLocation();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [records, setRecords] = useState([]); // dynamic records
@@ -23,33 +23,33 @@ const TransMed = () => {
 
   // Fetch records from API
   useEffect(() => {
-  const fetchRecords = async () => {
-    try {
-      const token = localStorage.getItem("token"); // or however you store it
-      const res = await axios.get("http://localhost:3000/auth/my-upcoming", {
-        headers: {
-          Authorization: `Bearer ${token}`, // 👈 send token
-        },
-        withCredentials: true,
-      });
-      setRecords(res.data);
-    } catch (error) {
-      console.error("Error fetching records:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchRecords();
-}, []);
+    const fetchRecords = async () => {
+      try {
+        const token = localStorage.getItem("token"); // or however you store it
+        const res = await axios.get("http://localhost:3000/auth/my-upcoming", {
+          headers: {
+            Authorization: `Bearer ${token}`, // 👈 send token
+          },
+          withCredentials: true,
+        });
+        setRecords(res.data);
+      } catch (error) {
+        console.error("Error fetching records:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRecords();
+  }, []);
 
   // Print Report function
-    const handlePrintReport = () => {
-      const printWindow = window.open('', '_blank');
-      const currentDate = new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
 
     printWindow.document.write(`
           <!DOCTYPE html>
@@ -138,10 +138,10 @@ const TransMed = () => {
                   <!-fix after->
                     <td>
                       ${new Date(record.pref_date).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })}
                     </td>     
                     <td>${record.pref_time}</td>
                     <td>${record.procedure_type}</td>
@@ -172,25 +172,25 @@ const TransMed = () => {
           </html>
         `);
 
-        printWindow.document.close();
-        printWindow.focus();
+    printWindow.document.close();
+    printWindow.focus();
 
-        setTimeout(() => {
-          printWindow.print();
+    setTimeout(() => {
+      printWindow.print();
 
-          setTimeout(() => {
-            if (!printWindow.closed) {
-              printWindow.addEventListener('focus', () => {
-                setTimeout(() => {
-                  if (!printWindow.closed) {
-                    printWindow.close();
-                  }
-                }, 1000);
-              });
-            }
-          }, 500);
-        }, 250);
-    };
+      setTimeout(() => {
+        if (!printWindow.closed) {
+          printWindow.addEventListener('focus', () => {
+            setTimeout(() => {
+              if (!printWindow.closed) {
+                printWindow.close();
+              }
+            }, 1000);
+          });
+        }
+      }, 500);
+    }, 250);
+  };
 
   // Filter records by search
   const filteredRecords = records.filter(record =>
@@ -278,16 +278,16 @@ const TransMed = () => {
                           </td>
                           <td className="px-4 py-2">{record.appointment_status}</td>
                           <td className="px-4 py-2 text-center">
-                              <button 
+                            <button
                               onClick={() => navigate(`/transviewmed/${record.appoint_id}`)}
                               className="bg-[#008CBA] text-white px-4 py-1 rounded-lg hover:bg-[#008CBA]">
-                                View
-                              </button>
+                              View
+                            </button>
                           </td>
                           <td className="px-4 py-2 text-center">
-                            <button 
-                            onClick={() => navigate(`/cancelappointment/${record.appoint_id}`)}
-                            className="bg-[#f44336] text-white px-4 py-1 rounded-lg hover:bg-red-600">
+                            <button
+                              onClick={() => navigate(`/cancelappointment/${record.appoint_id}`)}
+                              className="bg-[#f44336] text-white px-4 py-1 rounded-lg hover:bg-red-600">
                               Cancel
                             </button>
                           </td>
