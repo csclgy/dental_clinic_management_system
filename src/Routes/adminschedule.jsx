@@ -8,8 +8,9 @@ import {
   Calendar,
   Menu,
   X,
-  ChevronDown, 
+  ChevronDown,
   ChevronUp,
+  PhilippinePeso
 } from "lucide-react";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
@@ -157,20 +158,25 @@ const AdminSchedule = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -251,7 +257,7 @@ const AdminSchedule = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -344,94 +350,96 @@ const AdminSchedule = () => {
             </div>
 
             {/* Table */}
-            <table className="w-full border-collapse border border-gray-200 text-center">
-              <thead>
-                <tr className="bg-gray-100 text-[#00458B]">
-                  <th className="px-4 py-2">Visit Date</th>
-                  <th className="px-4 py-2">Last Name</th>
-                  <th className="px-4 py-2">First Name</th>
-                  <th className="px-4 py-2">Services</th>
-                  <th className="px-4 py-2">Dentist</th>
-                  <th className="px-4 py-2">Status</th>
-                  <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2"></th>
-                  <th className="px-4 py-2"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRecords.length > 0 ? (
-                  filteredRecords.map((record, i) => (
-                    <tr key={i} className="border-b border-gray-200 text-center">
-                      <td className="px-4 py-2 text-blue-700">{record.pref_date}</td>
-                      <td className="px-4 py-2">{record.p_lname}</td>
-                      <td className="px-4 py-2">{record.p_fname}</td>
-                      <td className="px-4 py-2">{record.procedure_type}</td>
-                      <td className="px-4 py-2">{record.attending_dentist}</td>
-                      <td className="px-4 py-2">{record.appointment_status}</td>
-                      <td className="px-2 py-3 whitespace-nowrap">
-                        <button
-                          onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
-                          className="bg-[#008CBA] text-white px-4 py-2 rounded-lg"
-                        >
-                          View
-                        </button>
-                      </td>
-                      <td className="px-2 py-3 whitespace-nowrap">
-                        <button
-                          onClick={() => navigate(`/adminschedulecancel/${record.appoint_id}`)}
-                          disabled={
-                            !(
-                              record.appointment_status === "incomplete" ||
+            <div className="max-h-[500px] overflow-y-auto">
+              <table className="w-full border-collapse border border-gray-200">
+                <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
+                  <tr className="bg-gray-100 text-[#00458B]">
+                    <th className="px-4 py-2">Visit Date</th>
+                    <th className="px-4 py-2">Last Name</th>
+                    <th className="px-4 py-2">First Name</th>
+                    <th className="px-4 py-2">Services</th>
+                    <th className="px-4 py-2">Dentist</th>
+                    <th className="px-4 py-2">Status</th>
+                    <th className="px-4 py-2"></th>
+                    <th className="px-4 py-2"></th>
+                    <th className="px-4 py-2"></th>
+                    <th className="px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRecords.length > 0 ? (
+                    filteredRecords.map((record, i) => (
+                      <tr key={i} className="border-b border-gray-200 text-center">
+                        <td className="px-4 py-2 text-blue-700">{record.pref_date}</td>
+                        <td className="px-4 py-2">{record.p_lname}</td>
+                        <td className="px-4 py-2">{record.p_fname}</td>
+                        <td className="px-4 py-2">{record.procedure_type}</td>
+                        <td className="px-4 py-2">{record.attending_dentist}</td>
+                        <td className="px-4 py-2">{record.appointment_status}</td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <button
+                            onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
+                            className="bg-[#008CBA] text-white px-4 py-2 rounded-lg"
+                          >
+                            View
+                          </button>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <button
+                            onClick={() => navigate(`/adminschedulecancel/${record.appoint_id}`)}
+                            disabled={
+                              !(
+                                record.appointment_status === "incomplete" ||
+                                record.appointment_status === "pending" ||
+                                record.appointment_status === "cancel with refund request"
+                              )
+                            }
+                            className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" ||
                               record.appointment_status === "pending" ||
                               record.appointment_status === "cancel with refund request"
-                            )
-                          }
-                          className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" ||
-                            record.appointment_status === "pending" ||
-                            record.appointment_status === "cancel with refund request"
-                            ? "bg-gray-200 hover:bg-gray-300 text-black"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            }`}
-                        >
-                          Cancel
-                        </button>
-                      </td>
-                      <td className="px-2 py-3 whitespace-nowrap">
-                        <button
-                          disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending")}
-                          onClick={() => handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)}
-                          className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" || record.appointment_status === "pending"
-                            ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            }`}
-                        >
-                          + Follow Up
-                        </button>
-                      </td>
-                      <td className="px-2 py-3 whitespace-nowrap">
-                        <button
-                          onClick={() => navigate(`/adminconsultationcomplete/${record.appoint_id}`)}
-                          disabled={record.appointment_status !== "incomplete"}
-                          className={`px-4 py-2 rounded-lg transition font-semibold ${record.appointment_status === "incomplete"
-                            ? "bg-green-600 hover:bg-green-700 text-white"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            }`}
-                        >
-                          Complete
-                        </button>
+                              ? "bg-gray-200 hover:bg-gray-300 text-black"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              }`}
+                          >
+                            Cancel
+                          </button>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <button
+                            disabled={!(record.appointment_status === "incomplete" || record.appointment_status === "pending")}
+                            onClick={() => handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)}
+                            className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" || record.appointment_status === "pending"
+                              ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              }`}
+                          >
+                            + Follow Up
+                          </button>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <button
+                            onClick={() => navigate(`/adminconsultationcomplete/${record.appoint_id}`)}
+                            disabled={record.appointment_status !== "incomplete"}
+                            className={`px-4 py-2 rounded-lg transition font-semibold ${record.appointment_status === "incomplete"
+                              ? "bg-green-600 hover:bg-green-700 text-white"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              }`}
+                          >
+                            Complete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="10" className="text-center text-gray-500 py-4">
+                        No records found
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="10" className="text-center text-gray-500 py-4">
-                      No records found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         ) : (
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">

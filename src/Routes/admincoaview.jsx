@@ -11,6 +11,7 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  PhilippinePeso
 } from "lucide-react";
 
 const AdminCoaView = () => {
@@ -147,7 +148,7 @@ const AdminCoaView = () => {
                 onClick={() => handleInactivate(confirmBox.subId)} // ✅ pass ID from modal state
                 className="px-5 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium flex items-center gap-2"
               >
-               Deactivate
+                Deactivate
               </button>
             </div>
           </div>
@@ -183,20 +184,25 @@ const AdminCoaView = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -277,7 +283,7 @@ const AdminCoaView = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -373,8 +379,8 @@ const AdminCoaView = () => {
                         {/* Delete button in the table */}
                         <button
                           className={`px-4 py-2 rounded-lg text-white ${sub.account_status === "inactive"
-                              ? "bg-gray-400 cursor-not-allowed" // disabled style
-                              : "bg-red-500 hover:bg-red-600"    // active style
+                            ? "bg-gray-400 cursor-not-allowed" // disabled style
+                            : "bg-red-500 hover:bg-red-600"    // active style
                             }`}
                           onClick={() =>
                             sub.account_status !== "inactive" &&

@@ -1,44 +1,59 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, X } from "lucide-react";
 
-const AdminConsultationPartial = () => {
+const transviewsoa = () => {
   const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
 
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
+  const [patient, setPatient] = useState(null);
   const [consultation, setConsultation] = useState(null);
   const [chargedItems, setChargedItems] = useState([]);
   const [error, setError] = useState("");
+
+  const [appointments, setAppointments] = useState([]);
   const [photos, setPhotos] = useState([]);
+
   const [selectedTeeth, setSelectedTeeth] = useState([]);
   const [cancelInfo, setCancelInfo] = useState(null);
+
   const [dentists, setDentists] = useState([]);
   const [payments, setPayments] = useState([]);
   const [balance, setBalance] = useState(0);
-  const role = localStorage.getItem("role");
-  const [openDashboard, setOpenDashboard] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+
   const printRef = useRef();
 
+
+  // Scroll to the section if state.scrollTo is passed
+  useEffect(() => {
+    if (location.state?.scrollTo) {
+      const element = document.getElementById(location.state.scrollTo);
+      if (element) {
+        setTimeout(() => {
+          element.scrollIntoView({ behavior: "smooth" });
+        }, 100); // delay ensures DOM is rendered
+      }
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchConsultation = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(
-          `http://localhost:3000/auth/displayconsultation/${appointId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        const res = await fetch(`http://localhost:3000/auth/viewmyconsultation/${appointId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
         if (!res.ok) throw new Error("Failed to fetch consultation");
+
         const data = await res.json();
         setConsultation(data.consultation);
         setChargedItems(data.chargedItems || []);
@@ -50,12 +65,14 @@ const AdminConsultationPartial = () => {
         setError("Could not load consultation");
       }
     };
+
     fetchConsultation();
   }, [appointId]);
 
   useEffect(() => {
     const fetchDentists = async () => {
       try {
+        setLoading(true); // <-- now this works
         const token = localStorage.getItem("token");
         const res = await axios.get("http://localhost:3000/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
@@ -71,6 +88,7 @@ const AdminConsultationPartial = () => {
   useEffect(() => {
     const fetchPayments = async () => {
       try {
+        setLoading(true); // <-- now this works
         const token = localStorage.getItem("token");
         const res = await axios.get(
           `http://localhost:3000/auth/consultationpayments/${appointId}`,
@@ -327,194 +345,43 @@ const AdminConsultationPartial = () => {
     }, 250);
   };
 
+
+  if (!consultation) return <p>Loading...</p>;
+
   const totalAmount = (
     Number(consultation?.total_charged || 0) +
     payments.reduce((sum, p) => sum + Number(p.credit || 0), 0)
   ).toFixed(2);
+
   return (
-    <div className="flex h-screen bg-gray-50">
-      {/* Sidebar (desktop) */}
-      <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
-        <nav className="flex flex-col gap-2">
-          {/* Dashboard Dropdown */}
-          <button
-            onClick={() => setOpenDashboard(!openDashboard)}
-            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <span className="flex items-center gap-2">
-              <BarChart3 size={18} /> Dashboard
-            </span>
-            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-
-          {openDashboard && (
-            <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
-            </div>
-          )}
-
-          {/* Ledger dropdown */}
-          {role === "admin" && (
-            <>
-              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <span className="flex items-center gap-2">
-                  <i className="fa fa-book"></i> Ledger
-                </span>
-                {isLedgerOpen ?
-                  <ChevronUp size={16} /> :
-                  <ChevronDown size={16} />}
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <aside className="bg-white rounded-lg shadow-md p-4 md:col-span-1">
+          <h2 className="text-2xl font-bold text-[#00458B] mb-6">
+            Transaction History
+          </h2>
+          <nav className="flex flex-col gap-2">
+            <Link to="/transmed">
+              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                <i className="fa fa-user-circle-o mr-2"></i>
+                Medical Records
               </button>
+            </Link>
+            <Link to="/transappointment">
+              <button className="w-full text-left px-4 py-2 rounded-md font-medium text-[#00458B] hover:bg-blue-100">
+                <i className="fa fa-history mr-2"></i>
+                Appointment History
+              </button>
+            </Link>
+          </nav>
+        </aside>
+        <main className="md:col-span-3 space-y-6">
+          <div className="bg-[#00458B] text-white p-6 rounded-lg shadow-md">
+            <h1 className="text-xl sm:text-2xl font-bold">Statement of Account</h1>
+          </div>
 
-              {isLedgerOpen && (
-                <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link
-                    to="/admincoa"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Chart of Accounts
-                  </Link>
-                  <Link
-                    to="/adminjournal"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Journal Entries
-                  </Link>
-                  <Link
-                    to="/adminsubsidiaryreceivable"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Subsidiary
-                  </Link>
-                  <Link
-                    to="/admingeneral"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    General Ledger
-                  </Link>
-                  <Link
-                    to="/admintrial"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Trial Balance
-                  </Link>
-                </div>
-              )}
-
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Users size={18} /> Users
-              </Link>
-            </>
-          )}
-
-          {(role === "admin" || role === "inventory") && (
-            <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-archive"></i> Inventory
-              </Link>
-            </>
-          )}
-
-          {(role === "admin" || role === "dentist" || role === "receptionist") && (
-            <>
-              <Link
-                to="/adminpatients"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-user-plus"></i> Patients
-              </Link>
-              <Link
-                to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
-              </Link>
-            </>
-          )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
-          {role === "admin" && (
-            <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-eye"></i> Audit Trail
-              </Link>
-            </>
-          )}
-        </nav>
-      </aside>
-
-      {/* Mobile Sidebar */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
-          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="self-end mb-6"
-            >
-              <X size={24} />
-            </button>
-            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
-            <nav className="flex flex-col gap-2">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
-              >
-                <BarChart3 size={18} /> Dashboard
-              </Link>
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
-              >
-                <Users size={18} /> Users
-              </Link>
-            </nav>
-          </aside>
-        </div>
-      )}
-
-      {/* Main content vertical */}
-      <div className="flex-1 flex flex-col overflow-y-auto">
-
-        <main className="p-6 space-y-8">
-          <div
-            className="p-10 rounded-lg shadow-lg border border-[#01D5C4] bg-white"
-          >
+          <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{ border: "solid", borderColor: "#01D5C4" }} ref={printRef}>
             <h1 className="text-2xl font-bold text-[#00458B] mb-4">
               Patient Information
             </h1>
@@ -665,34 +532,12 @@ const AdminConsultationPartial = () => {
               <div className="mt-6">
                 <div className="flex flex-col sm:flex-row justify-between items-center mt-3 gap-3">
                   <p className="font-bold text-2xl text-[#00458B]">
-                    Payments:
+                    Payments for installment:
                   </p>
-                  <button
-                    disabled={balance <= 0 || consultation?.payment_confirmation === "Complete"}
-                    className={`font-semibold px-6 py-2 rounded-lg w-full sm:w-auto ${balance <= 0 || consultation?.payment_confirmation === "Complete"
-                        ? "bg-gray-400 text-white cursor-not-allowed"
-                        : "bg-red-500 hover:bg-red-600 text-white"
-                      }`}
-                    onClick={() => {
-                      if (balance > 0) {
-                        navigate(`/adminconsultationpartialpay/${appointId}`, {
-                          state: {
-                            patientName: `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`,
-                            invoiceNo: consultation.or_num || "",
-                            procedureType: consultation.procedure_type || "",
-                            appointId: consultation.appoint_id || "",
-                          },
-                        });
-                      }
-                    }}
-                  >
-                    Add Payment
-                  </button>
                 </div>
                 <br />
                 <hr />
 
-                {/* Responsive wrapper for horizontal scroll on small devices */}
                 <div className="overflow-x-auto mt-4">
                   <table className="w-full min-w-[600px] table-auto border-collapse border border-gray-300">
                     <thead>
@@ -710,11 +555,11 @@ const AdminConsultationPartial = () => {
                             <td className="border border-gray-300 px-4 py-2 text-center">
                               {new Date(p.date).toLocaleDateString()}
                             </td>
-                            <td className="border border-gray-300 px-4 py-2">{p.particulars}</td>
-                            <td className="border border-gray-300 px-4 py-2 text-right">
+                            <td className="border border-gray-300 px-4 py-2 text-center">{p.particulars}</td>
+                            <td className="border border-gray-300 px-4 py-2 text-center">
                               ₱ {Number(p.credit || 0).toFixed(2)}
                             </td>
-                            <td className="border border-gray-300 px-4 py-2 text-right">
+                            <td className="border border-gray-300 px-4 py-2 text-center">
                               ₱ {Number(p.balance || 0).toFixed(2)}
                             </td>
                           </tr>
@@ -722,7 +567,7 @@ const AdminConsultationPartial = () => {
                       ) : (
                         <tr>
                           <td className="border border-gray-300 px-4 py-2 text-center" colSpan={4}>
-                            No payments recorded
+                            No Record
                           </td>
                         </tr>
                       )}
@@ -790,48 +635,36 @@ const AdminConsultationPartial = () => {
 
               {/* Buttons */}
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-end">
-                <button
-                  disabled={consultation.appointment_status !== "done"}
-                  className={`px-6 py-2 rounded-lg font-semibold border w-full sm:w-auto ${consultation.appointment_status === "done"
-                    ? "bg-[#00458B] text-white border border-[#00458B] hover:bg-gray-100 cursor-pointer"
-                    : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
-                    }`}
-                  onClick={handlePrintReport}
-                >
-                  Print
-                </button>
+                <div className="col-sm-2">
+                  <button
+                    className="px-6 py-2 rounded-lg font-semibold w-full mb-4 border "
+                    onClick={() => navigate(-1)}
+                  >
+                    Back to List
+                  </button>
+                </div>
+                <div className="col-sm-2">
+                  <button
+                    disabled={!consultation || consultation.appointment_status !== "done"}
+                    onClick={handlePrintReport}
+                    className={`px-6 py-2 rounded-lg font-semibold w-full border ${consultation && consultation.appointment_status === "done"
+                      ? "bg-[#00458B] text-white border-[#00458B] hover:bg-[#00458B]-100 cursor-pointer"
+                      : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
+                      }`}
+                  >
+                    Print
+                  </button>
 
-
-
-                <button
-                  className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full sm:w-auto"
-                  onClick={() => navigate("/admincashierpartial")}
-                >
-                  Back to List
-                </button>
-                <button
-                  disabled={balance > 0 || consultation?.payment_confirmation === "Complete"}
-                  className={`px-6 py-2 rounded-lg font-semibold w-full sm:w-auto ${balance > 0 || consultation?.payment_confirmation === "Complete"
-                      ? "bg-gray-400 text-white cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white"
-                    }`}
-                  onClick={() => {
-                    if (balance === 0 && consultation?.payment_confirmation !== "Complete") {
-                      handleComplete();
-                    }
-                  }}
-                >
-                  {consultation?.payment_confirmation === "complete"
-                    ? "Completed"
-                    : "Complete"}
-                </button>
+                </div>
               </div>
             </div>
           </div>
+
         </main>
+
       </div>
     </div>
   );
 };
 
-export default AdminConsultationPartial;
+export default transviewsoa;

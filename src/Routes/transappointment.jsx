@@ -274,7 +274,7 @@ const TransAppointment = () => {
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-auto" style={{ maxHeight: "500px", border: "1px solid #ddd" }}>
               <table className="w-full border-collapse border border-gray-200 text-sm sm:text-base">
                 <thead>
                   <tr className="bg-white text-[#00458B] border-b border-gray-200">
@@ -283,7 +283,8 @@ const TransAppointment = () => {
                     <th className="px-4 py-2 text-left">Services</th>
                     <th className="px-4 py-2 text-left">Dentist</th>
                     <th className="px-4 py-2 text-left">Status</th>
-                    <th className="px-4 py-2 text-center">Action</th>
+                    <th className="px-4 py-2 text-center"></th>
+                    <th className="px-4 py-2 text-center"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -306,6 +307,13 @@ const TransAppointment = () => {
                             onClick={() => navigate(`/transviewmed/${record.appoint_id}`)}
                             className="bg-[#008CBA] text-white px-4 py-1 rounded-lg w-full sm:w-auto hover:bg-[#008CBA]">
                             View
+                          </button>
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <button
+                            onClick={() => navigate(`/transviewsoa/${record.appoint_id}`)}
+                            className="bg-white text-[#008CBA] font-semibold border border-[#00458b] px-6 py-2 rounded-lg w-full sm:w-auto">
+                            View SOA
                           </button>
                         </td>
                       </tr>

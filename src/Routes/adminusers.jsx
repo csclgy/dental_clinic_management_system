@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle } from "lucide-react";
+import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso } from "lucide-react";
 
 import axios from "axios";
 
@@ -143,20 +143,25 @@ function AdminUsers() {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -237,7 +242,7 @@ function AdminUsers() {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -356,80 +361,81 @@ function AdminUsers() {
             <p className="text-center text-gray-500">Loading users…</p>
           ) : (
             <div className="overflow-x-auto mt-6">
-              <table className="w-full border-collapse border border-gray-200">
-                <thead>
-                  <tr className="bg-gray-100 text-[#00458B]">
-                    <th className="px-4 py-2 text-center">Username</th>
-                    <th className="px-4 py-2 text-center">Access Level</th>
-                    <th className="px-4 py-2 text-center">Name</th>
-                    <th className="px-4 py-2 text-center">Status</th>
-                    <th className="px-4 py-2 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => {
-                      const isInactive = user.user_status?.toLowerCase() === "inactive";
+              <div className="max-h-[500px] overflow-y-auto">
+                <table className="w-full border-collapse border border-gray-200">
+                  <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
+                    <tr className="bg-gray-100 text-[#00458B]">
+                      <th className="px-4 py-2 text-center">Username</th>
+                      <th className="px-4 py-2 text-center">Access Level</th>
+                      <th className="px-4 py-2 text-center">Name</th>
+                      <th className="px-4 py-2 text-center">Status</th>
+                      <th className="px-4 py-2 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => {
+                        const isInactive = user.user_status?.toLowerCase() === "inactive";
 
-                      return (
-                        <tr
-                          key={user.user_id}
-                          className={`border-b border-gray-200 text-center ${isInactive ? "bg-gray-100 text-gray-500" : ""
-                            }`}
-                        >
-                          <td className="px-4 py-2 text-blue-700">{user.user_name}</td>
-                          <td className="px-4 py-2">{user.role}</td>
-                          <td className="px-4 py-2">{`${user.fname} ${user.mname || ""} ${user.lname}`}</td>
-                          <td
-                            className={`px-4 py-2 font-semibold ${isInactive ? "text-red-500" : "text-green-600"
+                        return (
+                          <tr
+                            key={user.user_id}
+                            className={`border-b border-gray-200 text-center ${isInactive ? "bg-gray-100 text-gray-500" : ""
                               }`}
                           >
-                            {isInactive ? "Inactive" : "Active"}
-                          </td>
-                          <td className="px-4 py-2 flex gap-2 justify-center">
-                            {/* ✅ Edit should always be clickable */}
-                            <Link to={`/adminusersedit/${user.user_id}`}>
-                              <button
-                                className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600"
-                              >
-                                Edit
-                              </button>
-                            </Link>
-
-                            {/* ❌ Deactivate should be disabled if already inactive */}
-                            <button
-                              disabled={isInactive}
-                              onClick={() => {
-                                if (!isInactive) {
-                                  setConfirmBox({
-                                    show: true,
-                                    userId: user.user_id,
-                                    userName: user.user_name,
-                                  });
-                                }
-                              }}
-                              className={`px-4 py-2 rounded-lg ${isInactive
-                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                  : "bg-red-500 text-white hover:bg-red-600"
+                            <td className="px-4 py-2 text-blue-700">{user.user_name}</td>
+                            <td className="px-4 py-2">{user.role}</td>
+                            <td className="px-4 py-2">{`${user.fname} ${user.mname || ""} ${user.lname}`}</td>
+                            <td
+                              className={`px-4 py-2 font-semibold ${isInactive ? "text-red-500" : "text-green-600"
                                 }`}
                             >
-                              {isInactive ? "Deactivate" : "Deactivate"}
-                            </button>
-                          </td>
+                              {isInactive ? "Inactive" : "Active"}
+                            </td>
+                            <td className="px-4 py-2 flex gap-2 justify-center">
+                              {/* ✅ Edit should always be clickable */}
+                              <Link to={`/adminusersedit/${user.user_id}`}>
+                                <button
+                                  className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600"
+                                >
+                                  Edit
+                                </button>
+                              </Link>
 
-                        </tr>
-                      );
-                    })
-                  ) : (
-                    <tr>
-                      <td colSpan="5" className="text-center text-gray-500 py-4">
-                        No users found
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
+                              {/* ❌ Deactivate should be disabled if already inactive */}
+                              <button
+                                disabled={isInactive}
+                                onClick={() => {
+                                  if (!isInactive) {
+                                    setConfirmBox({
+                                      show: true,
+                                      userId: user.user_id,
+                                      userName: user.user_name,
+                                    });
+                                  }
+                                }}
+                                className={`px-4 py-2 rounded-lg ${isInactive
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-red-500 text-white hover:bg-red-600"
+                                  }`}
+                              >
+                                {isInactive ? "Deactivate" : "Deactivate"}
+                              </button>
+                            </td>
 
-              </table>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="text-center text-gray-500 py-4">
+                          No users found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>

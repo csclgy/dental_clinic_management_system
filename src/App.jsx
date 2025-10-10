@@ -73,6 +73,8 @@ import AdminCashierPaid from "./Routes/admincashierpaid.jsx";
 import AdminCashierPartial from "./Routes/admincashierpartial.jsx";
 import AdminConsultationPartial from "./Routes/adminconsultationpartial.jsx";
 import AdminConsultationPartialPayment from "./Routes/adminconsultationpartialpay.jsx";
+import ReceptionistDashboard from "./Routes/receptionistdashboard";
+import TransViewSoa from "./Routes/transviewsoa.jsx";
 
 function App() {
   return (
@@ -175,6 +177,15 @@ function App() {
                   <Cancelappointment />
                 </ProtectedRoute>
               }
+            />
+
+            <Route path="/transviewsoa/:appointId"
+             element={
+              <ProtectedRoute>
+             <TransViewSoa />
+            </ProtectedRoute>
+            }
+            
             />
 
             {/* ------------------ Admin's Routes ------------------ */}
@@ -600,6 +611,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <InventoryDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/receptionistdashboard"
+              element={
+                <ProtectedRoute>
+                  <ReceptionistDashboard />
                 </ProtectedRoute>
               }
             />

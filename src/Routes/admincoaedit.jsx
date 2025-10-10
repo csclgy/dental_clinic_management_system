@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
 
 const AdminCoaEdit = () => {
   const location = useLocation();
@@ -50,37 +50,37 @@ const AdminCoaEdit = () => {
     setAccount({ ...account, [e.target.name]: e.target.value });
   };
 
-const handleUpdate = async () => {
-  if (!account.account_name.trim()) {
-    showPopup("Account Name is required.", "error");
-    return;
-  }
-
-  try {
-    const token = localStorage.getItem("token"); // wherever your JWT is stored
-    if (!token) {
-      showPopup("No token found. Please login again.", "error");
+  const handleUpdate = async () => {
+    if (!account.account_name.trim()) {
+      showPopup("Account Name is required.", "error");
       return;
     }
 
-    const response = await axios.put(
-      `http://localhost:3000/auth/coa/${id}`,
-      account,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`, // send token in header
-        },
+    try {
+      const token = localStorage.getItem("token"); // wherever your JWT is stored
+      if (!token) {
+        showPopup("No token found. Please login again.", "error");
+        return;
       }
-    );
 
-    showPopup(response.data.message || "Account updated successfully!", "success");
+      const response = await axios.put(
+        `http://localhost:3000/auth/coa/${id}`,
+        account,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`, // send token in header
+          },
+        }
+      );
 
-    setTimeout(() => navigate("/admincoa"), 1500);
-  } catch (err) {
-    console.error("Error updating account:", err);
-    showPopup(err.response?.data?.message || "Failed to update account.", "error");
-  }
-};
+      showPopup(response.data.message || "Account updated successfully!", "success");
+
+      setTimeout(() => navigate("/admincoa"), 1500);
+    } catch (err) {
+      console.error("Error updating account:", err);
+      showPopup(err.response?.data?.message || "Failed to update account.", "error");
+    }
+  };
 
   // ✅ Scroll to element if provided
   useEffect(() => {
@@ -136,20 +136,25 @@ const handleUpdate = async () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -230,7 +235,7 @@ const handleUpdate = async () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}

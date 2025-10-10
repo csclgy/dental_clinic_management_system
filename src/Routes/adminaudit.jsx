@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle } from "lucide-react";
+import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso } from "lucide-react";
 import axios from "axios";
 
 function adminaudit() {
@@ -233,20 +233,28 @@ function adminaudit() {
               >
                 Inventory Dashboard
               </Link>
+              <Link
+                to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              {/* Ledger Dropdown */}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -327,7 +335,7 @@ function adminaudit() {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -519,36 +527,38 @@ function adminaudit() {
 
           <div className="overflow-x-auto">
             {/* Table */}
-            <table className="w-full border-collapse border border-gray-200 min-w-[600px] text-center">
-              <thead>
-                <tr className="bg-gray-100 text-[#00458B] ">
-                  <th className="px-4 py-2">Date</th>
-                  <th className="px-4 py-2">User</th>
-                  <th className="px-4 py-2">Role</th>
-                  <th className="px-4 py-2">Action</th>
-                  <th className="px-4 py-2">Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRecords.length > 0 ? (
-                  filteredRecords.map((record, index) => (
-                    <tr key={index} className="border-b border-gray-200">
-                      <td className="px-4 py-2 text-blue-700">{record.date}</td>
-                      <td className="px-4 py-2">{record.user}</td>
-                      <td className="px-4 py-2">{record.role}</td>
-                      <td className="px-4 py-2">{record.action}</td>
-                      <td className="px-4 py-2 text-left">{record.description}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="4" className="text-center text-gray-500 py-4">
-                      No records found
-                    </td>
+            <div className="max-h-[500px] overflow-y-auto">
+              <table className="w-full border-collapse border border-gray-200">
+                <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
+                  <tr className="bg-gray-100 text-[#00458B] ">
+                    <th className="px-4 py-2">Date</th>
+                    <th className="px-4 py-2">User</th>
+                    <th className="px-4 py-2">Role</th>
+                    <th className="px-4 py-2">Action</th>
+                    <th className="px-4 py-2">Description</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredRecords.length > 0 ? (
+                    filteredRecords.map((record, index) => (
+                      <tr key={index} className="border-b border-gray-200">
+                        <td className="px-4 py-2 text-blue-700">{record.date}</td>
+                        <td className="px-4 py-2">{record.user}</td>
+                        <td className="px-4 py-2">{record.role}</td>
+                        <td className="px-4 py-2">{record.action}</td>
+                        <td className="px-4 py-2 text-left">{record.description}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="text-center text-gray-500 py-4">
+                        No records found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </main>

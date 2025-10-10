@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
 
 const AdminPatients = () => {
   const location = useLocation();
@@ -234,20 +234,25 @@ const AdminPatients = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -328,7 +333,7 @@ const AdminPatients = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -395,49 +400,51 @@ const AdminPatients = () => {
               </div>
             </div>
 
-            <table className="w-full border-collapse border border-gray-200">
-              <thead>
-                <tr className="bg-gray-100 text-[#00458B]">
-                  <th className="px-4 py-2 text-center">Last Name</th>
-                  <th className="px-4 py-2 text-center">First Name</th>
-                  <th className="px-4 py-2 text-center">Middle Name</th>
-                  <th className="px-4 py-2 text-center">Age</th>
-                  <th className="px-4 py-2 text-center">Gender</th>
-                  <th className="px-4 py-2 text-center">Contact No.</th>
-                  <th className="px-4 py-2 text-center">Email</th>
-                  <th className="px-4 py-2 text-center"></th>
-                  <th className="px-4 py-2 text-center"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRecords.length > 0 ? (
-                  filteredRecords.map((record) => (
-                    <tr key={record.user_id} className="border-b border-gray-200 text-center">
-                      <td className="px-4 py-2 text-blue-700">{record.lname}</td>
-                      <td className="px-4 py-2">{record.fname}</td>
-                      <td className="px-4 py-2">{record.mname}</td>
-                      <td className="px-4 py-2">{record.age}</td>
-                      <td className="px-4 py-2">{record.gender}</td>
-                      <td className="px-4 py-2">{record.contact_no}</td>
-                      <td className="px-4 py-2">{record.email}</td>
-                      <td className="px-2 py-3 whitespace-nowrap">
-                        <Link to={`/adminpatientsview/${record.user_id}`}>
-                          <button className="bg-[#008CBA] text-white px-4 py-2 rounded-lg">
-                            View
-                          </button>
-                        </Link>
+            <div className="max-h-[500px] overflow-y-auto">
+              <table className="w-full border-collapse border border-gray-200">
+                <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
+                  <tr className="bg-gray-100 text-[#00458B]">
+                    <th className="px-4 py-2 text-center">Last Name</th>
+                    <th className="px-4 py-2 text-center">First Name</th>
+                    <th className="px-4 py-2 text-center">Middle Name</th>
+                    <th className="px-4 py-2 text-center">Age</th>
+                    <th className="px-4 py-2 text-center">Gender</th>
+                    <th className="px-4 py-2 text-center">Contact No.</th>
+                    <th className="px-4 py-2 text-center">Email</th>
+                    <th className="px-4 py-2 text-center"></th>
+                    <th className="px-4 py-2 text-center"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRecords.length > 0 ? (
+                    filteredRecords.map((record) => (
+                      <tr key={record.user_id} className="border-b border-gray-200 text-center">
+                        <td className="px-4 py-2 text-blue-700">{record.lname}</td>
+                        <td className="px-4 py-2">{record.fname}</td>
+                        <td className="px-4 py-2">{record.mname}</td>
+                        <td className="px-4 py-2">{record.age}</td>
+                        <td className="px-4 py-2">{record.gender}</td>
+                        <td className="px-4 py-2">{record.contact_no}</td>
+                        <td className="px-4 py-2">{record.email}</td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <Link to={`/adminpatientsview/${record.user_id}`}>
+                            <button className="bg-[#008CBA] text-white px-4 py-2 rounded-lg">
+                              View
+                            </button>
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="8" className="text-center py-4 text-gray-500">
+                        No records found
                       </td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="8" className="text-center py-4 text-gray-500">
-                      No records found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>

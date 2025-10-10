@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
 
 const Admingeneral = () => {
   const location = useLocation();
@@ -12,6 +12,8 @@ const Admingeneral = () => {
   const [records, setRecords] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState("");
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
@@ -26,6 +28,18 @@ const Admingeneral = () => {
       }
     }
   }, [location]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const tooltip = document.getElementById("floatingTooltipBox");
+      if (tooltip && !tooltip.contains(e.target)) {
+        setSelectedRecord(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchLedger = async () => {
@@ -253,20 +267,25 @@ const Admingeneral = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -347,7 +366,7 @@ const Admingeneral = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -421,46 +440,96 @@ const Admingeneral = () => {
             </div>
           </div>
 
-          <table className="w-full border-collapse border border-gray-200">
-            <thead>
-              <tr className="bg-gray-100 text-[#00458B]">
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Account Name</th>
-                <th className="px-4 py-2 text-left">Account Type</th>
-                <th className="px-4 py-2 text-left">Debit</th>
-                <th className="px-4 py-2 text-left">Credit</th>
-                <th className="px-4 py-2 text-left">Balance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRecords.length > 0 ? (
-                filteredRecords.map((record, index) => (
-                  <tr key={index} className="border-b border-gray-200">
-                    <td className="px-4 py-2 text-black">{record.date}</td>
-                    <td className="px-4 py-2 text-blue-700">{record.account}</td>
-                    <td className="px-4 py-2 text-black">
-                      {record.account_type || "-"}
-                    </td>
-                    <td className="px-4 py-2 text-black">
-                      ₱ {(Number(record.debit) || 0).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2 text-black">
-                      ₱ {(Number(record.credit) || 0).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2 text-black">
-                      {(Number(record.balance) || 0).toFixed(2)}
+          <div className="max-h-[500px] overflow-y-auto">
+            <table className="w-full border-collapse border border-gray-200">
+              <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
+                <tr className="bg-gray-100 text-[#00458B]">
+                  <th className="px-4 py-2 text-left">Date</th>
+                  <th className="px-4 py-2 text-left">Account Name</th>
+                  <th className="px-4 py-2 text-left">Account Type</th>
+                  <th className="px-4 py-2 text-left">Debit</th>
+                  <th className="px-4 py-2 text-left">Credit</th>
+                  <th className="px-4 py-2 text-left">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRecords.length > 0 ? (
+                  filteredRecords.map((record, index) => (
+                    < tr key={index}
+                      className="border-b border-gray-200 cursor-pointer hover:bg-gray-100">
+                      <td className="px-4 py-2 text-black">{record.date}</td>
+                      <td className="px-4 py-2 text-blue-700"
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect(); // Get position of the cell
+                          setTooltipPosition({
+                            x: rect.right + 10 + window.scrollX,
+                            y: rect.top + window.scrollY,
+                          });
+                          setSelectedRecord(record);
+                        }} >
+                        {record.account}
+                      </td>
+                      <td className="px-4 py-2 text-black">
+                        {record.account_type || "-"}
+                      </td>
+                      <td className="px-4 py-2 text-black">
+                        ₱ {(Number(record.debit) || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-black">
+                        ₱ {(Number(record.credit) || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-black">
+                        ₱ {(Number(record.balance) || 0).toFixed(2)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center text-gray-500 py-4">
+                      No records found
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="text-center text-gray-500 py-4">
-                    No records found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {selectedRecord && (
+            <div
+              id="floatingTooltipBox"
+              style={{
+                position: "absolute",
+                top: tooltipPosition.y,
+                left: tooltipPosition.x,
+                zIndex: 1000,
+              }}
+              className="bg-white border border-gray-300 shadow-lg p-4 rounded-md w-80"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
+                  Description
+                </h3>
+                <br></br>
+                <button
+                  onClick={() => setSelectedRecord(null)}
+                  className="text-gray-500 hover:text-red-500"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="text-sm text-gray-800">
+                <p className="mt-2"><strong>Date:</strong></p>
+                <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.date}</p>
+
+                <p className="mt-1"><strong>Description:</strong></p>
+                <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.description}</p>
+
+                <p className="mt-1"><strong> Total Amount:</strong></p>
+                <p className="mt-1 ml-3 text-blue-800">  ₱ {(Number(selectedRecord.total_amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+
+              </div>
+            </div>
+          )}
 
           {/* Generate Report Button */}
           <div className="flex justify-end mt-6">

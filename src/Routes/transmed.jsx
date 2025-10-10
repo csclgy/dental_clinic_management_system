@@ -249,7 +249,7 @@ const TransMed = () => {
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
+            <div className="overflow-auto" style={{ maxHeight: "500px", border: "1px solid #ddd" }}>
               {loading ? (
                 <p className="text-center py-4 text-gray-500">Loading...</p>
               ) : (

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, Package, AlertTriangle, PlusCircle } from "lucide-react";
+import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, Package, AlertTriangle, PlusCircle, PhilippinePeso } from "lucide-react";
 import axios from "axios";   // ✅ make sure axios is installed
 
 const Adminbillingedit = () => {
@@ -228,9 +228,6 @@ const Adminbillingedit = () => {
     if (paymentMode === "GCash" && !gcashProof) {
       return showPopup("Please upload GCash proof", "error");
     }
-    // if (paymentMode === "HMO" && !hmoNumber.trim()) {
-    //   return showPopup("HMO Number is required", "error");
-    // }
 
     try {
       const token = localStorage.getItem("token");
@@ -239,10 +236,27 @@ const Adminbillingedit = () => {
       formData.append("payment_method", paymentMode);
       formData.append("payment_status", paymentStatus);
       formData.append("or_num", paymentOR);
+      try {
+        const token = localStorage.getItem("token");
+        const checkRes = await axios.get(
+          `http://localhost:3000/auth/checkOR/${paymentOR}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (checkRes.data.exists && checkRes.data.appoint_id !== Number(appointId)) {
+          return showPopup(
+            `OR Number ${paymentOR} is already used for another appointment`,
+            "error"
+          );
+        }
+      } catch (err) {
+        console.error("Error checking OR number:", err);
+        return showPopup("Failed to validate OR number", "error");
+      }
       formData.append("total_service_charged", Number(serviceCharge));
 
-      // if (pwdDiscount) formData.append("pwd_number", pwdDiscount);
-      // if (hmoNumber) formData.append("hmo_number", hmoNumber);
       if (billingDate) formData.append("billing_date", billingDate);
 
       if (paymentMode === "GCash" && gcashProof) {
@@ -259,6 +273,7 @@ const Adminbillingedit = () => {
           },
         }
       );
+
 
       showPopup("Billing saved successfully", "success");
       await fetchBillingData();
@@ -325,20 +340,28 @@ const Adminbillingedit = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link
+                to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              {/* Ledger Dropdown */}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -419,7 +442,7 @@ const Adminbillingedit = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}

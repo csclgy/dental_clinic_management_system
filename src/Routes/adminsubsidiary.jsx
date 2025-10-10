@@ -8,7 +8,8 @@ import {
   Menu,
   X,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  PhilippinePeso
 } from "lucide-react";
 
 const AdminSubsidiaryAdd = () => {
@@ -211,7 +212,7 @@ const AdminSubsidiaryAdd = () => {
               to="/admincashier"
               className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
             >
-              <Calendar size={18} /> Cashier
+              <PhilippinePeso size={18} /> Cashier
             </Link>
           )}
 

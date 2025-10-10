@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link, useParams } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
 
 const AdminConsultationPartialPayment = () => {
-
+  const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -16,12 +16,14 @@ const AdminConsultationPartialPayment = () => {
 
   const [formData, setFormData] = useState({
     date: "",
-    description: "",
+    name: "",
     invoice_no: "",
     account: "",
     accountName: "",
     type: "debit",
     amount: "",
+    procedure_type:"",
+    appoint_id: ""
   });
 
   // Scroll into view if coming from another page
@@ -56,16 +58,18 @@ const AdminConsultationPartialPayment = () => {
     fetchAccountReceivable();
   }, [location]);
 
-  useEffect(() => {
-    if (location.state) {
-      const { patientName, invoiceNo } = location.state;
-      setFormData((prev) => ({
-        ...prev,
-        description: patientName || "",
-        invoice_no: invoiceNo || "",
-      }));
-    }
-  }, [location.state]);
+useEffect(() => {
+  if (location.state) {
+    const { patientName, invoiceNo, procedureType,appointId } = location.state;
+    setFormData((prev) => ({
+      ...prev,
+      name: patientName || "",
+      invoice_no: invoiceNo || "",
+      procedure_type: procedureType || "",
+      appoint_id: appointId ||""
+    }));
+  }
+}, [location.state]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -75,25 +79,23 @@ const AdminConsultationPartialPayment = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.date || !formData.description || !formData.account || !formData.amount) {
+    if (!formData.date || !formData.name || !formData.account || !formData.amount) {
       alert("Please fill in all required fields.");
       return;
     }
 
     const debit = formData.type === "debit" ? Number(formData.amount) : 0;
     const credit = formData.type === "credit" ? Number(formData.amount) : 0;
-    const balance = debit - credit;
+ 
 
     try {
-      await axios.post("http://localhost:3000/auth/subsidiary", {
-        date: formData.date,
-        name: formData.description,
+      await axios.post("http://localhost:3000/auth/subsidiaryReceivable", {
+         date: formData.date,
+        name: formData.name,
         invoice_no: formData.invoice_no,
-        account_id: formData.account,
-        patient_id: selectedPatientId,
-        debit,
-        credit,
-        balance,
+        amount: Number(formData.amount),
+        appoint_id: formData.appoint_id,
+        procedure_type: formData.procedure_type,
       });
       alert("Subsidiary entry saved successfully!");
       navigate("/adminsubsidiaryreceivable");
@@ -134,20 +136,25 @@ const AdminConsultationPartialPayment = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -228,7 +235,7 @@ const AdminConsultationPartialPayment = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -265,6 +272,19 @@ const AdminConsultationPartialPayment = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
+                  Appointment No:
+                </label>
+                <input
+                  type="text"
+                  name="appoint_id"
+                  value={formData.appoint_id}
+                  onChange={handleChange}
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
                   Date
                 </label>
                 <input
@@ -275,6 +295,9 @@ const AdminConsultationPartialPayment = () => {
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 />
               </div>
+            </div>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
                   Invoice Number
@@ -288,7 +311,21 @@ const AdminConsultationPartialPayment = () => {
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
                 />
               </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Service:
+                </label>
+                <input
+                  type="text"
+                  name="procedure_type"
+                  value={formData.procedure_type}
+                  onChange={handleChange}
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
+              </div>
             </div>
+
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
@@ -296,23 +333,25 @@ const AdminConsultationPartialPayment = () => {
               </label>
               <input
                 type="text"
-                name="description"
-                value={formData.description}
+                name="name"
+                value={formData.name}
                 readOnly
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
               />
-
+              
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Debit/Credit
+                  Debit
                 </label>
                 <select
                   name="type"
                   value={formData.type}
                   onChange={handleChange}
+                  readOnly
+                  disabled
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 >
                   <option value="debit">Debit</option>
@@ -337,7 +376,7 @@ const AdminConsultationPartialPayment = () => {
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/adminsubsidiaryreceivable")}
+                 onClick={() => navigate(`/adminconsultationpartial/${appointId}`)}
               >
                 Back
               </button>

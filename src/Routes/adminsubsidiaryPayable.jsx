@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
 
 const AdminSubsidiaryPayable = () => {
   const location = useLocation();
@@ -12,6 +12,8 @@ const AdminSubsidiaryPayable = () => {
   const [subsidiaryRecords, setSubsidiaryRecords] = useState([]);
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -24,11 +26,23 @@ const AdminSubsidiaryPayable = () => {
     }
   }, [location]);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const tooltip = document.getElementById("floatingTooltipBox");
+      if (tooltip && !tooltip.contains(e.target)) {
+        setSelectedRecord(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   // Fetch subsidiary ledger for Accounts Payable
   useEffect(() => {
     const fetchSubsidiary = async (account_id) => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/subsidiary", {
+        const res = await axios.get("http://localhost:3000/auth/subsidiaryPayable", {
           params: { account_id },
         });
         setSubsidiaryRecords(res.data);
@@ -37,29 +51,30 @@ const AdminSubsidiaryPayable = () => {
       }
     };
 
-    const fetchAccountPayable = async () => {
-      try {
-        const res = await axios.get("http://localhost:3000/auth/accountPayable");
-        if (res.data.length > 0) {
-          const { account_id } = res.data[0];
-          fetchSubsidiary(account_id);
-        }
-      } catch (err) {
-        console.error("Error fetching Account Payable:", err);
-      }
-    };
-
-    fetchAccountPayable();
+    fetchSubsidiary();
   }, []);
 
   // Filter records
   const filteredRecords = subsidiaryRecords.filter((record) => {
     if (!searchTerm) return true;
+
+    const name = record.name ? record.name.toLowerCase() : "";
+    const invoiceNo = record.invoice_no ? record.invoice_no.toLowerCase() : "";
+    const particulars = record.particulars ? record.particulars.toLowerCase() : "";
+
     return (
-      record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.invoice_no.toLowerCase().includes(searchTerm.toLowerCase())
+      name.includes(searchTerm.toLowerCase()) ||
+      invoiceNo.includes(searchTerm.toLowerCase()) ||
+      particulars.includes(searchTerm.toLowerCase())
     );
   });
+
+  const fullyPaidInvoices = new Set(
+    subsidiaryRecords
+      .filter((r) => Number(r.balance) <= 0)
+      .map((r) => r.invoice_no)
+  );
+
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -92,20 +107,25 @@ const AdminSubsidiaryPayable = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -186,7 +206,7 @@ const AdminSubsidiaryPayable = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -257,41 +277,139 @@ const AdminSubsidiaryPayable = () => {
 
           <table className="w-full border-collapse border border-gray-200">
             <thead>
-              <tr className="bg-gray-100 text-[#00458B]">
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Name</th>
-                <th className="px-4 py-2 text-left">Invoice No.</th>
-                <th className="px-4 py-2 text-left">Debit</th>
-                <th className="px-4 py-2 text-left">Credit</th>
-                <th className="px-4 py-2 text-left">Balance</th>
-              </tr>
+                                
+                  <tr className="bg-gray-100 text-[#00458B]">
+                    <th className="px-4 py-2 text-left">Date</th>
+                    <th className="px-4 py-2 text-left">Particulars</th>
+                    <th className="px-4 py-2 text-left">Invoice No.</th>
+                    <th className="px-4 py-2 text-left">Debit</th>
+                    <th className="px-4 py-2 text-left">Credit</th>
+                    <th className="px-4 py-2 text-left">Balance</th>
+                    <th className="px-4 py-2 text-left">Action</th>
+                  </tr>
+                
             </thead>
-            <tbody>
-              {filteredRecords.length > 0 ? (
-                filteredRecords.map((record, index) => (
-                  <tr key={index} className="border-b border-gray-200">
-                    <td className="px-4 py-2 text-black">{record.date}</td>
-                    <td className="px-4 py-2 text-blue-700">{record.name}</td>
-                    <td className="px-4 py-2 text-black">{record.invoice_no}</td>
-                    <td className="px-4 py-2 text-black">
-                      ₱ {(Number(record.debit) || 0).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2 text-black">
-                      ₱ {(Number(record.credit) || 0).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2 text-black">
-                      {(Number(record.balance) || 0).toFixed(2)}
+                <tbody>
+                {filteredRecords.length > 0 ? (
+                  filteredRecords.map((record, index) => (
+                    <tr
+                      key={index}
+                      className="border-b border-gray-200 cursor-pointer hover:bg-gray-100">
+                      <td className="px-4 py-2 text-black">{record.date}</td>
+                        <td
+                        className="px-4 py-2 text-blue-700 cursor-pointer"
+                        onClick={(e) => {
+                          const rect = e.currentTarget.getBoundingClientRect(); 
+                          setTooltipPosition({
+                            x: rect.right + 10 + window.scrollX,
+                            y: rect.top + window.scrollY,
+                          });
+                          setSelectedRecord(record);
+                        }}
+                      >
+                        {record.particulars}
+                      </td>
+                      <td className="px-4 py-2 text-black">{record.invoice_no}</td>
+                      <td className="px-4 py-2 text-black">
+                        ₱ {(Number(record.debit) || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-black">
+                        ₱ {(Number(record.credit) || 0).toFixed(2)}
+                      </td>
+                      <td className="px-4 py-2 text-black">
+                        {(Number(record.balance) || 0).toFixed(2)}
+                      </td>
+                     <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => {
+                            const [companyName, expenseAccount] = record.particulars
+                              ? record.particulars.split(" - ").map((part) => part.trim())
+                              : ["", ""];
+
+                            navigate("/adminsubsidiaryaddpayable", {
+                              state: {
+                                mode: "pay",
+                                invoice_no: record.invoice_no,
+                                name: companyName,
+                                expense_account: expenseAccount,
+                                items: record.items,
+                                day_agreement: record.day_agreement,
+                                due_date: record.due_date,
+                                balance: record.balance,
+                              },
+                            });
+                          }}
+                          disabled={fullyPaidInvoices.has(record.invoice_no)} 
+                          className={`font-semibold px-4 py-2 rounded-lg ${
+                            fullyPaidInvoices.has(record.invoice_no)
+                              ? "bg-gray-400 cursor-not-allowed text-white" 
+                              : "bg-[#00c3b8] hover:bg-[#00a99d] text-white" 
+                          }`}
+                        >
+                          Pay
+                        </button>
+                      </td>
+                                              
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center text-gray-500 py-4">
+                      No records found
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="text-center text-gray-500 py-4">
-                    No records found
-                  </td>
-                </tr>
-              )}
-            </tbody>
+                )}
+              </tbody>
+                {selectedRecord && (
+              <div
+                  id="floatingTooltipBox"
+                style={{
+                  position: "absolute",
+                  top: tooltipPosition.y,
+                  left: tooltipPosition.x,
+                  zIndex: 1000,
+                }}
+                className="bg-white border border-gray-300 shadow-lg p-4 rounded-md w-80"
+              >
+                <div className="flex justify-between items-center mb-2">
+                   <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
+                    Invoice Details
+                  </h3>
+                  <br></br>
+                  <button
+                    onClick={() => setSelectedRecord(null)}
+                    className="text-gray-500 hover:text-red-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="text-sm text-gray-800">
+                  <p className="mt-2"><strong>Invoice No:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.invoice_no}</p>
+
+                  {/* <p className="mt-1"><strong>Payment No:</strong> {selectedRecord.payment_reference}</p> */}
+
+                  <p className="mt-1"><strong>Date:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800">{selectedRecord.date}</p>
+
+                  <p className="mt-1"><strong>Day Agreement:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.day_agreement}</p>
+
+                  <p className="mt-1"><strong>Due Date:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.due_date}</p>
+                  
+                  <p className="mt-1"><strong>Supplier Name:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.supplier_name}</p>
+
+                  <p className="mt-1"><strong>Items:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.items}</p>
+
+                  <p className="mt-1"><strong> Total Amount:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800">  ₱ {(Number(selectedRecord.total_amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+
+                </div>
+              </div>
+            )}
           </table>
         </div>
       </main>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
 
 const AdminSubsidiaryPayableAdd = () => {
   const location = useLocation();
@@ -23,6 +23,9 @@ const AdminSubsidiaryPayableAdd = () => {
     account1: "",
     type: "debit",
     amount: "",
+    items: "",
+    day_agreement: "",
+    due_date: ""
   });
 
   // ✅ Popup state and fade animation (same style as AdminCoaViewAdd)
@@ -92,9 +95,50 @@ const AdminSubsidiaryPayableAdd = () => {
     }
   };
 
+  useEffect(() => {
+    if (formData.day_agreement && formData.date) {
+      let days = parseInt(formData.day_agreement);
+      const baseDate = new Date(formData.date);
+      const due = new Date(baseDate);
+      due.setDate(baseDate.getDate() + days);
+      const formattedDue = due.toISOString().split("T")[0];
+      setFormData((prev) => ({ ...prev, due_date: formattedDue }));
+    }
+  }, [formData.day_agreement, formData.date]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    // Handle day agreement change
+    if (name === "day_agreement") {
+      let days = 0;
+
+      if (value.includes("30")) days = 30;
+      else if (value.includes("60")) days = 60;
+      else if (value.includes("90")) days = 90;
+      else if (value.includes("100")) days = 100;
+
+      // Use the current date or selected formData.date as base
+      const baseDate = formData.date ? new Date(formData.date) : new Date();
+      const due = new Date(baseDate);
+      due.setDate(baseDate.getDate() + days);
+
+      // Format date to YYYY-MM-DD for input type="date"
+      const formattedDue = due.toISOString().split("T")[0];
+
+      setFormData((prev) => ({
+        ...prev,
+        day_agreement: value,
+        due_date: formattedDue,
+      }));
+    }
+    // Handle normal input fields
+    else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -115,23 +159,77 @@ const AdminSubsidiaryPayableAdd = () => {
       const debit = formData.type === "debit" ? Number(formData.amount) : 0;
       const credit = formData.type === "credit" ? Number(formData.amount) : 0;
 
+
       await axios.post("http://localhost:3000/auth/subsidiary1", {
         date: formData.date,
         name: formData.description,
         account_id: formData.account,
         expense_id: formData.account1,
         invoice_no: formData.invoice_no,
+        amount: formData.amount,
         debit,
         credit,
+        items: formData.items,
+        day_agreement: formData.day_agreement,
+        due_date: formData.due_date
       });
 
       showPopup("Subsidiary entry saved successfully!", "success");
       navigate("/adminsubsidiaryPayable");
     } catch (err) {
       console.error("Error saving entry:", err);
-      showPopup(err.response?.data?.message || "Something went wrong", "error");
+      const backendMessage =
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        "Something went wrong.";
+
+      showPopup(backendMessage, "error");
     }
   };
+
+  useEffect(() => {
+    const state = location.state;
+    if (!state?.mode) return;
+
+    if (state.mode === "pay") {
+      const expenseName = (state.expense_account || state.expenseAccount || "").trim();
+      const matched = account.find(
+        (acc) =>
+          acc.account_name &&
+          acc.account_name.toLowerCase() === expenseName.toLowerCase()
+      );
+
+      setFormData((prev) => ({
+        ...prev,
+        date: state.date || prev.date,
+        description: state.name || prev.description,
+        invoice_no: state.invoice_no || prev.invoice_no,
+        type: "debit",
+        account: prev.account,
+        accountName: prev.accountName,
+        account1: matched ? String(matched.account_id) : "",
+        items: state.items || prev.items,
+        day_agreement: state.day_agreement || prev.day_agreement,
+        due_date: state.due_date || prev.due_date,
+      }));
+    } else {
+
+      setFormData((prev) => ({
+        ...prev,
+        type: "credit"
+      }));
+    }
+  }, [location.state, account]);
+
+  const expenseFromState =
+    (location.state?.expense_account || location.state?.expenseAccount || "").trim();
+
+  const matchedAccount = account.find(
+    (acc) =>
+      expenseFromState &&
+      acc.account_name &&
+      acc.account_name.toLowerCase() === expenseFromState.toLowerCase()
+  );
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -164,20 +262,25 @@ const AdminSubsidiaryPayableAdd = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -258,7 +361,7 @@ const AdminSubsidiaryPayableAdd = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -324,6 +427,7 @@ const AdminSubsidiaryPayableAdd = () => {
                   name="invoice_no"
                   value={formData.invoice_no}
                   onChange={handleChange}
+                  readOnly={location.state?.mode === "pay"}
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 />
               </div>
@@ -342,6 +446,7 @@ const AdminSubsidiaryPayableAdd = () => {
                   handleChange(e);
                   fetchSuggestions(e.target.value);
                 }}
+                readOnly={location.state?.mode === "pay"}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 autoComplete="off"
               />
@@ -373,15 +478,13 @@ const AdminSubsidiaryPayableAdd = () => {
                 <label className="block text-[#00458b] font-semibold mb-1">
                   Debit/Credit
                 </label>
-                <select
+                <input
+                  type="text"
                   name="type"
                   value={formData.type}
-                  onChange={handleChange}
-                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                >
-                  <option value="debit">Debit</option>
-                  <option value="credit">Credit</option>
-                </select>
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
@@ -392,6 +495,7 @@ const AdminSubsidiaryPayableAdd = () => {
                   name="amount"
                   value={formData.amount}
                   onChange={handleChange}
+
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 />
               </div>
@@ -414,19 +518,92 @@ const AdminSubsidiaryPayableAdd = () => {
                 <label className="block text-[#00458b] font-semibold mb-1">
                   Expense Account
                 </label>
+
+                {/* if pay mode */}
+                {location.state?.mode === "pay" && matchedAccount ? (
+                  <select
+                    name="account1"
+                    value={formData.account1}
+                    onChange={handleChange}
+                    className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                    disabled
+                  >
+                    <option value="">-- Select Account --</option>
+                    {account.map((acc) => (
+                      <option key={acc.account_id} value={String(acc.account_id)}>
+                        {acc.account_name}
+                      </option>
+                    ))}
+                  </select>
+                ) : location.state?.mode === "pay" && expenseFromState ? (
+                  <input
+                    type="text"
+                    value={expenseFromState}
+                    readOnly
+                    className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                  />
+                ) : (
+                  <select
+                    name="account1"
+                    value={formData.account1}
+                    onChange={handleChange}
+                    className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                  >
+                    <option value="">-- Select Account --</option>
+                    {account.map((acc) => (
+                      <option key={acc.account_id} value={String(acc.account_id)}>
+                        {acc.account_name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </div>
+
+            {/* Transaction Description */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Items:
+                </label>
+                <input
+                  type="text"
+                  name="items"
+                  value={formData.items}
+                  onChange={handleChange}
+                  readOnly={location.state?.mode === "pay"}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Agreement
+                </label>
                 <select
-                  name="account1"
-                  value={formData.account1}
+                  name="day_agreement"
+                  value={formData.day_agreement}
                   onChange={handleChange}
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                  disabled={location.state?.mode === "pay"}
                 >
-                  <option value="">-- Select Account --</option>
-                  {account.map((acc) => (
-                    <option key={acc.account_id} value={acc.account_id}>
-                      {acc.account_name}
-                    </option>
-                  ))}
+                  <option value="">Select Agreement</option>
+                  <option value="30 days">30 days</option>
+                  <option value="60 days">60 days</option>
+                  <option value="90 days">90 days</option>
+                  <option value="100 days">100 days</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Due Date
+                </label>
+                <input
+                  type="date"
+                  name="due_date"
+                  value={formData.due_date}
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
               </div>
             </div>
 

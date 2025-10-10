@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
 import axios from "axios";
 
 const AdminJournal = () => {
@@ -236,20 +236,25 @@ const AdminJournal = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -330,7 +335,7 @@ const AdminJournal = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -421,50 +426,45 @@ const AdminJournal = () => {
         </div>
 
         {/* Table */}
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-200">
-            <thead>
-              <tr className="bg-gray-100 text-[#00458B]">
-                <th className="px-4 py-2 text-left">Date</th>
-                <th className="px-4 py-2 text-left">Account</th>
-                <th className="px-4 py-2 text-left">Description</th>
-                <th className="px-4 py-2 text-left">Debit</th>
-                <th className="px-4 py-2 text-left">Credit</th>
-                <th className="px-4 py-2 text-left">Comment</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredRecords.length > 0 ? (
-                filteredRecords.map((record, index) => (
-                  <tr key={index} className="border-b border-gray-200">
-                    <td className="px-4 py-2 text-black">{record.date}</td>
-                    <td className="px-4 py-2 text-blue-700">
-                      {record.Account}
-                    </td>
-                    <td className="px-4 py-2 text-black">
-                      {record.description}
-                    </td>
-                    <td className="px-4 py-2 text-black">
-                      ₱ {record.debit}
-                    </td>
-                    <td className="px-4 py-2 text-black">
-                      ₱ {record.credit}
-                    </td>
-                    <td className="px-4 py-2 text-black">
-                      {record.comment}
-                    </td>
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          <div className="overflow-x-auto">
+            <div className="max-h-[500px] overflow-y-auto">
+              <table className="w-full border-collapse border border-gray-200">
+                <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-2 text-left">Date</th>
+                    <th className="px-4 py-2 text-left">Account</th>
+                    <th className="px-4 py-2 text-left">Description</th>
+                    <th className="px-4 py-2 text-left">Debit</th>
+                    <th className="px-4 py-2 text-left">Credit</th>
+                    <th className="px-4 py-2 text-left">Comment</th>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="6" className="text-center text-gray-500 py-4">
-                    No records found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {filteredRecords.length > 0 ? (
+                    filteredRecords.map((record, index) => (
+                      <tr key={index} className="border-b border-gray-200">
+                        <td className="px-4 py-2 text-black">{record.date}</td>
+                        <td className="px-4 py-2 text-blue-700">{record.Account}</td>
+                        <td className="px-4 py-2 text-black">{record.description}</td>
+                        <td className="px-4 py-2 text-black">₱ {record.debit}</td>
+                        <td className="px-4 py-2 text-black">₱ {record.credit}</td>
+                        <td className="px-4 py-2 text-black">{record.comment}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="text-center text-gray-500 py-4">
+                        No records found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
+
       </main>
     </div>
   );

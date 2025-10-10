@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { BarChart3, Users, Calendar, Menu, X, PlusCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, PlusCircle, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
 
 const AdminInventoryPending = () => {
   const location = useLocation();
@@ -158,20 +158,25 @@ const AdminInventoryPending = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -252,7 +257,7 @@ const AdminInventoryPending = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -445,16 +450,6 @@ const AdminInventoryPending = () => {
               )}
             </tbody>
           </table>
-        </div>
-
-        {/* Report Button */}
-        <div className="flex justify-end mt-6">
-          <button
-            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
-            onClick={() => navigate("/register2")}
-          >
-            Generate Report
-          </button>
         </div>
       </main>
     </div>

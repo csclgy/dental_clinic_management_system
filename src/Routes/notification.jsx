@@ -40,15 +40,12 @@ const Notification = () => {
             <p className="my-3 text-transparent">...</p>
 
             <div
-              className="p-6 rounded-lg shadow-lg space-y-4"
-              style={{ border: "solid", borderColor: "#01D5C4" }}
+              className="p-6 rounded-lg shadow-lg space-y-4 overflow-y-auto"
+              style={{ border: "solid", borderColor: "#01D5C4", maxHeight: "500px" }}
             >
               {notifications.length > 0 ? (
                 notifications.map((note) => (
-                  <div
-                    key={note.ntf_id}
-                    className="p-4 border-b border-gray-200 last:border-0"
-                  >
+                  <div key={note.ntf_id} className="p-4 border-b border-gray-200 last:border-0">
                     <h2 className="text-lg font-semibold text-[#00458B]">
                       {note.ntf_subject}
                     </h2>

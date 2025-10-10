@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { BarChart3, Users, Calendar, Menu, X, Package, PlusCircle, ChevronDown, ChevronUp, AlertTriangle, Trash2 } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, Package, PlusCircle, ChevronDown, ChevronUp, AlertTriangle, Trash2, PhilippinePeso } from "lucide-react";
 import axios from "axios";
 
 function admininventory() {
@@ -120,20 +120,25 @@ function admininventory() {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -214,7 +219,7 @@ function admininventory() {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -338,88 +343,88 @@ function admininventory() {
                 <i className="fa fa-search text-[#00458B]"></i>
               </div>
             </div>
-            <table className="w-full border-collapse border border-gray-200">
-              <thead>
-                <tr className="bg-gray-100 text-[#00458B]">
-                  <th className="px-4 py-2 text-left">ID</th>
-                  <th className="px-4 py-2 text-left">Item Name</th>
-                  <th className="px-4 py-2 text-center">Category</th>
-                  <th className="px-4 py-2 text-center">Quantity</th>
-                  <th className="px-4 py-2 text-center">Stocks</th>
-                  <th className="px-4 py-2 text-center">Expiration Date</th>
-                  <th className="px-4 py-2 text-center">Status</th>
-                  <th className="px-4 py-2 text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedItems
-                  .filter(item =>
-                    Object.values(item).some(val =>
-                      val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+            <div className="max-h-[500px] overflow-y-auto">
+              <table className="w-full border-collapse border border-gray-200">
+                <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
+                  <tr className="bg-gray-100 text-[#00458B]">
+                    <th className="px-4 py-2 text-left">ID</th>
+                    <th className="px-4 py-2 text-left">Item Name</th>
+                    <th className="px-4 py-2 text-center">Category</th>
+                    <th className="px-4 py-2 text-center">Quantity</th>
+                    <th className="px-4 py-2 text-center">Stocks</th>
+                    <th className="px-4 py-2 text-center">Expiration Date</th>
+                    <th className="px-4 py-2 text-center">Status</th>
+                    <th className="px-4 py-2 text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedItems
+                    .filter(item =>
+                      Object.values(item).some(val =>
+                        val?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+                      )
                     )
-                  )
-                  .map(item => (
-                    <tr key={item.inv_id} className="border-b border-gray-200">
-                      <td className="px-4 py-2 text-center">{item.inv_id}</td>
-                      <td className="px-4 py-2 text-blue-700">{item.inv_item_name}</td>
-                      <td className="px-4 py-2 text-center">{item.inv_item_type}</td>
-                      <td className="px-4 py-2 text-center">{item.inv_quantity}</td>
-                      <td
-                        className={`px-4 py-2 text-center font-bold ${Number(item.inv_quantity) <= 50 ? "text-red-600" : "text-green-600"
-                          }`}
-                      >
-                        {Number(item.inv_quantity) <= 50 ? "Low" : "OK"}
-                      </td>
-                      <td className="px-4 py-2 text-center">
-                        {item.inv_exp_date ? new Date(item.inv_exp_date).toLocaleDateString() : "N/A"}
-                      </td>
-                      <td className="px-4 py-2 text-center">{item.inv_item_status}</td>
-                      <td className="px-4 py-2 text-center">
-                        <div className="flex flex-col sm:flex-row sm:justify-center sm:space-x-2 gap-2">
-                          {/* ✅ View - ALWAYS clickable */}
-                          <Link
-                            to={`/admininventoryview/${item.inv_id}`}
-                            className={`px-4 py-2 rounded-lg text-white ${item.inv_item_status === "inactive"
+                    .map(item => (
+                      <tr key={item.inv_id} className="border-b border-gray-200">
+                        <td className="px-4 py-2 text-center">{item.inv_id}</td>
+                        <td className="px-4 py-2 text-blue-700">{item.inv_item_name}</td>
+                        <td className="px-4 py-2 text-center">{item.inv_item_type}</td>
+                        <td className="px-4 py-2 text-center">{item.inv_quantity}</td>
+                        <td
+                          className={`px-4 py-2 text-center font-bold ${Number(item.inv_quantity) <= 50 ? "text-red-600" : "text-green-600"
+                            }`}
+                        >
+                          {Number(item.inv_quantity) <= 50 ? "Low" : "OK"}
+                        </td>
+                        <td className="px-4 py-2 text-center">
+                          {item.inv_exp_date ? new Date(item.inv_exp_date).toLocaleDateString() : "N/A"}
+                        </td>
+                        <td className="px-4 py-2 text-center">{item.inv_item_status}</td>
+                        <td className="px-4 py-2 text-center">
+                          <div className="flex flex-col sm:flex-row sm:justify-center sm:space-x-2 gap-2">
+                            {/* ✅ View - ALWAYS clickable */}
+                            <Link
+                              to={`/admininventoryview/${item.inv_id}`}
+                              className={`px-4 py-2 rounded-lg text-white ${item.inv_item_status === "inactive"
                                 ? "bg-[#008CBA] hover:bg-[#0079a1] opacity-80" // Slightly dimmer when inactive
                                 : "bg-[#008CBA] hover:bg-[#0079a1]"
-                              }`}
-                          >
-                            View
-                          </Link>
+                                }`}
+                            >
+                              View
+                            </Link>
 
-                          {/* ✅ Edit - always clickable */}
-                          <Link
-                            to={`/admininventoryedit/${item.inv_id}`}
-                            className="px-4 py-2 rounded-lg text-white bg-green-500 hover:bg-green-600"
-                          >
-                            Edit
-                          </Link>
+                            {/* ✅ Edit - always clickable */}
+                            <Link
+                              to={`/admininventoryedit/${item.inv_id}`}
+                              className="px-4 py-2 rounded-lg text-white bg-green-500 hover:bg-green-600"
+                            >
+                              Edit
+                            </Link>
 
-                          {/* ❌ Deactivate - disabled when inactive */}
-                          <button
-                            disabled={item.inv_item_status === "inactive"}
-                            onClick={() =>
-                              setConfirmBox({
-                                show: true,
-                                itemId: item.inv_id,
-                                itemName: item.inv_item_name,
-                              })
-                            }
-                            className={`px-4 py-2 rounded-lg text-white ${item.inv_item_status === "inactive"
+                            {/* ❌ Deactivate - disabled when inactive */}
+                            <button
+                              disabled={item.inv_item_status === "inactive"}
+                              onClick={() =>
+                                setConfirmBox({
+                                  show: true,
+                                  itemId: item.inv_id,
+                                  itemName: item.inv_item_name,
+                                })
+                              }
+                              className={`px-4 py-2 rounded-lg text-white ${item.inv_item_status === "inactive"
                                 ? "bg-gray-400 text-gray-500 cursor-not-allowed"
                                 : "bg-red-500 hover:bg-red-600"
-                              }`}
-                          >
-                            {item.inv_item_status === "inactive" ? "Deactivate" : "Deactivate"}
-                          </button>
-                        </div>
-                      </td>
-
-
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+                                }`}
+                            >
+                              {item.inv_item_status === "inactive" ? "Deactivate" : "Deactivate"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </main>

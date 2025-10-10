@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
 
 const AdminCoaAdd = () => {
   const location = useLocation();
@@ -15,6 +15,8 @@ const AdminCoaAdd = () => {
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
+
+  const [description, setDescription] = useState("Account Description");
 
   // ✅ Popup state and fade animation (copied from ProfileChange)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -52,6 +54,7 @@ const AdminCoaAdd = () => {
         {
           account_name: accountName,
           account_type: accountType,
+          description: description,
         },
         {
           headers: {
@@ -114,20 +117,25 @@ const AdminCoaAdd = () => {
               >
                 Inventory Dashboard
               </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              <button
-                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -208,7 +216,7 @@ const AdminCoaAdd = () => {
                 to="/admincashier"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Cashier
+                <PhilippinePeso size={18} /> Cashier
               </Link>
             </>
           )}
@@ -299,6 +307,18 @@ const AdminCoaAdd = () => {
                 <option value="Income">Income</option>
                 <option value="Expense">Expense</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Description
+              </label>
+              <input
+                type="text"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              />
             </div>
 
             <div className="flex justify-end gap-4 mt-6">
