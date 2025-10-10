@@ -307,6 +307,11 @@ const TransAppointment = () => {
                             className="bg-[#008CBA] text-white px-4 py-1 rounded-lg w-full sm:w-auto hover:bg-[#008CBA]">
                               View
                             </button>
+                            <button 
+                              onClick={() => navigate(`/transviewsoa/${record.appoint_id}`)}
+                              className="bg-[#008CBA] text-white px-4 py-1 rounded-lg hover:bg-[#008CBA] ml-5">
+                                SOA
+                              </button>
                         </td>
                       </tr>
                     ))

@@ -73,7 +73,7 @@ import AdminCashierPaid from "./Routes/admincashierpaid.jsx";
 import AdminCashierPartial from "./Routes/admincashierpartial.jsx";
 import AdminConsultationPartial from "./Routes/adminconsultationpartial.jsx";
 import AdminConsultationPartialPayment from "./Routes/adminconsultationpartialpay.jsx";
-
+import TransViewSoa from "./Routes/transviewsoa.jsx";
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-white-50">
@@ -174,6 +174,14 @@ function App() {
                   <Cancelappointment />
                 </ProtectedRoute>
               }
+            />
+            <Route path="/transviewsoa/:appointId"
+             element={
+              <ProtectedRoute>
+             <TransViewSoa />
+            </ProtectedRoute>
+            }
+            
             />
 
             {/* Admin routes */}
