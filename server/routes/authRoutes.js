@@ -7,10 +7,6 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import { authenticateToken } from "../middleware/authMiddleware.js";
-import bodyParser from "body-parser";
-import { decode } from 'punycode';
-import { create } from 'domain';
-import { act } from 'react';
 import AWS from "aws-sdk";
 
 dotenv.config();
