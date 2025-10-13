@@ -85,6 +85,15 @@ const Appointment = () => {
     }
   }, [appointmentData.procedure_type]);
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // triggers re-render so `isPastTime()` recalculates
+      setBookedSlots((prev) => ({ ...prev }));
+    }, 60000); // every 60 seconds
+    return () => clearInterval(timer);
+  }, []);
+
+
   const fetchAppointments = async () => {
     try {
       const response = await axios.get("http://localhost:3000/auth/appointments/all");
@@ -125,6 +134,31 @@ const Appointment = () => {
 
     const bookedTimesForDate = bookedSlots[appointmentData.pref_date] || [];
     return timeSlots.filter(slot => !bookedTimesForDate.includes(slot));
+  };
+
+  const isPastTime = (time) => {
+    if (!appointmentData.pref_date) return false;
+
+    const today = new Date();
+    const selectedDate = new Date(appointmentData.pref_date);
+
+    // If selected date is before today → all times are past
+    if (selectedDate < new Date(today.toDateString())) return true;
+
+    // If selected date is after today → all times are valid
+    if (selectedDate > new Date(today.toDateString())) return false;
+
+    // Otherwise, selected date is today → check individual times
+    const [hourMin, modifier] = time.split(/(AM|PM)/);
+    let [hour, minute] = hourMin.split(":").map(Number);
+
+    if (modifier === "PM" && hour !== 12) hour += 12;
+    if (modifier === "AM" && hour === 12) hour = 0;
+
+    const slotTime = new Date();
+    slotTime.setHours(hour, minute, 0, 0);
+
+    return slotTime <= today; // true if this time has already passed today
   };
 
   const isDateFullyBooked = (date) => {
@@ -291,20 +325,25 @@ const Appointment = () => {
                   {timeSlots.map((time) => {
                     const bookedTimesForDate = bookedSlots[appointmentData.pref_date] || [];
                     const isBooked = bookedTimesForDate.includes(time);
+                    const pastTime = isPastTime(time);
+
+                    const disabled = isBooked || pastTime;
+
                     return (
                       <option
                         key={time}
                         value={time}
-                        disabled={isBooked}
+                        disabled={disabled}
                         style={{
-                          color: isBooked ? "gray" : "black",
-                          backgroundColor: isBooked ? "#f2f2f2" : "white",
+                          color: disabled ? "gray" : "black",
+                          backgroundColor: disabled ? "#f2f2f2" : "white",
                         }}
                       >
-                        {time} {isBooked ? "(Booked)" : ""}
+                        {time} {isBooked ? "(Booked)" : pastTime ? "(Past)" : ""}
                       </option>
                     );
                   })}
+
                 </select>
 
                 {/* Availability alerts */}
@@ -316,6 +355,14 @@ const Appointment = () => {
                     </p>
                   </div>
                 )}
+
+                {appointmentData.pref_date && new Date(appointmentData.pref_date) < new Date(new Date().toDateString()) && (
+                  <p className="text-xs text-red-600 mt-1">
+                    ⚠️ You cannot select past dates or times.
+                  </p>
+                )}
+
+
 
                 {appointmentData.pref_date && getAvailableTimeSlots().length > 0 && (
                   <p className="text-xs text-green-600 mt-1">
@@ -466,8 +513,8 @@ const Appointment = () => {
               <div className="mt-6">
                 <button
                   className={`font-semibold px-6 py-2 rounded-full w-full ${validateForm
-                      ? "bg-[#00c3b8] text-white hover:bg-teal-600"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    ? "bg-[#00c3b8] text-white hover:bg-teal-600"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   onClick={() => {
                     if (!validateForm()) return;
