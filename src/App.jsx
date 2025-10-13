@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppointmentProvider } from "./context/AppointmentContext";
 import './index.css';
 import './App.css';
-import Navbar from "./components/NavBar";
+import NavBar from "./components/NavBar";
 import Home from "./Routes/home";
 import Login from "./Routes/login";
 import Register from "./Routes/register";
@@ -79,7 +79,7 @@ import TransViewSoa from "./Routes/transviewsoa.jsx";
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-white-50">
-      <Navbar />
+      <NavBar />
       <RegisterProvider>
         <AppointmentProvider>
           <Routes>
