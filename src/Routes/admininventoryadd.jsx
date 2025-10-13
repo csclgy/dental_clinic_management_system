@@ -44,7 +44,7 @@ const AdminInventoryAdd = () => {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/auth/suppliers");
+        const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/suppliers");
         setSuppliers(response.data);
       } catch (error) {
         console.error("Error fetching suppliers:", error);
@@ -58,7 +58,7 @@ const AdminInventoryAdd = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/auth/additem",
+        "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/additem",
         registerData,
         {
           headers: {

@@ -34,7 +34,7 @@ function ReceptionistDashboard() {
   useEffect(() => {
   const fetchDashboardData = async () => {
     try {
-      const res = await axios.get("http://localhost:3000/auth/receptionistdashboard");
+      const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/receptionistdashboard");
       const data = res.data;
 
       console.log("📊 Dashboard Data:", data);

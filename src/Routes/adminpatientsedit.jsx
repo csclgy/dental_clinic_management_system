@@ -52,7 +52,7 @@ const AdminPatientsEdit = () => {
       }
 
       try {
-        const res = await fetch(`http://localhost:3000/auth/displaypatient/${id}`, {
+        const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displaypatient/${id}`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -103,7 +103,7 @@ const AdminPatientsEdit = () => {
     }
 
     try {
-      const res = await fetch(`http://localhost:3000/auth/updatepatientinfo/${id}`, {
+      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/updatepatientinfo/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

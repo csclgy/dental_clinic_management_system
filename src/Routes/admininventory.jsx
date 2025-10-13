@@ -33,7 +33,7 @@ function admininventory() {
     const fetchItems = async () => {
       try {
         const token = localStorage.getItem("token"); // include token if needed
-        const res = await fetch("http://localhost:3000/auth/inventory", {
+        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inventory", {
           headers: {
             "Authorization": `Bearer ${token}`
           }
@@ -54,7 +54,7 @@ function admininventory() {
     const token = localStorage.getItem("token");
     try {
       const res = await axios.put(
-        `http://localhost:3000/auth/inactiveitem/${confirmBox.itemId}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inactiveitem/${confirmBox.itemId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

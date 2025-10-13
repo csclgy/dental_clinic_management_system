@@ -188,7 +188,7 @@ const AdminTrial = () => {
   useEffect(() => {
     const fetchTrialBalance = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/auth/trial");
+        const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/trial");
         setTrialData(response.data.data);
         setTotalDebit(response.data.totalDebit);
         setTotalCredit(response.data.totalCredit);

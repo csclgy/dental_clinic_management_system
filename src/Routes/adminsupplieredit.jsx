@@ -39,7 +39,7 @@ const AdminSupplierEdit = () => {
   useEffect(() => {
     const fetchSupplier = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/auth/supplier/${id}`);
+        const response = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/supplier/${id}`);
         setSupplier(response.data);
       } catch (err) {
         console.error(err);
@@ -67,7 +67,7 @@ const AdminSupplierEdit = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:3000/auth/supplier/${id}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/supplier/${id}`,
         supplier,
         {
           headers: {

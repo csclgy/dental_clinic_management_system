@@ -35,7 +35,7 @@ const AdminCoaEdit = () => {
   useEffect(() => {
     const fetchAccount = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/coa/${id}`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/${id}`);
         setAccount(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
@@ -64,7 +64,7 @@ const AdminCoaEdit = () => {
       }
 
       const response = await axios.put(
-        `http://localhost:3000/auth/coa/${id}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/${id}`,
         account,
         {
           headers: {

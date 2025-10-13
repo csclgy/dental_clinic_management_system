@@ -14,7 +14,7 @@ const Presubmit = () => {
     setSuccessMessage("");
 
     try {
-      const response = await axios.post("http://localhost:3000/auth/register", registerData);
+      const response = await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/register", registerData);
       setSuccessMessage(response.data.message || "Registration successful!");
       console.log(response);
       setTimeout(() => navigate("/login"), 1500);

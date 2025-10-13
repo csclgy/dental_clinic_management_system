@@ -49,7 +49,7 @@ const AdminUsersAdd = () => {
       const token = localStorage.getItem("token"); // get your saved JWT token
 
       const response = await axios.post(
-        "http://localhost:3000/auth/adduser",
+        "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/adduser",
         registerData, // ✅ send flat object
         {
           headers: {

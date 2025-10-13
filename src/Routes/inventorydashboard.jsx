@@ -24,7 +24,7 @@ function InventoryDashboard() {
     const fetchItems = async () => {
       try {
         const token = localStorage.getItem("token"); // staff login token
-        const res = await fetch("http://localhost:3000/auth/inventory", {
+        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inventory", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

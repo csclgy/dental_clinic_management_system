@@ -29,7 +29,7 @@ const InventoryAdd = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/auth/additem",
+        "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/additem",
         registerData
       );
       setSuccessMessage(response.data.message || "Item added successfully!");

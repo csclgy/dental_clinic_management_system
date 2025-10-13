@@ -54,7 +54,7 @@ const AdminPatientsView = () => {
         }
 
         const res = await fetch(
-          `http://localhost:3000/auth/displaypatient/${id}`,
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displaypatient/${id}`,
           {
             method: "GET",
             headers: {
@@ -85,7 +85,7 @@ const AdminPatientsView = () => {
   const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/auth/followup/${appoint_id}`, {
+      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/followup/${appoint_id}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -19,7 +19,7 @@ const AdminBillingEditItem = () => {   // ✅ uppercase
   useEffect(() => {
     if (ci_id) {
       axios
-        .get(`http://localhost:3000/auth/billing/item/${ci_id}`, {
+        .get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/item/${ci_id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         })
         .then((res) => {

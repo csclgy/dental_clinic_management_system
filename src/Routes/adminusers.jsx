@@ -55,7 +55,7 @@ function AdminUsers() {
 
         const token = rawToken.startsWith("Bearer ") ? rawToken.split(" ")[1] : rawToken;
 
-        const res = await fetch("http://localhost:3000/auth/displayusers", {
+        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayusers", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -82,7 +82,7 @@ function AdminUsers() {
           : rawToken;
 
       await axios.delete(
-        `http://localhost:3000/auth/deleteuserinfo/${confirmBox.userId}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/deleteuserinfo/${confirmBox.userId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 

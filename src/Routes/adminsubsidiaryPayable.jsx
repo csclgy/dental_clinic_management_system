@@ -42,7 +42,7 @@ const AdminSubsidiaryPayable = () => {
   useEffect(() => {
     const fetchSubsidiary = async (account_id) => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/subsidiaryPayable", {
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subsidiaryPayable", {
           params: { account_id },
         });
         setSubsidiaryRecords(res.data);

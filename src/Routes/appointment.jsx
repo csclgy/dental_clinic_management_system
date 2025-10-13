@@ -36,7 +36,7 @@ const Appointment = () => {
   useEffect(() => {
     const fetchDentists = async () => {
       try {
-        const response = await axios.get("http://localhost:3000/auth/dentists");
+        const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists");
         setDentists(response.data);
       } catch (err) {
         console.error("Error fetching dentists:", err);
@@ -96,7 +96,7 @@ const Appointment = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/auth/appointments/all");
+      const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/all");
       const appointments = response.data;
 
       // Filter for active appointments (not cancelled or done)

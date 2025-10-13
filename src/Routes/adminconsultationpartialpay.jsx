@@ -40,7 +40,7 @@ const AdminConsultationPartialPayment = () => {
     const fetchAccountReceivable = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:3000/auth/accountReceivable`
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/accountReceivable`
         );
         if (res.data.length > 0) {
           const { account_id, account_name } = res.data[0];
@@ -89,7 +89,7 @@ useEffect(() => {
  
 
     try {
-      await axios.post("http://localhost:3000/auth/subsidiaryReceivable", {
+      await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subsidiaryReceivable", {
          date: formData.date,
         name: formData.name,
         invoice_no: formData.invoice_no,

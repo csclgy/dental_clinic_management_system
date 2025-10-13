@@ -363,7 +363,7 @@ const transviewmed = () => {
     const fetchConsultation = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`http://localhost:3000/auth/viewmyconsultation/${appointId}`, {
+        const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/viewmyconsultation/${appointId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",

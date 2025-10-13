@@ -51,7 +51,7 @@ const AdminCoaView = () => {
     const fetchAccount = async () => {
       try {
         const token = localStorage.getItem("token"); // get your saved JWT token
-        const res = await axios.get(`http://localhost:3000/auth/coa/${id}`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/${id}`);
         setAccount(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
@@ -62,7 +62,7 @@ const AdminCoaView = () => {
     const fetchSubAccounts = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:3000/auth/coa/${id}/subaccounts`
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/${id}/subaccounts`
         );
         setSubAccounts(res.data);
       } catch (err) {
@@ -83,7 +83,7 @@ const AdminCoaView = () => {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        `http://localhost:3000/auth/coa/sub/${subId}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/sub/${subId}`,
         {}, // PUT requires a body
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -25,7 +25,7 @@ const InventoryEdit = () => {
     const fetchItem = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:3000/auth/displayitem/${id}`,
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayitem/${id}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -61,7 +61,7 @@ const InventoryEdit = () => {
     e.preventDefault();
     try {
       await axios.put(
-        `http://localhost:3000/auth/edititem/${id}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/edititem/${id}`,
         {
           inv_item_name: itemName,
           inv_item_type: itemType,

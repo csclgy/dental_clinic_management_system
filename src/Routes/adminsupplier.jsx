@@ -48,7 +48,7 @@ const AdminSupplier = () => {
   useEffect(() => {
     const fetchSupplier = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/suppliers");
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/suppliers");
         setSuppliers(res.data);
       } catch (err) {
         console.error("Error fetching subsidiary records:", err);
@@ -64,7 +64,7 @@ const AdminSupplier = () => {
       const token = localStorage.getItem("token"); // get token from localStorage
 
       await axios.delete(
-        `http://localhost:3000/auth/suppliers/${confirmBox.supplierId}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/suppliers/${confirmBox.supplierId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`, // pass the token

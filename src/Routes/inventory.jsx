@@ -12,7 +12,7 @@ function Inventory() {
     const fetchItems = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3000/auth/inventory", {
+        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inventory", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -35,7 +35,7 @@ function Inventory() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/auth/inventory/${id}`, {
+      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inventory/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
