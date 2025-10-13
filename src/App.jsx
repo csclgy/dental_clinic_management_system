@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppointmentProvider } from "./context/AppointmentContext";
 import './index.css';
 import './App.css';
-import NavBar from "./components/NavBar";
+import NavBar from "./Components/NavBar";
 import Home from "./Routes/home";
 import Login from "./Routes/login";
 import Register from "./Routes/register";
