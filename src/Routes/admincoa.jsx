@@ -115,7 +115,6 @@ const AdminCoa = () => {
     }
   };
 
-
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
       {/* ✅ Popup Notification (same style as AdminCoaEdit) */}
@@ -354,7 +353,7 @@ const AdminCoa = () => {
           </div>
         </div>
 
-               {loading ? (
+        {loading ? (
           <div className="flex justify-center items-center h-64">
             <svg
               aria-hidden="true"
@@ -376,7 +375,7 @@ const AdminCoa = () => {
             </svg>
           </div>
         ) : (
-          
+
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
             {/* Search Bar */}
             <div className="flex justify-end mb-4">
