@@ -8,11 +8,12 @@ export const connectToDatabase = async () => {
       connection = await mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
-        password: process.env.DB_PASS,  // Make sure this matches your Render env variable
+        password: process.env.DB_PASS, // Make sure this matches your Render env variable
         database: process.env.DB_NAME,
         port: process.env.DB_PORT || 3306, // Optional: include port
       });
       console.log("Connected to AWS RDS MySQL!");
+      console.log("DB_PASS loaded:", !!process.env.DB_PASS);
     } catch (error) {
       console.error("Database connection failed:", error);
       throw error;
