@@ -479,7 +479,7 @@ const transviewmed = () => {
                                 <button
                                   key={idx}
                                   className="px-4 py-2 mt-1 mr-2 rounded-md bg-[#01D5C4] text-white font-semibold hover:bg-[#00b0a6]"
-                                  onClick={() => window.open(`http://localhost:3000/uploads/appointments/${photo.up_url}`, "_blank")
+                                  onClick={() => window.open(`https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${photo.up_url}`, "_blank")
                                   }
                                 >
                                   View Image {idx + 1}
@@ -595,7 +595,7 @@ const transviewmed = () => {
                               <button
                                 onClick={() =>
                                   window.open(
-                                    `http://localhost:3000/uploads/appointments/${consultation.downpayment_proof}`,
+                                    `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${consultation.downpayment_proof}`,
                                     "_blank"
                                   )
                                 }
@@ -639,7 +639,7 @@ const transviewmed = () => {
                                 <button
                                   onClick={() =>
                                     window.open(
-                                      `http://localhost:3000/uploads/appointments/${cancelInfo.refund_photo}`,
+                                      `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${cancelInfo.refund_photo}`,
                                       "_blank"
                                     )
                                   }
