@@ -14,6 +14,7 @@ const AdminSubsidiaryReceivable = () => {
   const [openDashboard, setOpenDashboard] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [loading, setLoading] = useState(true);
 
 
   useEffect(() => {
@@ -101,7 +102,7 @@ const AdminSubsidiaryReceivable = () => {
               {(role === "admin" || role === "inventory") && (
                 <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
               )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
                 <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
               )}
             </div>
@@ -281,12 +282,42 @@ const AdminSubsidiaryReceivable = () => {
                   <th className="px-4 py-2 text-left">Balance</th>
                 </tr>
               </thead>
+
               <tbody>
-                {filteredRecords.length > 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan="6">
+                      <div className="flex justify-center items-center h-64">
+                        <svg
+                          aria-hidden="true"
+                          className="w-16 h-16 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+                          viewBox="0 0 100 101"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                            className="text-gray-300"
+                            fill="currentColor"
+                          />
+                          <path
+                            d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                            className="text-[#00458B]" // matches table header color
+                            fill="currentFill"
+                          />
+                        </svg>
+                      </div>
+                    </td>
+                  </tr>
+                ) : filteredRecords.length > 0 ? (
                   filteredRecords.map((record, index) => (
-                    <tr key={index} className="border-b border-gray-200 cursor-pointer hover:bg-gray-100">
+                    <tr
+                      key={index}
+                      className="border-b border-gray-200 cursor-pointer hover:bg-gray-100"
+                    >
                       <td className="px-4 py-2 text-black">{record.date}</td>
-                      <td className="px-4 py-2 text-black-700 cursor-pointer"
+                      <td
+                        className="px-4 py-2 text-black-700 cursor-pointer"
                         onClick={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           setTooltipPosition({
@@ -295,7 +326,9 @@ const AdminSubsidiaryReceivable = () => {
                           });
                           setSelectedRecord(record);
                         }}
-                      > {record.particulars}</td>
+                      >
+                        {record.particulars}
+                      </td>
                       <td className="px-4 py-2 text-black">{record.Invoice_no}</td>
                       <td className="px-4 py-2 text-black">
                         ₱ {(Number(record.debit) || 0).toFixed(2)}
@@ -316,6 +349,8 @@ const AdminSubsidiaryReceivable = () => {
                   </tr>
                 )}
               </tbody>
+
+              {/* Tooltip */}
               {selectedRecord && (
                 <div
                   id="floatingTooltipBox"
@@ -331,7 +366,7 @@ const AdminSubsidiaryReceivable = () => {
                     <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
                       Invoice Details
                     </h3>
-                    <br></br>
+                    <br />
                     <button
                       onClick={() => setSelectedRecord(null)}
                       className="text-gray-500 hover:text-red-500"
@@ -339,32 +374,59 @@ const AdminSubsidiaryReceivable = () => {
                       ✕
                     </button>
                   </div>
-                  <div className="text-sm text-gray-800">
-                    <p className="mt-2"><strong>Invoice No:</strong></p>
-                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.Invoice_no}</p>
 
-                    <p className="mt-1"><strong>Date:</strong></p>
+                  <div className="text-sm text-gray-800">
+                    <p className="mt-2">
+                      <strong>Invoice No:</strong>
+                    </p>
+                    <p className="mt-1 ml-3 text-blue-800">{selectedRecord.Invoice_no}</p>
+
+                    <p className="mt-1">
+                      <strong>Date:</strong>
+                    </p>
                     <p className="mt-1 ml-3 text-blue-800">{selectedRecord.date}</p>
 
-                    <p className="mt-1"><strong>Patient Name:</strong></p>
-                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.patient_name}</p>
+                    <p className="mt-1">
+                      <strong>Patient Name:</strong>
+                    </p>
+                    <p className="mt-1 ml-3 text-blue-800">
+                      {selectedRecord.patient_name}
+                    </p>
 
-                    <p className="mt-1"><strong>Apointment Date:</strong></p>
-                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.pref_date}</p>
+                    <p className="mt-1">
+                      <strong>Appointment Date:</strong>
+                    </p>
+                    <p className="mt-1 ml-3 text-blue-800">{selectedRecord.pref_date}</p>
 
-                    <p className="mt-1"><strong>Service:</strong></p>
-                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.procedure_type}</p>
+                    <p className="mt-1">
+                      <strong>Service:</strong>
+                    </p>
+                    <p className="mt-1 ml-3 text-blue-800">
+                      {selectedRecord.procedure_type}
+                    </p>
 
-                    <p className="mt-1"><strong>Service Charge:</strong></p>
-                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.total_service_charged}</p>
+                    <p className="mt-1">
+                      <strong>Service Charge:</strong>
+                    </p>
+                    <p className="mt-1 ml-3 text-blue-800">
+                      {selectedRecord.total_service_charged}
+                    </p>
 
-                    <p className="mt-1"><strong> Total Amount:</strong></p>
-                    <p className="mt-1 ml-3 text-blue-800">  ₱ {(Number(selectedRecord.total_charged) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-
+                    <p className="mt-1">
+                      <strong>Total Amount:</strong>
+                    </p>
+                    <p className="mt-1 ml-3 text-blue-800">
+                      ₱{" "}
+                      {(Number(selectedRecord.total_charged) || 0).toLocaleString(
+                        undefined,
+                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+                      )}
+                    </p>
                   </div>
                 </div>
               )}
             </table>
+
           </div>
         </div>
       </main>
