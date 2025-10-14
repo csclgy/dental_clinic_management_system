@@ -110,9 +110,12 @@ const ProfileLogin = () => {
       setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
     }
   };
-  if (loading) return
-    <Spinner className="h-16 w-16 text-gray-900/50" />
-  ;
+  if (loading) 
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner className="h-16 w-16 text-gray-900/50" />
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
