@@ -227,7 +227,7 @@ const Register2 = () => {
         <div className="flex flex-col sm:flex-row gap-4 mt-6">
           <button
             className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full sm:w-1/2"
-            onClick={() => navigate("/registergcash")}
+            onClick={() => navigate("/register")}
           >
             Back
           </button>
