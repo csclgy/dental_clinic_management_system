@@ -301,6 +301,7 @@ const AdminCashierPaid = () => {
                 <option value="/admincashier">Unpaid</option>
                 <option value="/admincashierpaid">Paid</option>
                 <option value="/admincashierpartial">Partial</option>
+                <option value="/admincashierhmo">HMO</option>
               </select>
 
               <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">

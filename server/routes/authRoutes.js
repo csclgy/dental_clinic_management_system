@@ -1034,7 +1034,7 @@ router.get('/displayconsultations2', async (req, res) => {
              p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
              p_home_address, p_email, p_contact_no, p_blood_type
       FROM appointment
-      WHERE appointment_status = 'done' and  payment_confirmation = 'Complete'
+      WHERE appointment_status = 'done' and  payment_confirmation = 'Complete' and hmo_number = 'N/A'
       ORDER BY pref_date ASC
     `);
 
@@ -1066,8 +1066,48 @@ router.get('/displayconsultations3', async (req, res) => {
              p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
              p_home_address, p_email, p_contact_no, p_blood_type
       FROM appointment
-      WHERE appointment_status = 'done' and  payment_confirmation = 'incomplete' and payment_status = 'Partial'
+      WHERE appointment_status = 'done' and  payment_confirmation = 'incomplete' and payment_status = 'Partial' and  hmo_number = 'N/A'
       ORDER BY pref_date ASC
+    `);
+
+    return res.json({ consultations: rows }); // wrap for frontend clarity
+  } catch (err) {
+    console.error("Display consultations error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+//NEW
+// (DISPLAY ALL HMO PAYMENTS)
+router.get('/displayconsultations4', async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    if (decoded.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
+
+    const db = await connectToDatabase();
+    const [rows] = await db.query(`
+     SELECT 
+    appoint_id, procedure_type, pref_date, pref_time, payment_method,
+    downpayment_proof, attending_dentist, or_num, payment_status,
+    total_charged, appointment_status, payment_confirmation,
+    p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
+    p_home_address, p_email, p_contact_no, p_blood_type
+  FROM 
+    appointment
+  WHERE 
+    appointment_status = 'done'
+    AND payment_confirmation = 'complete'
+    AND payment_status = 'Paid'
+    AND (hmo_number IS NOT NULL AND hmo_number != 'N/A')
+  ORDER BY 
+    pref_date ASC;
     `);
 
     return res.json({ consultations: rows }); // wrap for frontend clarity
@@ -1319,13 +1359,15 @@ router.post(
         ci_quantity,
         ci_amount,
         ci_type, // NEW: "item" or "service"
-        payment_method,   // optional
-        or_num,   // optional
-        payment_status,   // optional
-        total_service_charged, // optional (manual override)
-        // pwd_number,       
-        // hmo_number,
-        billing_date
+        payment_method,   
+        or_num,   
+        payment_status,   
+        total_service_charged, 
+        hmo_number,
+        hmo_provider,
+        coverage,
+        billing_date,
+        due_date
       } = req.body;
 
       const gcashProof = req.file ? req.file.filename : null;
@@ -1409,7 +1451,33 @@ router.post(
         updateQuery += `, billing_date = ?`;
         updateParams.push(billing_date);
       }
+      if (due_date != null) {
+        updateQuery += `, due_date = ?`;
+        updateParams.push(due_date);
+      }
 
+       if (hmo_number != null) {
+        updateQuery += `, hmo_number = ?`;
+        updateParams.push(hmo_number);
+      }
+        if (hmo_provider != null) {
+          // hmo_provider is actually the hmo_id from the frontend
+          const [hmoRows] = await db.query(
+            "SELECT hmo_name FROM hmo WHERE hmo_id = ?",
+            [hmo_provider]
+          );
+
+          if (hmoRows.length > 0) {
+            const hmoName = hmoRows[0].hmo_name;
+            updateQuery += `, hmo_name = ?`;
+            updateParams.push(hmoName);
+              console.log("HMO rows:", hmoRows);
+          }
+        }
+        if (coverage != null) {
+        updateQuery += `,coverage = ?`;
+        updateParams.push(coverage);
+      }
       updateQuery += ` WHERE appoint_id = ?`;
       updateParams.push(appointId);
 
@@ -1421,7 +1489,7 @@ router.post(
       // Fetch updated appointment
       const [updatedAppRows] = await db.query(
         `SELECT payment_method, payment_status, total_service_charged, total_charged, 
-                appointment_status, downpayment_proof, billing_date
+                appointment_status, downpayment_proof, billing_date, due_date,hmo_number,hmo_name, coverage
         FROM appointment
         WHERE appoint_id = ?`,
         [appointId]
@@ -1439,6 +1507,7 @@ router.post(
         [req.user.user_name, req.user.role, action, description, created_at]
       );
 
+
       res.status(insertRes ? 201 : 200).json({
         message: insertRes ? "Charge added + billing updated" : "Billing updated",
         ci_id: insertRes?.insertId ?? null,
@@ -1452,7 +1521,10 @@ router.post(
         appointment_status: updatedAppRows[0]?.appointment_status ?? "done",
         pwd_number: updatedAppRows[0]?.pwd_number ?? null,
         hmo_number: updatedAppRows[0]?.hmo_number ?? null,
-        billing_date: updatedAppRows[0]?.billing_date ?? null
+        hmo_name: updatedAppRows[0]?.hmo_name?? null,
+        coverage: updatedAppRows[0]?.coverage?? null,
+        billing_date: updatedAppRows[0]?.billing_date ?? null,
+        due_date: updatedAppRows[0]?.due_date ?? due_date ?? null
       });
 
     } catch (err) {
@@ -1823,6 +1895,22 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
   }
 });
 
+router.get("/complete/:appointId", async (req, res) => {
+  const { appointId } = req.params;
+  const db = await connectToDatabase();
+
+  try {
+    const [rows] = await db.query(
+      `SELECT * FROM sub_receivable WHERE appoint_id = ?`,
+      [appointId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("SQL ERROR:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get("/consultationpayments/:appointId", async (req, res) => {
   const { appointId } = req.params;
   const db = await connectToDatabase();
@@ -1840,7 +1928,9 @@ router.get("/consultationpayments/:appointId", async (req, res) => {
 });
 //
 
-
+//Complete payment
+// ✅ Complete Payment Route (with fixed HMO computation and no previous balance logic)
+//Complete payment
 router.post("/complete/:appoint_id", async (req, res) => { 
   const { appoint_id } = req.params;
   const connection = await connectToDatabase();
@@ -1848,9 +1938,11 @@ router.post("/complete/:appoint_id", async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    // 1️⃣ Get appointment details
+    // appointment details 
     const [appoint] = await connection.query(
-      `SELECT total_charged, p_fname, p_mname, p_lname, procedure_type, appoint_id 
+      `SELECT appoint_id, total_charged, total_service_charged, 
+              p_fname, p_mname, p_lname, procedure_type, payment_method,
+              hmo_number, coverage, or_num, user_name, billing_date, hmo_name
        FROM appointment 
        WHERE appoint_id = ?`,
       [appoint_id]
@@ -1861,71 +1953,178 @@ router.post("/complete/:appoint_id", async (req, res) => {
       return res.status(404).json({ message: "Appointment not found." });
     }
 
-    const { total_charged, p_fname, p_mname, p_lname, procedure_type } = appoint[0];
+    const {
+      total_charged,
+      total_service_charged,
+      p_fname,
+      p_mname,
+      p_lname,
+      procedure_type,
+      payment_method,
+      hmo_number,
+      coverage,
+      or_num,
+      user_name,
+      billing_date,
+      hmo_name
+    } = appoint[0];
+
     const patient_name = `${p_fname} ${p_mname ? p_mname + " " : ""}${p_lname}`;
-
-    // 2️⃣ Get required accounts (Cash & Service Income)
-    const [accounts] = await connection.query(
-      "SELECT account_id, account_name, account_type FROM chartofaccounts WHERE account_name IN ('Cash', 'Service Income')"
-    );
-
-    const incomeAcc = accounts.find(
-      (a) => a.account_name.trim().toLowerCase() === "service income"
-    );
-    const cashAcc = accounts.find(
-      (a) => a.account_name.trim().toLowerCase() === "cash"
-    );
-
-    if (!cashAcc || !incomeAcc) {
-      await connection.rollback();
-      return res
-        .status(400)
-        .json({ message: "Cash or Service Income account not found." });
-    }
-
-    const date = new Date();
+    const date = billing_date;
+    const subAccountId = 0;
     const description = `Payment received from ${patient_name} appointment no. ${appoint_id}`;
     const fullDescription = `${procedure_type} - ${patient_name}`;
-    const subAccountId = 0;
 
-    console.log("💵 Starting payment entry for", patient_name);
-    console.log("🧾 Total charged:", total_charged);
+    // Get Accounts
+    const [accounts] = await connection.query(
+      "SELECT account_id, account_name, account_type FROM chartofaccounts WHERE account_name IN ('Cash on Hand', 'Service Income', 'Account Receivable')"
+    );
 
-    // 3️⃣ Insert journal entries
-    // Debit: Cash
+    const normalize = (name) => name.trim().toLowerCase();
+
+    const cashAcc = accounts.find(a => normalize(a.account_name) === "cash on hand");
+    const incomeAcc = accounts.find(a => normalize(a.account_name) === "service income");
+    const arAcc = accounts.find(a => normalize(a.account_name) === "account receivable");
+
+    if (!cashAcc || !incomeAcc) {
+      console.error("Missing required accounts:", {
+        cashAcc: !!cashAcc,
+        incomeAcc: !!incomeAcc,
+        arAcc: !!arAcc
+      });
+      await connection.rollback();
+      return res.status(400).json({
+        message: "Cash on Hand or Service Income account not found.",
+      });
+    }
+
+    console.log(" Starting payment entry for", patient_name);
+
+    // HMO COMPUTATION
+    let additional_charge = 0;
+    let hmo_charge = 0;
+    let patient_bill = total_charged;
+
+    if (payment_method === "HMO") {
+      const totalSvc = parseFloat(total_service_charged || 0);
+      const totalChg = parseFloat(total_charged || 0);
+      const cov = parseFloat(coverage || 0);
+
+      additional_charge = totalChg - totalSvc;
+      hmo_charge = (totalSvc * cov) / 100;
+      patient_bill = additional_charge + (totalSvc - hmo_charge);
+
+      console.log(" HMO Payment Detected");
+      console.log({
+        totalSvc,
+        totalChg,
+        cov,
+        additional_charge,
+        hmo_charge,
+        patient_bill,
+      });
+    } else {
+      console.log(" Regular (Non-HMO) Payment");
+    }
+
+    // JOURNAL ENTRY & GENERAL LEDGER (PATIENT PAYMENT)
     const [debitEntry] = await connection.query(
       `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [date, fullDescription, cashAcc.account_id, subAccountId, total_charged, 0, description, total_charged]
-    ); 
+      [date, fullDescription, cashAcc.account_id, subAccountId, patient_bill, 0, description, patient_bill]
+    );
 
-    // Credit: Service Income
     const [creditEntry] = await connection.query(
       `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [date, fullDescription, incomeAcc.account_id, subAccountId, 0, total_charged, description, total_charged]
+      [date, fullDescription, incomeAcc.account_id, subAccountId, 0, patient_bill, description, patient_bill]
     );
 
-    // 4️⃣ Insert into General Ledger
-    // Debit Cash
     await connection.query(
       `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, date, total_amount)
        VALUES (?, ?, ?, 0, ?, ?, ?)`,
-      [debitEntry.insertId, cashAcc.account_id, total_charged, fullDescription, date, total_charged]
+      [debitEntry.insertId, cashAcc.account_id, patient_bill, fullDescription, date, patient_bill]
     );
 
-    // Credit Service Income
     await connection.query(
       `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, date, total_amount)
        VALUES (?, ?, 0, ?, ?, ?, ?)`,
-      [creditEntry.insertId, incomeAcc.account_id, total_charged, fullDescription, date, total_charged]
+      [creditEntry.insertId, incomeAcc.account_id, patient_bill, fullDescription, date, patient_bill]
     );
 
-    // ✅ 5️⃣ Update running balances
-    const updateBalanceForAccount = async (account_id) => {
-      console.log("🔄 Updating running balance for account ID:", account_id);
+    // HMO SECTION
+    if (payment_method && payment_method.toLowerCase() === "hmo") {
+      console.log("📘 HMO path entered for appoint_id:", appoint_id);
 
-      // 1️⃣ Get account type
+      const totalSvc = parseFloat(total_service_charged || 0);
+      const cov = parseFloat(coverage || 0);
+      const additional_charge = parseFloat(total_charged) - totalSvc;
+      const hmo_charge = parseFloat(((totalSvc * cov) / 100).toFixed(2));
+      const patient_bill = parseFloat((additional_charge + (totalSvc - hmo_charge)).toFixed(2));
+
+      console.log({ totalSvc, cov, additional_charge, hmo_charge, patient_bill });
+
+      if (!arAcc) {
+        console.warn("Accounts Receivable account not found; skipping sub_receivable/journal for HMO.");
+      } else if (!hmo_charge || hmo_charge <= 0) {
+        console.warn(" Computed hmo_charge is 0 or NaN; skipping sub_receivable/journal for HMO.");
+      } else {
+        const invoice_no = (or_num || "").toString().trim();
+        if (!invoice_no) {
+          console.warn("invoice_no (or_num) is empty — skipping sub_receivable/journal for HMO.");
+        } else {
+          let user_id = null;
+          try {
+            const [urows] = await connection.query(
+              `SELECT user_id FROM users WHERE user_name = ? LIMIT 1`,
+              [user_name]
+            );
+            if (urows && urows.length > 0) user_id = urows[0].user_id;
+          } catch (e) {
+            console.error("Error fetching user_id:", e.message);
+          }
+
+          const particulars = `${hmo_name}: ${procedure_type} - ${p_fname} ${p_lname}`;
+          const entryDate = date; 
+
+          // Insert into sub_receivable (no previous balance)
+          const [insSub] = await connection.query(
+            `INSERT INTO sub_receivable (date, particulars, invoice_no, total_amount, debit, credit, balance, appoint_id, user_id)
+             VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+            [entryDate, particulars, invoice_no, hmo_charge, hmo_charge, hmo_charge, appoint_id, user_id]
+          );
+          console.log(" sub_receivable inserted, insertId:", insSub.insertId);
+
+          // Journal Entries
+          const [debitAR] = await connection.query(
+            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [entryDate, `${hmo_name}: ${fullDescription}`, arAcc.account_id, subAccountId, hmo_charge, 0, "HMO charge receivable", hmo_charge]
+          );
+
+          const [creditHMO] = await connection.query(
+            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [entryDate, `${hmo_name}: ${fullDescription}`, incomeAcc.account_id, subAccountId, 0, hmo_charge, "HMO income recognition", hmo_charge]
+          );
+
+          await connection.query(
+            `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, date, total_amount)
+             VALUES (?, ?, ?, 0, ?, ?, ?)`,
+            [debitAR.insertId, arAcc.account_id, hmo_charge, `${hmo_name}: ${fullDescription} (Receivable)`, entryDate, hmo_charge]
+          );
+
+          await connection.query(
+            `INSERT INTO general_ledger (entry_id, account_id, debit, credit, description, date, total_amount)
+             VALUES (?, ?, 0, ?, ?, ?, ?)`,
+            [creditHMO.insertId, incomeAcc.account_id, hmo_charge, `${hmo_name}: ${fullDescription} (HMO Income)`, entryDate, hmo_charge]
+          );
+        }
+      }
+    }
+
+    // 🔁 Update Ledger Balances
+    const updateBalanceForAccount = async (account_id) => {
       const [accountRows] = await connection.query(
         "SELECT account_type FROM chartofaccounts WHERE account_id = ?",
         [account_id]
@@ -1933,13 +2132,11 @@ router.post("/complete/:appoint_id", async (req, res) => {
       if (accountRows.length === 0) return;
       const accountType = accountRows[0].account_type;
 
-      // 2️⃣ Fetch all ledger entries for this account
       const [entries] = await connection.query(
         "SELECT ledger_id, debit, credit FROM general_ledger WHERE account_id = ? ORDER BY ledger_id ASC",
         [account_id]
       );
 
-      // 3️⃣ Compute running balance
       let balance = 0;
       for (const entry of entries) {
         if (accountType === "Asset" || accountType === "Expense") {
@@ -1947,50 +2144,51 @@ router.post("/complete/:appoint_id", async (req, res) => {
         } else {
           balance += entry.credit - entry.debit;
         }
-
-        // 4️⃣ Update each row's balance
         await connection.query(
           "UPDATE general_ledger SET balance = ? WHERE ledger_id = ?",
           [balance, entry.ledger_id]
         );
       }
-
-      console.log(`✅ ${accountType} account updated. Final balance: ₱${balance.toFixed(2)}`);
     };
 
     await updateBalanceForAccount(cashAcc.account_id);
     await updateBalanceForAccount(incomeAcc.account_id);
+    if (payment_method === "HMO" && arAcc) await updateBalanceForAccount(arAcc.account_id);
 
-    // 6️⃣ Update appointment as paid
-    console.log("🩺 Updating appointment record...");
+    // ✅ Fixed: Update appointment with correct values
     await connection.query(
       `UPDATE appointment 
-       SET payment_confirmation = 'Complete', payment_status = 'Paid'
+       SET additional_charge = ?, 
+           payment_confirmation = 'Complete', 
+           payment_status = 'Paid',
+           hmo_charge = ?,
+           patient_bill = ?
        WHERE appoint_id = ?`,
-      [appoint_id]
+      [additional_charge, hmo_charge, patient_bill, appoint_id]
     );
 
     await connection.commit();
-
-    console.log("🎉 Payment complete for:", patient_name);
 
     res.status(200).json({
       message: "Payment completed successfully.",
       appoint_id,
       patient_name,
       total_charged,
+      hmo_applied: payment_method === "HMO",
+      hmo_charge,
+      additional_charge,
+      patient_bill,
     });
 
   } catch (error) {
     await connection.rollback();
-    console.error("❌ ERROR completing payment:", error.message);
-    console.error("Full stack:", error);
-    res.status(500).json({
-      message: "Internal server error.",
-      error: error.message,
-    });
+    console.error(" ERROR completing payment:", error.message);
+    res.status(500).json({ message: "Internal server error.", error: error.message });
   }
 });
+
+
+
 
 
 // 📌 For Refunds
@@ -3125,6 +3323,7 @@ router.post("/journal", async (req, res) => {
 
   const debitAmount = parseFloat(debit) || 0;
   const creditAmount = parseFloat(credit) || 0;
+  const totalAmount = debitAmount > 0 ? debitAmount : creditAmount; 
 
   if (!date || !description || !account_id || (!debit && !credit)) {
     return res.status(400).json({ message: "All required fields must be filled" });
@@ -3139,8 +3338,8 @@ router.post("/journal", async (req, res) => {
 
     // 1️⃣ Insert into journalentry
     const [journalResult] = await db.query(
-      "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id) VALUES (?,?,?,?,?,?,?)",
-      [date, description, account_id, debitAmount, creditAmount, comment || "n/a", subaccount_id]
+      "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id, total_amount) VALUES (?,?,?,?,?,?,?,?)",
+      [date, description, account_id, debitAmount, creditAmount, comment || "n/a", subaccount_id,totalAmount]
     );
 
     const entryId = journalResult.insertId;
@@ -3181,8 +3380,8 @@ router.post("/journal", async (req, res) => {
 
     // 5️⃣ Insert into general_ledger
     await db.query(
-      "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date) VALUES (?,?,?,?,?,?,?)",
-      [entryId, account_id, description, debitAmount, creditAmount, newBalance, date]
+      "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
+      [entryId, account_id, description, debitAmount, creditAmount, newBalance, date,totalAmount]
     );
     console.log("🧮 General ledger updated for", accountName);
 
@@ -3191,7 +3390,7 @@ router.post("/journal", async (req, res) => {
   console.log("💸 Auto cash credit triggered for Expense:", accountName);
 
       const [cashRows] = await db.query(
-        "SELECT account_id FROM chartofaccounts WHERE account_name = 'Cash' LIMIT 1"
+        "SELECT account_id FROM chartofaccounts WHERE account_name = 'Cash on Bank' LIMIT 1"
       );
 
       if (cashRows.length > 0) {
@@ -3217,13 +3416,13 @@ router.post("/journal", async (req, res) => {
 
         // Insert credit journal for Cash
         const [cashJournal] = await db.query(
-          "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id) VALUES (?,?,?,?,?,?,?)",
-          [date, `Auto Cash Credit for ${accountName}`, cashId, 0, debitAmount, "auto entry", subaccount_id]
+          "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id, total_amount) VALUES (?,?,?,?,?,?,?,?)",
+          [date, `${accountName}: ${description} `, cashId, 0, debitAmount, "auto entry", 0,debitAmount]
         );
 
         await db.query(
-          "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date) VALUES (?,?,?,?,?,?,?)",
-          [cashJournal.insertId, cashId, `Auto Cash Credit for ${accountName}`, 0, debitAmount, newCashBalance, date]
+          "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date,total_amount) VALUES (?,?,?,?,?,?,?,?)",
+          [cashJournal.insertId, cashId, `Auto Cash Credit for ${accountName}`, 0, debitAmount, newCashBalance, date, debitAmount]
         );
 
         console.log("✅ Auto cash credit entry added for", accountName);
@@ -3231,6 +3430,59 @@ router.post("/journal", async (req, res) => {
         console.warn("⚠️ Cash account not found — skipping auto credit");
       }
     }
+//NEW CODE
+    // Cash on Hand → Cash on Bank
+if (accountName === "Cash on Hand" && creditAmount > 0 && comment !== "gcash transfer to bank") {
+  console.log("🏦 Auto transfer triggered: Cash on Hand → Cash on Bank");
+
+  // Find the Cash on Bank account
+  const [bankRows] = await db.query(
+    "SELECT account_id FROM chartofaccounts WHERE account_name = 'Cash on Bank' LIMIT 1"
+  );
+
+  if (bankRows.length > 0) {
+    const bankId = bankRows[0].account_id;
+    console.log("🏧 Found Cash on Bank account ID:", bankId);
+
+    // Get latest bank balance
+    const [bankBalanceRows] = await db.query(
+      "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
+      [bankId]
+    );
+
+    let lastBankBalance = bankBalanceRows.length
+      ? parseFloat(bankBalanceRows[0].balance)
+      : 0;
+
+    const newBankBalance = lastBankBalance + creditAmount;
+
+    // Insert auto journal for Cash on Bank (Debit)
+    const [bankJournal] = await db.query(
+      "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id, total_amount) VALUES (?,?,?,?,?,?,?,?)",
+      [date, "Transfer from Cash on Hand", bankId, creditAmount, 0, "auto transfer", 0, creditAmount]
+    );
+
+    // Insert into General Ledger
+    await db.query(
+      "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
+      [
+        bankJournal.insertId,
+        bankId,
+        "Auto Debit for Cash on Hand Transfer",
+        creditAmount,
+        0,
+        newBankBalance,
+        date,
+        creditAmount,
+      ]
+    );
+
+    console.log("✅ Auto debit entry added for Cash on Bank");
+  } else {
+    console.warn("⚠️ Cash on Bank account not found — skipping auto transfer");
+  }
+}
+
 
     // 6️⃣ Insert audit trail
     const action = "Add Journal Entry";
@@ -3344,6 +3596,27 @@ router.get("/accountInventory", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+//NEW ROUTE
+router.get("/accountExpense", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+
+    // Combine expense accounts + Dental Supplies + their subaccounts
+    const [rows] = await db.query(`
+      SELECT account_id, account_name
+      FROM chartofaccounts
+      WHERE account_type = 'Expense' 
+         OR account_name = 'Dental Supplies' 
+    `);
+
+    res.json(rows);
+  } catch (err) {
+    console.error("DB error:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 
 // Search patients by  name
 router.get('/patients/search', async (req, res) => {
@@ -3625,15 +3898,16 @@ router.post("/subsidiary1", async (req, res) => {
     });
   }
 }
+//NEW LINE
+let supplier_id = 0;
     // 🔸 Get supplier_id from supplier table
     const [userRows] = await db.query(
       `SELECT supplier_id FROM supplier WHERE supplier_name = ? LIMIT 1`,
       [name]
     );
-    if (userRows.length === 0) {
-      return res.status(404).json({ error: "Supplier not found with the given name" });
-    }
-    const supplier_id = userRows[0].supplier_id;
+    if (userRows.length > 0) {
+  supplier_id = userRows[0].supplier_id;
+}
 
     // 🔸 Get expense name (chart of accounts)
     const [expenseRows] = await db.query(
@@ -3661,9 +3935,6 @@ router.post("/subsidiary1", async (req, res) => {
       ? parseFloat(existingSub[0].total_amount)
       : parseFloat(amount) || 0;
 
-    // =====================================================
-    // 🧾 SUBSIDIARY LEDGER (Liability account)
-    // =====================================================
     const [subsidiaryRows] = await db.query(
       `SELECT balance FROM sub_payable
        WHERE supplier_id = ? AND invoice_no = ?
@@ -3674,7 +3945,7 @@ router.post("/subsidiary1", async (req, res) => {
 
     const lastSubsidiaryBalance = subsidiaryRows.length > 0 ? parseFloat(subsidiaryRows[0].balance) || 0 : 0;
 
-    // ✅ Liabilities: Credit ↑ increases balance, Debit ↓ decreases balance
+    // Liabilities: Credit ↑ increases balance, Debit ↓ decreases balance
     const newSubsidiaryBalance = lastSubsidiaryBalance + creditVal - debitVal;
 
     await db.query(
@@ -3683,20 +3954,16 @@ router.post("/subsidiary1", async (req, res) => {
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [date, invoice_no, amount, `${name} - ${expensename}`, debitVal, creditVal, newSubsidiaryBalance, supplier_id, items, day_agreement, due_date, total_amount]
     );
-
-    // =====================================================
-    // 📘 JOURNAL ENTRY
-    // =====================================================
+    //journal entry
     const description = `${name} - ${expensename}`;
     const [journalResult] = await db.query(
       `INSERT INTO journalentry (date, description, account_id, debit, credit, comment, total_amount)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [date, description, account_id, debitVal, creditVal, expensename, total_amount]
+      [date, description, account_id, debitVal, creditVal, items, total_amount]
     );
 
-    // =====================================================
-    // 📙 GENERAL LEDGER (Main)
-    // =====================================================
+    //NEW EDIT LINE
+    //general ledger
     const [ledgerRows] = await db.query(
       `SELECT balance FROM general_ledger 
        WHERE account_id = ? 
@@ -3716,12 +3983,9 @@ router.post("/subsidiary1", async (req, res) => {
       [date, description, account_id, debitVal, creditVal, newLedgerBalance, journalResult.insertId, total_amount]
     );
 
-    // =====================================================
-    // 🔁 PARTNER ACCOUNT (Cash or Expense)
-    // =====================================================
-    // If debit (payment made), partner is Cash (credit)
-    // If credit (new payable), partner is Expense (debit)
-    let partnerAccountName = debitVal > 0 ? "Cash" : expensename;
+    //NEW EDIT LINE
+    // payment
+    let partnerAccountName = debitVal > 0 ? "Cash on Bank" : expensename;
     const partnerDebit = creditVal;
     const partnerCredit = debitVal;
 
@@ -3738,11 +4002,12 @@ router.post("/subsidiary1", async (req, res) => {
     }
     const partnerAccountId = partnerRows[0].account_id;
 
+    //NEW EDIT LINE 
     // Journal entry for partner account
     const [partnerJournalResult] = await db.query(
       `INSERT INTO journalentry (date, description, account_id, debit, credit, comment, total_amount)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [date, description, partnerAccountId, partnerDebit, partnerCredit, expensename, partnerTotalAmount]
+      [date, description, partnerAccountId, partnerDebit, partnerCredit, `payment to ${items}`, partnerTotalAmount]
     );
 
     // Get partner ledger balance
@@ -3759,11 +4024,12 @@ router.post("/subsidiary1", async (req, res) => {
     // ✅ Assets (like Cash): Debit ↑ increases, Credit ↓ decreases
     const newPartnerLedgerBalance = lastPartnerLedgerBalance + partnerDebit - partnerCredit;
 
+    //NEW EDIT LINE 3836 (ADDED ONLY PAYMENT TO DESCRIPTION)
     // Insert partner ledger entry
     await db.query(
       `INSERT INTO general_ledger (date, description, account_id, debit, credit, balance, entry_id, total_amount)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [date, description, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId, partnerTotalAmount]
+      [date, `payment to ${description}`, partnerAccountId, partnerDebit, partnerCredit, newPartnerLedgerBalance, partnerJournalResult.insertId, partnerTotalAmount]
     );
 
     res.status(201).json({
@@ -3799,7 +4065,7 @@ router.get("/subsidiaryPayable", async (req, res) => {
   }
 });
 
-//insert into sub receivable
+//insert into sub receivable for partial payments
 router.post("/subsidiaryReceivable", async (req, res) => {
   const { date, name, invoice_no, amount, appoint_id, procedure_type } = req.body;
   const db = await connectToDatabase();
@@ -3850,17 +4116,18 @@ router.post("/subsidiaryReceivable", async (req, res) => {
     const totalPaid = Number(prevPayments[0].totalPaid || 0);
     const newBalance = totalCharged - (totalPaid + currentAmount);
 
+    //NEW EDIT LINE 3926 3929 3933
     //  Get Cash and A/R account IDs
     const [coaRows] = await connection.query(
       `SELECT account_id, account_name FROM chartofaccounts 
-       WHERE account_name IN ('Cash', 'Account Receivable')`
+       WHERE account_name IN ('Cash on Hand', 'Account Receivable')`
     );
 
-    const cashAccount = coaRows.find(a => a.account_name === "Cash");
+    const cashAccount = coaRows.find(a => a.account_name === "Cash on Hand");
     const receivableAccount = coaRows.find(a => a.account_name === "Account Receivable");
 
     if (!cashAccount || !receivableAccount) {
-      throw new Error("Missing Cash or Account Receivable in chart of accounts");
+      throw new Error("Missing Cash on Hand or Account Receivable in chart of accounts");
     }
 
     // Insert Journal Entries
@@ -3938,11 +4205,170 @@ router.post("/subsidiaryReceivable", async (req, res) => {
     await connection.rollback();
     console.error("❌ Error processing payment:", err);
     res.status(500).json({ message: err.message });
-  } finally {
-    // release is optional depending on your db lib
+
     if (connection.release) connection.release();
   }
 });
+
+//insert into sub_receivable for hmos
+router.post("/subsidiaryReceivableHmo", async (req, res) => {
+  const { date, name, invoice_no, amount, appoint_id, procedure_type } = req.body;
+  const db = await connectToDatabase();
+  const connection = db;
+
+  try {
+    await connection.beginTransaction();
+
+    //  Get appointment + user info
+    const [appointmentRows] = await connection.query(
+      `SELECT a.user_name, u.user_id, u.fname, u.lname, a.hmo_charge
+       FROM appointment a
+       JOIN users u ON a.user_name = u.user_name
+       WHERE a.appoint_id = ?`,
+      [appoint_id]
+    );
+
+    if (appointmentRows.length === 0) {
+      throw new Error("Appointment or user not found");
+      
+    }
+
+      //Get hmo name
+     const [HmoRows] = await connection.query(
+      `SELECT hmo_name
+       FROM appointment 
+       WHERE appoint_id = ?`,
+      [appoint_id]
+    );
+
+    if (HmoRows.length === 0) {
+      throw new Error("Appointment or user not found");
+    }
+
+    const HmoName = HmoRows[0];
+
+    const user = appointmentRows[0];
+    const description = `${HmoName.hmo_name} : ${procedure_type} - ${user.fname} ${user.lname}`;
+    const comment = `Appointment #${appoint_id}`;
+
+    const currentAmount = Number(amount);
+    const totalCharged = Number(user.hmo_charge);
+
+
+    //get total_amount
+    const [existingPayment] = await connection.query(
+  `SELECT total_amount FROM sub_receivable WHERE invoice_no = ?`,
+  [invoice_no]
+);
+
+if (existingPayment.length === 0) {
+  throw new Error(`No existing total_amount found for invoice_no: ${invoice_no}`);
+}
+
+const total_amount = Number(existingPayment[0].total_amount);
+    // Get previous payments (credit total)
+    const [prevPayments] = await connection.query(
+      `SELECT SUM(credit) AS totalPaid FROM sub_receivable WHERE appoint_id = ?`,
+      [appoint_id]
+    );
+
+    const totalPaid = Number(prevPayments[0].totalPaid || 0);
+    const newBalance = totalCharged - (totalPaid + currentAmount);
+
+    //NEW EDIT LINE 3926 3929 3933
+    //  Get Cash and A/R account IDs
+    const [coaRows] = await connection.query(
+      `SELECT account_id, account_name FROM chartofaccounts 
+       WHERE account_name IN ('Cash on Hand', 'Account Receivable')`
+    );
+
+    const cashAccount = coaRows.find(a => a.account_name === "Cash on Hand");
+    const receivableAccount = coaRows.find(a => a.account_name === "Account Receivable");
+
+    if (!cashAccount || !receivableAccount) {
+      throw new Error("Missing Cash on Hand or Account Receivable in chart of accounts");
+    }
+
+    // Insert Journal Entries
+    const [journalCash] = await connection.query(
+      `INSERT INTO journalentry 
+         (date, description, account_id, id, debit, credit, comment, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, cashAccount.account_id, 0, currentAmount, 0, comment, currentAmount]
+    );
+
+    const [journalAR] = await connection.query(
+      `INSERT INTO journalentry 
+         (date, description, account_id, id, debit, credit, comment, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, receivableAccount.account_id, 0, 0, currentAmount, comment, currentAmount]
+    );
+
+    // Get last balances for general ledger accounts
+    const [lastCashBalanceRows] = await connection.query(
+      `SELECT balance FROM general_ledger 
+       WHERE account_id = ? 
+       ORDER BY date DESC, entry_id DESC LIMIT 1`,
+      [cashAccount.account_id]
+    );
+    const lastCashBalance = lastCashBalanceRows.length ? Number(lastCashBalanceRows[0].balance) : 0;
+    const newCashBalance = lastCashBalance + currentAmount;
+
+    const [lastARBalanceRows] = await connection.query(
+      `SELECT balance FROM general_ledger 
+       WHERE account_id = ? 
+       ORDER BY date DESC, entry_id DESC LIMIT 1`,
+      [receivableAccount.account_id]
+    );
+    const lastARBalance = lastARBalanceRows.length ? Number(lastARBalanceRows[0].balance) : 0;
+    const newARBalance = lastARBalance - currentAmount;
+
+    // Insert into General Ledger
+    await connection.query(
+      `INSERT INTO general_ledger 
+         (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [cashAccount.account_id, journalCash.insertId, date, currentAmount, 0, newCashBalance, description, currentAmount]
+    );
+
+    await connection.query(
+      `INSERT INTO general_ledger 
+         (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [receivableAccount.account_id, journalAR.insertId, date, 0, currentAmount, newARBalance, description, total_amount]
+    );
+
+    // Insert into subsidiary receivable
+    await connection.query(
+      `INSERT INTO sub_receivable 
+         (date, particulars, invoice_no, debit, credit, balance, appoint_id, user_id, total_amount)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [date, description, invoice_no, 0, currentAmount, newBalance, appoint_id, user.user_id, total_amount]
+    );
+
+    // Update appointment if fully paid
+    if (newBalance <= 0) {
+      await connection.query(
+        `UPDATE appointment SET hmo_payment = 'complete' WHERE appoint_id = ?`,
+        [appoint_id]
+      );
+    }
+
+    await connection.commit();
+    res.json({
+      message: "Payment recorded successfully!",
+      remaining_balance: newBalance,
+    });
+
+  } catch (err) {
+    await connection.rollback();
+    console.error("❌ Error processing payment:", err);
+    res.status(500).json({ message: err.message });
+
+    if (connection.release) connection.release();
+  }
+});
+
 
 // get subsidiary of receivable
 router.get("/subsidiaryReceivable", async (req, res) => {
@@ -4055,6 +4481,7 @@ router.get("/trial", async (req, res) => {
 });
 ;
 
+
 router.get("/checkOR/:orNum", async (req, res) => {
   const { orNum } = req.params;
   const db = await connectToDatabase();
@@ -4089,6 +4516,127 @@ router.get("/appointments/all", async (req, res) => {
     return res.json(rows);
   } catch (err) {
     console.error("Fetch all appointments error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//NEW
+router.get("/HMO", async (req, res) => {
+   const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM hmo where status = 'active' "
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching HMO:", err);
+    return res.status(500).json({ error: "Failed to get HMO" });
+  }
+});
+
+//NEW
+const hmoStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../uploads/hmo")); // ✅ HMO-specific folder
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+
+const uploadHMO = multer({ storage: hmoStorage });
+
+// ✅ Use uploadHMO here
+router.post("/hmo", uploadHMO.single("moa_letter"), async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const { hmo_name, status } = req.body;
+
+    if (!hmo_name || !status || !req.file) {
+      return res.status(400).json({ message: "Please fill in all required fields including MOA Letter." });
+    }
+
+    const moaPath = req.file.filename;
+
+    await db.query(
+      "INSERT INTO hmo (hmo_name, status, moa_letter) VALUES (?, ?, ?)",
+      [hmo_name, status, moaPath]
+    );
+
+    res.json({ message: "HMO added successfully!" });
+  } catch (error) {
+    console.error("Error adding HMO:", error);
+    res.status(500).json({ message: "Error adding HMO." });
+  }
+});
+
+//NEW
+router.get("/hmo", async (req, res) => {
+
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query(
+      "SELECT hmo_id, hmo_name FROM hmo where status = 'active' "
+    );
+    res.json(rows); // ✅ you forgot to return the data
+  } catch (err) {
+    console.error("Error fetching HMO:", err);
+    return res.status(500).json({ error: "Failed to get HMO" });
+  }
+});
+
+//NEW
+router.get("/hmo/:hmoId/services", async (req, res) => {
+  const { hmoId } = req.params;
+  const db = await connectToDatabase();
+
+  try {
+    const [rows] = await db.query(
+      "SELECT service_id, service, coverage FROM hmo_service WHERE hmo_id = ?",
+      [hmoId]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching HMO services:", err);
+    res.status(500).json({ error: "Failed to get HMO services" });
+  }
+});
+
+// new
+router.get("/hmo_services/:hmo_id", async (req, res) => {
+  const { hmo_id } = req.params;
+   const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query(
+      "SELECT * FROM hmo_service WHERE hmo_id = ?",
+      [hmo_id]
+    );
+    res.json(rows);
+  } catch (err) {
+    console.error("Error fetching HMO services:", err);
+    res.status(500).json({ message: "Failed to fetch HMO services" });
+  }
+});
+
+//NEW
+router.get("/hmo/:id", async (req, res) => {
+  try {
+    const { hmo_id } = req.params;
+    const db = await connectToDatabase();
+
+    const [result] = await db.query(
+      "SELECT * FROM hmo WHERE hmo_id = ?",
+      [hmo_id]
+    );
+
+    if (result.length === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    res.json(result[0]);
+  } catch (err) {
+    console.error("Fetch COA error:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });

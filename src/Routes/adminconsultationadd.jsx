@@ -166,7 +166,7 @@ const AdminConsultationAdd = () => {
       // Wait 3 seconds before navigating
       setTimeout(() => {
         navigate("/adminpatients");
-      }, 3000);
+      }, 1500);
     } catch (err) {
       console.error("Error saving consultation:", err);
       showPopup("Failed to create consultation", "error");

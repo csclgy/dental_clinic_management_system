@@ -378,7 +378,7 @@ const Adminconsultationpaid = () => {
         },
         {
           headers: {
-            Authorization: `Bearer ${token}`, // ✅ add token
+            Authorization: `Bearer ${token}`, 
             "Content-Type": "application/json",
           },
         }
@@ -386,7 +386,7 @@ const Adminconsultationpaid = () => {
 
       if (res.data.success) {
         showPopup("Payment completed successfully!", "success");
-        setTimeout(() => navigate("/admincashier"), 1500); // ✅ navigate is correct
+        setTimeout(() => navigate("/admincashier"), 1500); 
       } else {
         showPopup(res.data.message || "Failed to complete payment.", "error");
       }
@@ -687,6 +687,12 @@ const Adminconsultationpaid = () => {
                     </p>
                     <p>
                       <b>Payment Method:</b> {consultation.payment_method}
+                    </p>
+                     <p>
+                      <b> HMO Number:</b> {consultation.hmo_number}
+                    </p>
+                    <p>
+                      <b> HMO Provider:</b> {consultation.hmo_name}
                     </p>
                     <p>
                       <b>Payment Status:</b> {consultation.payment_status}

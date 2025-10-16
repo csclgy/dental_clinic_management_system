@@ -171,7 +171,7 @@ const Adminconsultationcomplete = () => {
       if (!res.ok) throw new Error("Failed to complete consultation");
 
       showPopup("Consultation marked as complete!", "success");
-      setTimeout(() => navigate("/adminpatients"), 5000);
+      setTimeout(() => navigate("/adminschedule"), 2000);
     } catch (err) {
       console.error("Error completing consultation:", err);
       showPopup("Error completing consultation. Try again.", "error");

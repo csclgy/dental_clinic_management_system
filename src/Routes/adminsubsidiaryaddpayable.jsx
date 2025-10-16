@@ -21,7 +21,7 @@ const AdminSubsidiaryPayableAdd = () => {
     account: "",
     accountName: "",
     account1: "",
-    type: "debit",
+    type: "credit",
     amount: "",
     items: "",
     day_agreement: "",
@@ -67,7 +67,7 @@ const AdminSubsidiaryPayableAdd = () => {
 
     const fetchInventory = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/accountInventory`);
+        const res = await axios.get(`http://localhost:3000/auth/accountExpense`);
         if (res.data.length > 0) {
           setAccount(res.data);
         }
@@ -564,7 +564,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Items:
+                  Comments/Items:
                 </label>
                 <input
                   type="text"

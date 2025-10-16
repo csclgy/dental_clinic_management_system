@@ -162,6 +162,12 @@ const AdminSubsidiaryReceivable = () => {
                   </Link>
                 </div>
               )}
+                <Link
+                to="/adminhmo"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Users size={18} /> HMO
+              </Link>
 
               <Link
                 to="/adminusers"

@@ -38,10 +38,15 @@ const Adminbillingedit = () => {
   const [newServiceName, setNewServiceName] = useState("");
   const [newServiceAmount, setNewServiceAmount] = useState(0);
 
-  // const [hmoNumber, setHmoNumber] = useState("");
+   const [hmoNumber, setHmoNumber] = useState("");
+   const [hmoProvider, setHmoProvider] = useState("");
+   const [hmoCoverage, setHmoCoverage] = useState("");
+   const [hmoList, setHmoList] = useState([]); //NEW
+   const [hmoServices, setHmoServices] = useState([]);//NEW
   // const [pwdDiscount, setPwdDiscount] = useState("");
 
   const [billingDate, setBillingDate] = useState("");
+  const [dueDate, setDueDate] = useState(""); //NEW
 
   const [appointment, setAppointment] = useState(null);
 
@@ -56,6 +61,8 @@ const Adminbillingedit = () => {
     setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
   };
 
+  //NEW
+  
   const fetchBillingData = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -93,6 +100,7 @@ const Adminbillingedit = () => {
 
   useEffect(() => {
     fetchBillingData();
+     fetchHmos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointId]);
 
@@ -223,10 +231,19 @@ const Adminbillingedit = () => {
     if (!serviceCharge || Number(serviceCharge) <= 0) {
       return showPopup("Main Service Charge must be greater than 0", "error");
     }
+    //NEW
+      if (paymentStatus === "Partial" && !dueDate) {
+    return showPopup("Please enter due date", "error");
+  }
+
 
     // ✅ Optional: additional validation for GCash proof or HMO number
     if (paymentMode === "GCash" && !gcashProof) {
       return showPopup("Please upload GCash proof", "error");
+    }
+    //NEW
+    if (paymentStatus === "Partial" && !dueDate) {
+      return showPopup("Please enter due date", "error");
     }
 
     try {
@@ -262,6 +279,18 @@ const Adminbillingedit = () => {
       if (paymentMode === "GCash" && gcashProof) {
         formData.append("gcash_proof", gcashProof);
       }
+      if (paymentStatus === "Partial" && dueDate) {
+      formData.append("due_date", dueDate);
+    }
+
+      if (paymentMode === "HMO") {
+      formData.append("hmo_number", hmoNumber);
+      formData.append("hmo_provider", hmoProvider);
+      formData.append("coverage", hmoCoverage);
+      if (!hmoNumber) {
+      return showPopup("Hmo Number is required", "error");
+    }
+    }
 
       await axios.post(
         `http://localhost:3000/auth/billing/${appointId}`,
@@ -296,6 +325,47 @@ const Adminbillingedit = () => {
     navigate(`/adminconsultationview/${appointId}`);
   };
 
+  //NEW
+    const fetchHmos = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:3000/auth/hmo", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHmoList(res.data);
+    } catch (err) {
+      console.error("Failed to fetch HMOs:", err);
+    }
+  };
+
+ //NEW
+useEffect(() => {
+  const fetchHmoServices = async () => {
+    if (!hmoProvider) {
+      setHmoServices([]);
+      setHmoCoverage("");
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const res = await axios.get(
+        `http://localhost:3000/auth/hmo/${hmoProvider}/services`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setHmoServices(res.data);
+      setHmoCoverage(res.data.length > 0 ? res.data[0].coverage : "");
+
+    } catch (err) {
+      console.error("Failed to fetch HMO services:", err);
+      setHmoServices([]);
+    }
+  };
+
+  fetchHmoServices();
+}, [hmoProvider]);
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -656,7 +726,7 @@ const Adminbillingedit = () => {
                 <option value="">--Select--</option>
                 <option value="Cash">Cash</option>
                 <option value="GCash">GCash</option>
-                {/* <option value="HMO">HMO</option> fixed value */}
+                <option value="HMO">HMO</option> fixed value 
               </select>
             </div>
 
@@ -685,18 +755,54 @@ const Adminbillingedit = () => {
             )}
 
             {/* ✅ Show HMO Number ONLY if paymentMode === "HMO" */}
-            {/* {paymentMode === "HMO" && (
-              <div className="col-span-2">
-                <label className="block font-medium">HMO Number</label>
-                <input
-                  type="text"
-                  className="col-sm-6 border rounded px-3 py-2"
-                  value={hmoNumber}
-                  onChange={(e) => setHmoNumber(e.target.value)}
-                  placeholder="Enter HMO Number"
-                />
+            {paymentMode === "HMO" && (
+            <div className="col-span-2 mt-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-medium">HMO Provider</label>
+                  <select
+                      className="w-full border rounded px-3 py-2"
+                      value={hmoProvider}
+                      onChange={(e) => setHmoProvider(e.target.value)}
+                    >
+                      <option value="">-- Select HMO Provider --</option>
+                      {hmoList.map((hmo) => (
+                        <option key={hmo.hmo_id} value={hmo.hmo_id}>
+                          {hmo.hmo_name}
+                        </option>
+                      ))}
+                    </select>
+                </div>
+
+                <div>
+                  <label className="block font-medium">HMO Number</label>
+                  <input
+                    type="text"
+                    className="w-full border rounded px-3 py-2"
+                    value={hmoNumber}
+                    onChange={(e) => setHmoNumber(e.target.value)}
+                    placeholder="Enter HMO Number"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-medium">Service Coverage</label>
+                  <select
+                    className="w-full border rounded px-3 py-2"
+                    value={hmoCoverage}
+                    onChange={(e) => setHmoCoverage(e.target.value)}
+                  >
+                    <option value="">-- Select Service Coverage --</option>
+                    {hmoServices.map((svc) => (
+                      <option key={svc.service_id} value={svc.coverage}>
+                        {svc.service} -  {svc.coverage} %
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            )} */}
+            </div>
+          )}
 
             {/* ✅ Always show PWD Discount field */}
             {/* <div className="col-span-2">
@@ -718,7 +824,24 @@ const Adminbillingedit = () => {
                 onChange={(e) => setBillingDate(e.target.value)}
               />
             </div>
+
+            {/* 👇 Add this right next to Billing Date */}
+            {paymentStatus === "Partial" && (
+              <div>
+                <label className="block font-semibold">Due Date</label>
+                <input
+                  type="date"
+                  className="w-full border rounded px-3 py-2"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
           </div>
+
+          
 
           {/* Service Selection */}
           <hr></hr>

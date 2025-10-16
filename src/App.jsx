@@ -75,6 +75,12 @@ import AdminConsultationPartial from "./Routes/adminconsultationpartial.jsx";
 import AdminConsultationPartialPayment from "./Routes/adminconsultationpartialpay.jsx";
 import ReceptionistDashboard from "./Routes/receptionistdashboard";
 import TransViewSoa from "./Routes/transviewsoa.jsx";
+import AdminHMO from "./Routes/adminhmo.jsx";
+import AdminHMOAdd from "./Routes/adminhmoadd.jsx";
+import AdminHMOService from "./Routes/adminhmoservice.jsx";
+import AdminCashierHmo from "./Routes/admincashierhmo.jsx";
+import AdminConsultationHmo from "./Routes/adminconsultationhmo.jsx";
+import AdminConsultationHmoPay from "./Routes/adminconsultationhmopay.jsx";
 
 function App() {
   return (
@@ -315,6 +321,42 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Admintrial />
+                </ProtectedRoute>
+              }
+            />
+            {/* NEW */}
+               <Route
+              path="/admincashierhmo"
+              element={
+                <ProtectedRoute>
+                  <AdminCashierHmo />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/adminhmo"
+              element={
+                <ProtectedRoute>
+                  <AdminHMO />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/adminhmoadd"
+              element={
+                <ProtectedRoute>
+                  <AdminHMOAdd />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/adminhmoservice/:hmo_id"
+              element={
+                <ProtectedRoute>
+                  <AdminHMOService />
                 </ProtectedRoute>
               }
             />
@@ -567,6 +609,23 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AdminConsultationPartialPayment />
+                </ProtectedRoute>
+              }
+            />
+            {/* NEW */}
+            <Route
+              path="/adminconsultationhmopay/:appointId"
+              element={
+                <ProtectedRoute>
+                  <AdminConsultationHmoPay />
+                </ProtectedRoute>
+              }
+            />
+             <Route
+              path="/adminconsultationhmo/:appointId"
+              element={
+                <ProtectedRoute>
+                  <AdminConsultationHmo />
                 </ProtectedRoute>
               }
             />
