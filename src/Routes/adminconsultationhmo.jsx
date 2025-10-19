@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminConsultationHmo = () => {
   const { appointId } = useParams();
@@ -87,11 +87,11 @@ const AdminConsultationHmo = () => {
   useEffect(() => {
     if (consultation && payments.length > 0) {
       const totalPaid = payments.reduce((sum, p) => sum + Number(p.credit || 0), 0);
-      const totalCharged = consultation.hmo_charge|| 0;
+      const totalCharged = consultation.hmo_charge || 0;
       const remainingBalance = totalCharged - totalPaid;
       setBalance(remainingBalance);
     } else if (consultation) {
-      setBalance(consultation.hmo_charge|| 0);
+      setBalance(consultation.hmo_charge || 0);
     }
   }, [payments, consultation]);
 
@@ -417,7 +417,9 @@ const AdminConsultationHmo = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -489,7 +491,8 @@ const AdminConsultationHmo = () => {
             >
               <X size={24} />
             </button>
-            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
             <nav className="flex flex-col gap-2">
               <Link
                 to="/admindashboard"
@@ -671,10 +674,10 @@ const AdminConsultationHmo = () => {
                     Payments (If Installment):
                   </p>
                   <button
-                    disabled={balance <= 0 ||  consultation.hmo_payment==='complete'}
+                    disabled={balance <= 0 || consultation.hmo_payment === 'complete'}
                     className={`font-semibold px-6 py-2 rounded-lg w-full sm:w-auto ${balance <= 0 || consultation?.hmo_payment === "Complete"
-                        ? "bg-gray-400 text-white cursor-not-allowed"
-                        : "bg-red-500 hover:bg-red-600 text-white"
+                      ? "bg-gray-400 text-white cursor-not-allowed"
+                      : "bg-red-500 hover:bg-red-600 text-white"
                       }`}
                     onClick={() => {
                       if (balance > 0) {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso } from "lucide-react";
+import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso, IdCard, Printer } from "lucide-react";
 import axios from "axios";
 
 function adminaudit() {
@@ -11,11 +11,13 @@ function adminaudit() {
   const [searchTerm, setSearchTerm] = useState("");
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [records, setRecords] = useState([]);
 
   useEffect(() => {
     const fetchAuditTrail = async () => {
+      setLoading(true); // ✅ show spinner
       try {
         const token = localStorage.getItem("token"); // JWT token
         const response = await axios.get("http://localhost:3000/auth/audit-trail", {
@@ -34,6 +36,8 @@ function adminaudit() {
         setRecords(mappedRecords);
       } catch (err) {
         console.error("Error fetching audit trail:", err);
+      } finally {
+        setLoading(false); // ✅ hide spinner after fetch finishes
       }
     };
 
@@ -206,7 +210,7 @@ function adminaudit() {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -291,7 +295,9 @@ function adminaudit() {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -500,15 +506,13 @@ function adminaudit() {
 
           <div className="w-full sm:w-auto flex justify-end">
             <button
-              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full sm:w-auto"
               onClick={handlePrintReport}
+              className="px-6 py-3 bg-[#00458B] hover:bg-[#003366] text-white font-bold rounded-lg flex items-center gap-2"
             >
-              Generate Report
+              <Printer size={18} /> Generate Report
             </button>
           </div>
         </div>
-
-
 
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
           {/* Search Bar */}
@@ -539,7 +543,32 @@ function adminaudit() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRecords.length > 0 ? (
+                  {loading ? (
+                    <tr>
+                      <td colSpan="5">
+                        <div className="flex justify-center items-center h-64">
+                          <svg
+                            aria-hidden="true"
+                            className="w-16 h-16 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+                            viewBox="0 0 100 101"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            <path
+                              d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                              className="text-gray-300"
+                              fill="currentColor"
+                            />
+                            <path
+                              d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                              className="text-[#00458B]"
+                              fill="currentFill"
+                            />
+                          </svg>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredRecords.length > 0 ? (
                     filteredRecords.map((record, index) => (
                       <tr key={index} className="border-b border-gray-200">
                         <td className="px-4 py-2 text-blue-700">{record.date}</td>
@@ -551,7 +580,7 @@ function adminaudit() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="4" className="text-center text-gray-500 py-4">
+                      <td colSpan="5" className="text-center text-gray-500 py-4">
                         No records found
                       </td>
                     </tr>

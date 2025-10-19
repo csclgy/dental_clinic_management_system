@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminHMOAdd = () => {
   const location = useLocation();
@@ -42,38 +42,38 @@ const AdminHMOAdd = () => {
     }
   }, [location]);
 
- const handleSave = async () => {
-  if (!hmoName.trim() || !status.trim() || !moaFile) {
-    showPopup("Please fill in all required fields including MOA Letter.", "error");
-    return;
-  }
+  const handleSave = async () => {
+    if (!hmoName.trim() || !status.trim() || !moaFile) {
+      showPopup("Please fill in all required fields including MOA Letter.", "error");
+      return;
+    }
 
-  try {
-    const token = localStorage.getItem("token");
+    try {
+      const token = localStorage.getItem("token");
 
-    const formData = new FormData();
-    formData.append("hmo_name", hmoName.trim());
-    formData.append("status", status);
-    formData.append("moa_letter", moaFile);
+      const formData = new FormData();
+      formData.append("hmo_name", hmoName.trim());
+      formData.append("status", status);
+      formData.append("moa_letter", moaFile);
 
-    const res = await axios.post("http://localhost:3000/auth/hmo", formData, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "multipart/form-data",
-      },
-    });
+      const res = await axios.post("http://localhost:3000/auth/hmo", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
-    showPopup(res.data.message || "HMO added successfully!", "success");
-    setHmoName("");
-    setStatus("Active");
-    setMoaFile(null);
+      showPopup(res.data.message || "HMO added successfully!", "success");
+      setHmoName("");
+      setStatus("Active");
+      setMoaFile(null);
 
-    setTimeout(() => navigate("/adminhmo"), 1500);
-  } catch (err) {
-    console.error("Error adding HMO:", err);
-    showPopup(err.response?.data?.message || "Something went wrong.", "error");
-  }
-};
+      setTimeout(() => navigate("/adminhmo"), 1500);
+    } catch (err) {
+      console.error("Error adding HMO:", err);
+      showPopup(err.response?.data?.message || "Something went wrong.", "error");
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
@@ -90,7 +90,8 @@ const AdminHMOAdd = () => {
 
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -128,7 +129,7 @@ const AdminHMOAdd = () => {
           {role === "admin" && (
             <>
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
@@ -142,7 +143,7 @@ const AdminHMOAdd = () => {
                 <div className="ml-6 flex flex-col gap-1 text-sm">
                   <Link
                     to="/admincoa"
-                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
                   >
                     Chart of Accounts
                   </Link>
@@ -172,7 +173,9 @@ const AdminHMOAdd = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -278,7 +281,7 @@ const AdminHMOAdd = () => {
             Add New HMO
           </h1>
 
-            <div className="space-y-6">
+          <div className="space-y-6">
             {/* ✅ HMO Name */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
@@ -310,7 +313,7 @@ const AdminHMOAdd = () => {
             {/* ✅ MOA File */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                MOA Letter 
+                MOA Letter
               </label>
               <input
                 type="file"
@@ -336,8 +339,8 @@ const AdminHMOAdd = () => {
               >
                 Save
               </button>
-              </div>
-              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>

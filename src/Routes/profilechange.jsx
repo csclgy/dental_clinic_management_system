@@ -9,6 +9,7 @@ const ProfileChange = () => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordStrength, setPasswordStrength] = useState("");
 
   // ✅ Popup state and fade animation
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -51,11 +52,25 @@ const ProfileChange = () => {
   };
 
   const handleChangePassword = async () => {
+    // 🧩 Step 1: Validate password match
     if (newPassword !== confirmPassword) {
       showPopup("New password and confirm password do not match.", "error");
       return;
     }
 
+    // 🧩 Step 2: Enforce password format (at least 8 chars, uppercase, lowercase, number, special char)
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+    if (!passwordRegex.test(newPassword)) {
+      showPopup(
+        "Password must be at least 8 characters long, include uppercase, lowercase, number, and special character.",
+        "error"
+      );
+      return;
+    }
+
+    // 🧩 Step 3: Proceed with password change
     const token = localStorage.getItem("token");
     if (!token) {
       navigate("/login");
@@ -75,9 +90,7 @@ const ProfileChange = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || "Failed to change password");
 
-      // ✅ Success popup
       showPopup("Password changed successfully.", "success");
-
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -85,6 +98,29 @@ const ProfileChange = () => {
       showPopup(err.message || "Failed to change password.", "error");
     }
   };
+
+  const checkPasswordStrength = (password) => {
+  let strength = "";
+
+  if (!password) {
+    strength = "";
+  } else if (password.length < 8) {
+    strength = "Weak";
+  } else {
+    const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecial = /[@$!%*?&]/.test(password);
+    const passedChecks = [hasLower, hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+
+    if (passedChecks <= 2) strength = "Weak";
+    else if (passedChecks === 3) strength = "Medium";
+    else strength = "Strong";
+  }
+
+  setPasswordStrength(strength);
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
@@ -119,8 +155,8 @@ const ProfileChange = () => {
         {popup.show && (
           <div
             className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-3"
+              ? "opacity-100 translate-y-0"
+              : "opacity-0 -translate-y-3"
               } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
             style={{ zIndex: 9999 }}
           >
@@ -145,12 +181,52 @@ const ProfileChange = () => {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
               />
-              <Input
-                label="New Password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
+<Input
+  label="New Password"
+  type="password"
+  value={newPassword}
+  onChange={(e) => {
+    setNewPassword(e.target.value);
+    checkPasswordStrength(e.target.value);
+  }}
+/>
+
+{/* Strength Indicator */}
+{passwordStrength && (
+  <div className="mb-4">
+    {/* Progress Bar */}
+    <div className="h-2 w-full bg-gray-200 rounded-full mb-2">
+      <div
+        className={`h-2 rounded-full transition-all duration-500 ${
+          passwordStrength === "Weak"
+            ? "bg-red-500 w-1/3"
+            : passwordStrength === "Medium"
+            ? "bg-yellow-500 w-2/3"
+            : "bg-green-500 w-full"
+        }`}
+      ></div>
+    </div>
+
+    {/* Text Label */}
+    <p
+      className={`text-sm font-medium ${
+        passwordStrength === "Weak"
+          ? "text-red-500"
+          : passwordStrength === "Medium"
+          ? "text-yellow-500"
+          : "text-green-600"
+      }`}
+    >
+      Password strength: {passwordStrength}
+    </p>
+  </div>
+)}
+
+<p className="text-sm text-gray-500 mb-4">
+  Must be at least 8 characters and include uppercase, lowercase, number, and special character.
+</p>
+
+
               <Input
                 label="Confirm Password"
                 type="password"

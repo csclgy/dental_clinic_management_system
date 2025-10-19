@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, Package, AlertTriangle, PlusCircle, PhilippinePeso } from "lucide-react";
+import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, Package, AlertTriangle, PlusCircle, PhilippinePeso, IdCard } from "lucide-react";
 import axios from "axios";   // ✅ make sure axios is installed
 
 const Adminbillingedit = () => {
@@ -38,11 +38,11 @@ const Adminbillingedit = () => {
   const [newServiceName, setNewServiceName] = useState("");
   const [newServiceAmount, setNewServiceAmount] = useState(0);
 
-   const [hmoNumber, setHmoNumber] = useState("");
-   const [hmoProvider, setHmoProvider] = useState("");
-   const [hmoCoverage, setHmoCoverage] = useState("");
-   const [hmoList, setHmoList] = useState([]); //NEW
-   const [hmoServices, setHmoServices] = useState([]);//NEW
+  const [hmoNumber, setHmoNumber] = useState("");
+  const [hmoProvider, setHmoProvider] = useState("");
+  const [hmoCoverage, setHmoCoverage] = useState("");
+  const [hmoList, setHmoList] = useState([]); //NEW
+  const [hmoServices, setHmoServices] = useState([]);//NEW
   // const [pwdDiscount, setPwdDiscount] = useState("");
 
   const [billingDate, setBillingDate] = useState("");
@@ -62,7 +62,7 @@ const Adminbillingedit = () => {
   };
 
   //NEW
-  
+
   const fetchBillingData = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -100,7 +100,7 @@ const Adminbillingedit = () => {
 
   useEffect(() => {
     fetchBillingData();
-     fetchHmos();
+    fetchHmos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointId]);
 
@@ -232,9 +232,9 @@ const Adminbillingedit = () => {
       return showPopup("Main Service Charge must be greater than 0", "error");
     }
     //NEW
-      if (paymentStatus === "Partial" && !dueDate) {
-    return showPopup("Please enter due date", "error");
-  }
+    if (paymentStatus === "Partial" && !dueDate) {
+      return showPopup("Please enter due date", "error");
+    }
 
 
     // ✅ Optional: additional validation for GCash proof or HMO number
@@ -280,17 +280,17 @@ const Adminbillingedit = () => {
         formData.append("gcash_proof", gcashProof);
       }
       if (paymentStatus === "Partial" && dueDate) {
-      formData.append("due_date", dueDate);
-    }
+        formData.append("due_date", dueDate);
+      }
 
       if (paymentMode === "HMO") {
-      formData.append("hmo_number", hmoNumber);
-      formData.append("hmo_provider", hmoProvider);
-      formData.append("coverage", hmoCoverage);
-      if (!hmoNumber) {
-      return showPopup("Hmo Number is required", "error");
-    }
-    }
+        formData.append("hmo_number", hmoNumber);
+        formData.append("hmo_provider", hmoProvider);
+        formData.append("coverage", hmoCoverage);
+        if (!hmoNumber) {
+          return showPopup("Hmo Number is required", "error");
+        }
+      }
 
       await axios.post(
         `http://localhost:3000/auth/billing/${appointId}`,
@@ -326,7 +326,7 @@ const Adminbillingedit = () => {
   };
 
   //NEW
-    const fetchHmos = async () => {
+  const fetchHmos = async () => {
     try {
       const token = localStorage.getItem("token");
       const res = await axios.get("http://localhost:3000/auth/hmo", {
@@ -338,34 +338,34 @@ const Adminbillingedit = () => {
     }
   };
 
- //NEW
-useEffect(() => {
-  const fetchHmoServices = async () => {
-    if (!hmoProvider) {
-      setHmoServices([]);
-      setHmoCoverage("");
-      return;
-    }
+  //NEW
+  useEffect(() => {
+    const fetchHmoServices = async () => {
+      if (!hmoProvider) {
+        setHmoServices([]);
+        setHmoCoverage("");
+        return;
+      }
 
-    try {
-      const token = localStorage.getItem("token");
+      try {
+        const token = localStorage.getItem("token");
 
-      const res = await axios.get(
-        `http://localhost:3000/auth/hmo/${hmoProvider}/services`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+        const res = await axios.get(
+          `http://localhost:3000/auth/hmo/${hmoProvider}/services`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-      setHmoServices(res.data);
-      setHmoCoverage(res.data.length > 0 ? res.data[0].coverage : "");
+        setHmoServices(res.data);
+        setHmoCoverage(res.data.length > 0 ? res.data[0].coverage : "");
 
-    } catch (err) {
-      console.error("Failed to fetch HMO services:", err);
-      setHmoServices([]);
-    }
-  };
+      } catch (err) {
+        console.error("Failed to fetch HMO services:", err);
+        setHmoServices([]);
+      }
+    };
 
-  fetchHmoServices();
-}, [hmoProvider]);
+    fetchHmoServices();
+  }, [hmoProvider]);
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -383,7 +383,8 @@ useEffect(() => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -468,7 +469,9 @@ useEffect(() => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -726,7 +729,7 @@ useEffect(() => {
                 <option value="">--Select--</option>
                 <option value="Cash">Cash</option>
                 <option value="GCash">GCash</option>
-                <option value="HMO">HMO</option> fixed value 
+                <option value="HMO">HMO</option> fixed value
               </select>
             </div>
 
@@ -756,11 +759,11 @@ useEffect(() => {
 
             {/* ✅ Show HMO Number ONLY if paymentMode === "HMO" */}
             {paymentMode === "HMO" && (
-            <div className="col-span-2 mt-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-medium">HMO Provider</label>
-                  <select
+              <div className="col-span-2 mt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-medium">HMO Provider</label>
+                    <select
                       className="w-full border rounded px-3 py-2"
                       value={hmoProvider}
                       onChange={(e) => setHmoProvider(e.target.value)}
@@ -772,37 +775,37 @@ useEffect(() => {
                         </option>
                       ))}
                     </select>
-                </div>
+                  </div>
 
-                <div>
-                  <label className="block font-medium">HMO Number</label>
-                  <input
-                    type="text"
-                    className="w-full border rounded px-3 py-2"
-                    value={hmoNumber}
-                    onChange={(e) => setHmoNumber(e.target.value)}
-                    placeholder="Enter HMO Number"
-                  />
-                </div>
+                  <div>
+                    <label className="block font-medium">HMO Number</label>
+                    <input
+                      type="text"
+                      className="w-full border rounded px-3 py-2"
+                      value={hmoNumber}
+                      onChange={(e) => setHmoNumber(e.target.value)}
+                      placeholder="Enter HMO Number"
+                    />
+                  </div>
 
-                <div>
-                  <label className="block font-medium">Service Coverage</label>
-                  <select
-                    className="w-full border rounded px-3 py-2"
-                    value={hmoCoverage}
-                    onChange={(e) => setHmoCoverage(e.target.value)}
-                  >
-                    <option value="">-- Select Service Coverage --</option>
-                    {hmoServices.map((svc) => (
-                      <option key={svc.service_id} value={svc.coverage}>
-                        {svc.service} -  {svc.coverage} %
-                      </option>
-                    ))}
-                  </select>
+                  <div>
+                    <label className="block font-medium">Service Coverage</label>
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={hmoCoverage}
+                      onChange={(e) => setHmoCoverage(e.target.value)}
+                    >
+                      <option value="">-- Select Service Coverage --</option>
+                      {hmoServices.map((svc) => (
+                        <option key={svc.service_id} value={svc.coverage}>
+                          {svc.service} -  {svc.coverage} %
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
             {/* ✅ Always show PWD Discount field */}
             {/* <div className="col-span-2">
@@ -841,7 +844,7 @@ useEffect(() => {
 
           </div>
 
-          
+
 
           {/* Service Selection */}
           <hr></hr>

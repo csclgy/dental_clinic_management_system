@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminConsultationPartial = () => {
   const { appointId } = useParams();
@@ -335,7 +335,8 @@ const AdminConsultationPartial = () => {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -417,7 +418,9 @@ const AdminConsultationPartial = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -673,8 +676,8 @@ const AdminConsultationPartial = () => {
                   <button
                     disabled={balance <= 0 || consultation?.payment_confirmation === "Complete"}
                     className={`font-semibold px-6 py-2 rounded-lg w-full sm:w-auto ${balance <= 0 || consultation?.payment_confirmation === "Complete"
-                        ? "bg-gray-400 text-white cursor-not-allowed"
-                        : "bg-red-500 hover:bg-red-600 text-white"
+                      ? "bg-gray-400 text-white cursor-not-allowed"
+                      : "bg-red-500 hover:bg-red-600 text-white"
                       }`}
                     onClick={() => {
                       if (balance > 0) {
@@ -815,8 +818,8 @@ const AdminConsultationPartial = () => {
                 <button
                   disabled={balance > 0 || consultation?.payment_confirmation === "Complete"}
                   className={`px-6 py-2 rounded-lg font-semibold w-full sm:w-auto ${balance > 0 || consultation?.payment_confirmation === "Complete"
-                      ? "bg-gray-400 text-white cursor-not-allowed"
-                      : "bg-green-600 hover:bg-green-700 text-white"
+                    ? "bg-gray-400 text-white cursor-not-allowed"
+                    : "bg-green-600 hover:bg-green-700 text-white"
                     }`}
                   onClick={() => {
                     if (balance === 0 && consultation?.payment_confirmation !== "Complete") {

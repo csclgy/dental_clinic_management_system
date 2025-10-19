@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminSubsidiaryPayable = () => {
   const location = useLocation();
@@ -14,6 +14,7 @@ const AdminSubsidiaryPayable = () => {
   const [openDashboard, setOpenDashboard] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -41,6 +42,7 @@ const AdminSubsidiaryPayable = () => {
   // Fetch subsidiary ledger for Accounts Payable
   useEffect(() => {
     const fetchSubsidiary = async (account_id) => {
+      setLoading(true); // ✅ show spinner
       try {
         const res = await axios.get("http://localhost:3000/auth/subsidiaryPayable", {
           params: { account_id },
@@ -48,6 +50,8 @@ const AdminSubsidiaryPayable = () => {
         setSubsidiaryRecords(res.data);
       } catch (err) {
         console.error("Error fetching subsidiary records:", err);
+      } finally {
+        setLoading(false); // ✅ hide spinner after fetch finishes
       }
     };
 
@@ -80,7 +84,8 @@ const AdminSubsidiaryPayable = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -162,7 +167,9 @@ const AdminSubsidiaryPayable = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -277,92 +284,141 @@ const AdminSubsidiaryPayable = () => {
 
           <table className="w-full border-collapse border border-gray-200">
             <thead>
-                                
-                  <tr className="bg-gray-100 text-[#00458B]">
-                    <th className="px-4 py-2 text-left">Date</th>
-                    <th className="px-4 py-2 text-left">Particulars</th>
-                    <th className="px-4 py-2 text-left">Invoice No.</th>
-                    <th className="px-4 py-2 text-left">Debit</th>
-                    <th className="px-4 py-2 text-left">Credit</th>
-                    <th className="px-4 py-2 text-left">Balance</th>
-                    <th className="px-4 py-2 text-left">Action</th>
-                  </tr>
-                
-            </thead>
-                <tbody>
-                {filteredRecords.length > 0 ? (
-                  filteredRecords.map((record, index) => (
-                    <tr
-                      key={index}
-                      className="border-b border-gray-200 cursor-pointer hover:bg-gray-100">
-                      <td className="px-4 py-2 text-black">{record.date}</td>
-                        <td
-                        className="px-4 py-2 text-blue-700 cursor-pointer"
-                        onClick={(e) => {
-                          const rect = e.currentTarget.getBoundingClientRect(); 
-                          setTooltipPosition({
-                            x: rect.right + 10 + window.scrollX,
-                            y: rect.top + window.scrollY,
-                          });
-                          setSelectedRecord(record);
-                        }}
-                      >
-                        {record.particulars}
-                      </td>
-                      <td className="px-4 py-2 text-black">{record.invoice_no}</td>
-                      <td className="px-4 py-2 text-black">
-                        ₱ {(Number(record.debit) || 0).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-2 text-black">
-                        ₱ {(Number(record.credit) || 0).toFixed(2)}
-                      </td>
-                      <td className="px-4 py-2 text-black">
-                        {(Number(record.balance) || 0).toFixed(2)}
-                      </td>
-                     <td className="px-4 py-2 text-center">
-                        <button
-                          onClick={() => {
-                            const [companyName, expenseAccount] = record.particulars
-                              ? record.particulars.split(" - ").map((part) => part.trim())
-                              : ["", ""];
 
-                            navigate("/adminsubsidiaryaddpayable", {
-                              state: {
-                                mode: "pay",
-                                invoice_no: record.invoice_no,
-                                name: companyName,
-                                expense_account: expenseAccount,
-                                items: record.items,
-                                day_agreement: record.day_agreement,
-                                due_date: record.due_date,
-                                balance: record.balance,
-                              },
-                            });
-                          }}
-                          disabled={fullyPaidInvoices.has(record.invoice_no)} 
-                          className={`font-semibold px-4 py-2 rounded-lg ${
-                            fullyPaidInvoices.has(record.invoice_no)
-                              ? "bg-gray-400 cursor-not-allowed text-white" 
-                              : "bg-[#00c3b8] hover:bg-[#00a99d] text-white" 
+              <tr className="bg-gray-100 text-[#00458B]">
+                <th className="px-4 py-2 text-left">Date</th>
+                <th className="px-4 py-2 text-left">Particulars</th>
+                <th className="px-4 py-2 text-left">Invoice No.</th>
+                <th className="px-4 py-2 text-left">Debit</th>
+                <th className="px-4 py-2 text-left">Credit</th>
+                <th className="px-4 py-2 text-left">Balance</th>
+                <th className="px-4 py-2 text-left">Action</th>
+              </tr>
+
+            </thead>
+            <tbody>
+              {loading ? (
+                // 🌀 Show spinner when loading is true
+                <tr>
+                  <td colSpan="7" className="py-10">
+                    <div className="flex justify-center items-center h-64">
+                      <svg
+                        aria-hidden="true"
+                        className="w-16 h-16 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
+                        viewBox="0 0 100 101"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          d="M100 50.5908C100 78.2051 77.6142 100.591 
+                 50 100.591C22.3858 100.591 0 78.2051 
+                 0 50.5908C0 22.9766 22.3858 0.59082 
+                 50 0.59082C77.6142 0.59082 100 
+                 22.9766 100 50.5908ZM9.08144 
+                 50.5908C9.08144 73.1895 27.4013 
+                 91.5094 50 91.5094C72.5987 
+                 91.5094 90.9186 73.1895 
+                 90.9186 50.5908C90.9186 
+                 27.9921 72.5987 9.67226 
+                 50 9.67226C27.4013 9.67226 
+                 9.08144 27.9921 9.08144 
+                 50.5908Z"
+                          className="text-gray-300"
+                          fill="currentColor"
+                        />
+                        <path
+                          d="M93.9676 39.0409C96.393 38.4038 
+                 97.8624 35.9116 97.0079 33.5539C95.2932 
+                 28.8227 92.871 24.3692 89.8167 20.348C85.8452 
+                 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 
+                 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 
+                 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 
+                 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 
+                 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 
+                 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 
+                 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 
+                 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 
+                 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 
+                 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                          className="text-[#00458B]"
+                          fill="currentFill"
+                        />
+                      </svg>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredRecords.length > 0 ? (
+                filteredRecords.map((record, index) => (
+                  <tr
+                    key={index}
+                    className="border-b border-gray-200 cursor-pointer hover:bg-gray-100"
+                  >
+                    <td className="px-4 py-2 text-black">{record.date}</td>
+                    <td
+                      className="px-4 py-2 text-blue-700 cursor-pointer"
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        setTooltipPosition({
+                          x: rect.right + 10 + window.scrollX,
+                          y: rect.top + window.scrollY,
+                        });
+                        setSelectedRecord(record);
+                      }}
+                    >
+                      {record.particulars}
+                    </td>
+                    <td className="px-4 py-2 text-black">{record.invoice_no}</td>
+                    <td className="px-4 py-2 text-black">
+                      ₱ {(Number(record.debit) || 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2 text-black">
+                      ₱ {(Number(record.credit) || 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2 text-black">
+                      {(Number(record.balance) || 0).toFixed(2)}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <button
+                        onClick={() => {
+                          const [companyName, expenseAccount] = record.particulars
+                            ? record.particulars.split(" - ").map((part) => part.trim())
+                            : ["", ""];
+                          navigate("/adminsubsidiaryaddpayable", {
+                            state: {
+                              mode: "pay",
+                              invoice_no: record.invoice_no,
+                              name: companyName,
+                              expense_account: expenseAccount,
+                              items: record.items,
+                              day_agreement: record.day_agreement,
+                              due_date: record.due_date,
+                              balance: record.balance,
+                            },
+                          });
+                        }}
+                        disabled={fullyPaidInvoices.has(record.invoice_no)}
+                        className={`font-semibold px-4 py-2 rounded-lg ${fullyPaidInvoices.has(record.invoice_no)
+                          ? "bg-gray-400 cursor-not-allowed text-white"
+                          : "bg-[#00c3b8] hover:bg-[#00a99d] text-white"
                           }`}
-                        >
-                          Pay
-                        </button>
-                      </td>
-                                              
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="text-center text-gray-500 py-4">
-                      No records found
+                      >
+                        Pay
+                      </button>
                     </td>
                   </tr>
-                )}
-              </tbody>
-                {selectedRecord && (
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="text-center text-gray-500 py-4">
+                    No records found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+
+            {selectedRecord && (
               <div
-                  id="floatingTooltipBox"
+                id="floatingTooltipBox"
                 style={{
                   position: "absolute",
                   top: tooltipPosition.y,
@@ -372,7 +428,7 @@ const AdminSubsidiaryPayable = () => {
                 className="bg-white border border-gray-300 shadow-lg p-4 rounded-md w-80"
               >
                 <div className="flex justify-between items-center mb-2">
-                   <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
+                  <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
                     Invoice Details
                   </h3>
                   <br></br>
@@ -397,7 +453,7 @@ const AdminSubsidiaryPayable = () => {
 
                   <p className="mt-1"><strong>Due Date:</strong></p>
                   <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.due_date}</p>
-                  
+
                   <p className="mt-1"><strong>Supplier Name:</strong></p>
                   <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.supplier_name}</p>
 

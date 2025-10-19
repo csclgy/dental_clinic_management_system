@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link, useParams } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminConsultationPartialPayment = () => {
   const { appointId } = useParams();
@@ -22,7 +22,7 @@ const AdminConsultationPartialPayment = () => {
     accountName: "",
     type: "debit",
     amount: "",
-    procedure_type:"",
+    procedure_type: "",
     appoint_id: ""
   });
 
@@ -58,18 +58,18 @@ const AdminConsultationPartialPayment = () => {
     fetchAccountReceivable();
   }, [location]);
 
-useEffect(() => {
-  if (location.state) {
-    const { patientName, invoiceNo, procedureType,appointId } = location.state;
-    setFormData((prev) => ({
-      ...prev,
-      name: patientName || "",
-      invoice_no: invoiceNo || "",
-      procedure_type: procedureType || "",
-      appoint_id: appointId ||""
-    }));
-  }
-}, [location.state]);
+  useEffect(() => {
+    if (location.state) {
+      const { patientName, invoiceNo, procedureType, appointId } = location.state;
+      setFormData((prev) => ({
+        ...prev,
+        name: patientName || "",
+        invoice_no: invoiceNo || "",
+        procedure_type: procedureType || "",
+        appoint_id: appointId || ""
+      }));
+    }
+  }, [location.state]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -86,11 +86,11 @@ useEffect(() => {
 
     const debit = formData.type === "debit" ? Number(formData.amount) : 0;
     const credit = formData.type === "credit" ? Number(formData.amount) : 0;
- 
+
 
     try {
       await axios.post("http://localhost:3000/auth/subsidiaryReceivable", {
-         date: formData.date,
+        date: formData.date,
         name: formData.name,
         invoice_no: formData.invoice_no,
         amount: Number(formData.amount),
@@ -109,7 +109,8 @@ useEffect(() => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -191,7 +192,9 @@ useEffect(() => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -296,8 +299,8 @@ useEffect(() => {
                 />
               </div>
             </div>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
                   Invoice Number
@@ -338,7 +341,7 @@ useEffect(() => {
                 readOnly
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
               />
-              
+
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -376,7 +379,7 @@ useEffect(() => {
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                 onClick={() => navigate(`/adminconsultationpartial/${appointId}`)}
+                onClick={() => navigate(`/adminconsultationpartial/${appointId}`)}
               >
                 Back
               </button>

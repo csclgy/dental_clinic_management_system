@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, AlertCircle, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, AlertCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminConsultationAdd = () => {
   const location = useLocation();
@@ -37,7 +37,7 @@ const AdminConsultationAdd = () => {
   const [fullyBookedDates, setFullyBookedDates] = useState([]);
 
   const timeSlots = [
-    "8:00AM", "9:00AM", "10:00AM", "11:00AM", "12:00PM",
+    "9:00AM", "10:00AM", "11:00AM", "12:00PM",
     "1:00PM", "2:00PM", "3:00PM", "4:00PM", "5:00PM",
   ];
 
@@ -101,6 +101,33 @@ const AdminConsultationAdd = () => {
 
     return timeSlots.filter(slot => !bookedTimesForDate.includes(slot));
   };
+
+  const isPastTime = (time) => {
+    if (!dateOfVisit) return false;
+
+    const today = new Date();
+    const selectedDate = new Date(dateOfVisit);
+
+    // If date is before today → all times are past
+    if (selectedDate < new Date(today.toDateString())) return true;
+
+    // If date is after today → all times are valid
+    if (selectedDate > new Date(today.toDateString())) return false;
+
+    // If date is today → check individual times
+    const [hourMin, modifier] = time.split(/(AM|PM)/);
+    let [hour, minute] = hourMin.split(":").map(Number);
+
+    if (modifier === "PM" && hour !== 12) hour += 12;
+    if (modifier === "AM" && hour === 12) hour = 0;
+
+    const slotTime = new Date();
+    slotTime.setHours(hour, minute, 0, 0);
+
+    return slotTime <= today;
+  };
+
+
   const isDateFullyBooked = (date) => {
     return fullyBookedDates.includes(date);
   };
@@ -166,7 +193,7 @@ const AdminConsultationAdd = () => {
       // Wait 3 seconds before navigating
       setTimeout(() => {
         navigate("/adminpatients");
-      }, 1500);
+      }, 3000);
     } catch (err) {
       console.error("Error saving consultation:", err);
       showPopup("Failed to create consultation", "error");
@@ -207,7 +234,8 @@ const AdminConsultationAdd = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -222,22 +250,15 @@ const AdminConsultationAdd = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -288,7 +309,9 @@ const AdminConsultationAdd = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -414,11 +437,11 @@ const AdminConsultationAdd = () => {
               </label>
               <input
                 type="date"
+                className="border border-gray-400 rounded-lg px-3 py-2 w-full"
                 value={dateOfVisit}
                 onChange={handleDateChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-2"
-                min={new Date().toISOString().split("T")[0]}
-                disabled={!dentist}
+                min={new Date().toISOString().split("T")[0]} // ✅ disable past dates
+                required
               />
 
               {/* Show fully booked dates warning */}
@@ -432,34 +455,56 @@ const AdminConsultationAdd = () => {
                 Preferred Time *
               </label>
               <select
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none mb-2"
+                className="border border-gray-400 rounded-lg px-3 py-2 w-full"
                 value={preferredTime}
                 onChange={(e) => setPreferredTime(e.target.value)}
                 disabled={!dateOfVisit}
               >
                 <option value="">Select a time</option>
-                {getAvailableTimeSlots().map((time) => (
-                  <option key={time} value={time}>
-                    {time}
-                  </option>
-                ))}
+                {timeSlots.map((time) => {
+                  const bookedTimesForDate = bookedSlots[dateOfVisit] || [];
+                  const isBooked = bookedTimesForDate.includes(time);
+                  const pastTime = isPastTime(time);
+                  const disabled = isBooked || pastTime;
+
+                  return (
+                    <option
+                      key={time}
+                      value={time}
+                      disabled={disabled}
+                      style={{
+                        color: disabled ? "gray" : "black",
+                        backgroundColor: disabled ? "#f2f2f2" : "white",
+                      }}
+                    >
+                      {time} {isBooked ? "(Booked)" : pastTime ? "(Past)" : ""}
+                    </option>
+                  );
+                })}
               </select>
 
-              {/* Show helpful messages */}
+              {/* Availability alerts */}
               {dateOfVisit && getAvailableTimeSlots().length === 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
-                  <AlertCircle className="text-red-600 mt-0.5" size={16} />
-                  <p className="text-sm text-red-700">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-2 mt-2 flex items-start gap-2">
+                  <AlertCircle className="text-red-600 mt-0.5 flex-shrink-0" size={14} />
+                  <p className="text-xs text-red-700">
                     No available time slots for this date. Please select another date.
                   </p>
                 </div>
               )}
 
+              {dateOfVisit && new Date(dateOfVisit) < new Date(new Date().toDateString()) && (
+                <p className="text-xs text-red-600 mt-1">
+                  ⚠️ You cannot select past dates or times.
+                </p>
+              )}
+
               {dateOfVisit && getAvailableTimeSlots().length > 0 && (
-                <p className="text-xs text-green-600">
+                <p className="text-xs text-green-600 mt-1">
                   ✓ {getAvailableTimeSlots().length} time slot(s) available
                 </p>
               )}
+
             </div>
 
             {/* Right Side */}

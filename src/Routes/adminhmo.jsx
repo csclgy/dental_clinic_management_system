@@ -12,7 +12,8 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
-  PhilippinePeso
+  PhilippinePeso,
+  IdCard
 } from "lucide-react";
 
 const AdminHMO = () => {
@@ -157,7 +158,8 @@ const AdminHMO = () => {
 
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -195,7 +197,7 @@ const AdminHMO = () => {
           {role === "admin" && (
             <>
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
@@ -209,7 +211,7 @@ const AdminHMO = () => {
                 <div className="ml-6 flex flex-col gap-1 text-sm">
                   <Link
                     to="/admincoa"
-                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
                   >
                     Chart of Accounts
                   </Link>
@@ -239,7 +241,9 @@ const AdminHMO = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -342,7 +346,7 @@ const AdminHMO = () => {
 
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#00458B]">
-           HMO Managment
+            HMO Managment
           </h1>
 
           <div className="flex gap-3">
@@ -381,11 +385,11 @@ const AdminHMO = () => {
                       <th className="px-4 py-2 text-center">status</th>
                       <th className="px-4 py-2 text-center">MOA</th>
                       <th className="px-4 py-2 text-center">Services</th>
-                      <th className="px-4 py-2 text-center">Actions</th>             
+                      <th className="px-4 py-2 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                     {filteredHmos.length > 0 ? (
+                    {filteredHmos.length > 0 ? (
                       filteredHmos.map((hmo) => {
                         const isInactive =
                           hmo.status?.toLowerCase() === "inactive";
@@ -395,33 +399,35 @@ const AdminHMO = () => {
                               {hmo.hmo_name}
                             </td>
                             <td
-                              className={`px-4 py-2 text-center font-semibold ${
-                                isInactive ? "text-red-500" : "text-green-600"
-                              }`}
+                              className={`px-4 py-2 text-center font-semibold ${isInactive ? "text-red-500" : "text-green-600"
+                                }`}
                             >
                               {isInactive ? "Inactive" : "Active"}
                             </td>
                             <td className="px-4 py-2 text-center">
                               {hmo.moa_letter ? (
-                                <a
-                                  href={`http://localhost:3000/uploads/hmo/${hmo.moa_letter}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-blue-600 underline"
+                                <button
+                                  onClick={() =>
+                                    window.open(
+                                      `http://localhost:3000/uploads/hmo/${hmo.moa_letter}`,
+                                      "_blank"
+                                    )
+                                  }
+                                  className="px-4 py-2 rounded-lg bg-[white] border border-[#00458B] font-medium text-[#008CBA]"
                                 >
                                   View MOA
-                                </a>
+                                </button>
                               ) : (
                                 "No File"
                               )}
                             </td>
                             <td className="px-4 py-2 text-center">
-                                <Link to={`/adminhmoservice/${hmo.hmo_id}`}>
-                                    <button className="px-4 py-2 rounded-lg bg-[#008CBA] text-white font-medium hover:bg-blue-700 transition-colors">
-                                    View
-                                    </button>
-                                </Link>
-                                </td>
+                              <Link to={`/adminhmoservice/${hmo.hmo_id}`}>
+                                <button className="px-4 py-2 rounded-lg bg-[#008CBA] text-white">
+                                  View
+                                </button>
+                              </Link>
+                            </td>
                             <td className="px-4 py-2 text-center space-x-2">
                               <Link to={`/adminhmoedit/${hmo.hmo_id}`}>
                                 <button className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600">
@@ -439,11 +445,10 @@ const AdminHMO = () => {
                                     });
                                   }
                                 }}
-                                className={`px-4 py-2 rounded-lg ${
-                                  isInactive
+                                className={`px-4 py-2 rounded-lg ${isInactive
                                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                                     : "bg-red-500 text-white hover:bg-red-600"
-                                }`}
+                                  }`}
                               >
                                 Deactivate
                               </button>

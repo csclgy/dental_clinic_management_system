@@ -1,6 +1,7 @@
 import axios from 'axios'; // for API requests
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Printer } from "lucide-react";
 
 const TransMed = () => {
   const location = useLocation();
@@ -314,7 +315,7 @@ const TransMed = () => {
                 className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-teal-600"
                 onClick={handlePrintReport}
               >
-                Print
+                <Printer size={18} />
               </button>
             </div>
           </div>

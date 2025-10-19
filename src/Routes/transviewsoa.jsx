@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { BarChart3, Users, Calendar, X } from "lucide-react";
+import { Printer } from "lucide-react";
 
 const transviewsoa = () => {
   const { appointId } = useParams();
@@ -382,9 +383,26 @@ const transviewsoa = () => {
           </div>
 
           <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{ border: "solid", borderColor: "#01D5C4" }} ref={printRef}>
-            <h1 className="text-2xl font-bold text-[#00458B] mb-4">
-              Patient Information
-            </h1>
+            <div className="flex items-center justify-between">
+              <h1 className="font-bold text-2xl" style={{ color: "#00458B" }}>
+                Patient's Information
+              </h1>
+
+              {/* Print Button beside the title */}
+              <button
+                onClick={handlePrintReport}
+                title="Print Medical Record"
+                disabled={!consultation || consultation.appointment_status !== "done"}
+                className={`flex items-center gap-2 px-4 py-2 rounded-md font-semibold border transition ${consultation && consultation.appointment_status === "done"
+                  ? "bg-[#00458B] text-white border-[#00458B] hover:bg-[#003870]"
+                  : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
+                  }`}
+              >
+                <Printer size={18} /> Print
+              </button>
+            </div>
+            <br></br>
+
             <hr />
             <div className="mt-4 text-[#00458B]">
               <p className="font-bold text-xl text-[#00c3b8]">
@@ -637,24 +655,11 @@ const transviewsoa = () => {
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-end">
                 <div className="col-sm-2">
                   <button
-                    className="px-6 py-2 rounded-lg font-semibold w-full mb-4 border "
+                    className="px-6 py-2 bg-[#00c3b8] text-white rounded-lg font-semibold w-full mb-4 border "
                     onClick={() => navigate(-1)}
                   >
                     Back to List
                   </button>
-                </div>
-                <div className="col-sm-2">
-                  <button
-                    disabled={!consultation || consultation.appointment_status !== "done"}
-                    onClick={handlePrintReport}
-                    className={`px-6 py-2 rounded-lg font-semibold w-full border ${consultation && consultation.appointment_status === "done"
-                      ? "bg-[#00458B] text-white border-[#00458B] hover:bg-[#00458B]-100 cursor-pointer"
-                      : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
-                      }`}
-                  >
-                    Print
-                  </button>
-
                 </div>
               </div>
             </div>

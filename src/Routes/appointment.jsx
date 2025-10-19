@@ -7,11 +7,11 @@ import { AlertCircle } from "lucide-react";
 const Appointment = () => {
   const navigate = useNavigate();
   const { appointmentData, updateAppointment } = useAppointment();
+  const userId = localStorage.getItem("userId");
 
   // Availability checking states
   const [bookedSlots, setBookedSlots] = useState({});
   const [fullyBookedDates, setFullyBookedDates] = useState([]);
-  const [dentists, setDentists] = useState([]);
 
   // ✅ Popup state and fade animation (same as AppointmentSubmit)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -31,19 +31,6 @@ const Appointment = () => {
     "9:00AM", "10:00AM", "11:00AM", "12:00PM",
     "1:00PM", "2:00PM", "3:00PM", "4:00PM", "5:00PM",
   ];
-
-  // Fetch dentists on component mount
-  useEffect(() => {
-    const fetchDentists = async () => {
-      try {
-        const response = await axios.get("http://localhost:3000/auth/dentists");
-        setDentists(response.data);
-      } catch (err) {
-        console.error("Error fetching dentists:", err);
-      }
-    };
-    fetchDentists();
-  }, []);
 
   const validateForm = () => {
     const requiredFields = [
@@ -84,6 +71,20 @@ const Appointment = () => {
       fetchAppointments();
     }
   }, [appointmentData.procedure_type]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      // triggers re-render so `isPastTime()` recalculates
+      setBookedSlots((prev) => ({ ...prev }));
+    }, 60000); // every 60 seconds
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!userId) {
+      showPopup("User not logged in or ID missing.", "error");
+    }
+  }, [userId]);
 
   const fetchAppointments = async () => {
     try {
@@ -127,6 +128,31 @@ const Appointment = () => {
     return timeSlots.filter(slot => !bookedTimesForDate.includes(slot));
   };
 
+  const isPastTime = (time) => {
+    if (!appointmentData.pref_date) return false;
+
+    const today = new Date();
+    const selectedDate = new Date(appointmentData.pref_date);
+
+    // If selected date is before today → all times are past
+    if (selectedDate < new Date(today.toDateString())) return true;
+
+    // If selected date is after today → all times are valid
+    if (selectedDate > new Date(today.toDateString())) return false;
+
+    // Otherwise, selected date is today → check individual times
+    const [hourMin, modifier] = time.split(/(AM|PM)/);
+    let [hour, minute] = hourMin.split(":").map(Number);
+
+    if (modifier === "PM" && hour !== 12) hour += 12;
+    if (modifier === "AM" && hour === 12) hour = 0;
+
+    const slotTime = new Date();
+    slotTime.setHours(hour, minute, 0, 0);
+
+    return slotTime <= today; // true if this time has already passed today
+  };
+
   const isDateFullyBooked = (date) => {
     return fullyBookedDates.includes(date);
   };
@@ -143,8 +169,19 @@ const Appointment = () => {
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-    updateAppointment("photos", files);
+
+    // Filter only image files
+    const validFiles = files.filter(file => file.type.startsWith("image/"));
+
+    // If any invalid file is found, show a warning
+    if (validFiles.length !== files.length) {
+      alert("Only image files (PNG, JPG, JPEG, etc.) are allowed.");
+    }
+
+    // Update only with valid image files
+    updateAppointment("photos", validFiles);
   };
+
 
   const handleTimeChange = (selectedTime) => {
     const bookedTimesForDate = bookedSlots[appointmentData.pref_date] || [];
@@ -291,20 +328,25 @@ const Appointment = () => {
                   {timeSlots.map((time) => {
                     const bookedTimesForDate = bookedSlots[appointmentData.pref_date] || [];
                     const isBooked = bookedTimesForDate.includes(time);
+                    const pastTime = isPastTime(time);
+
+                    const disabled = isBooked || pastTime;
+
                     return (
                       <option
                         key={time}
                         value={time}
-                        disabled={isBooked}
+                        disabled={disabled}
                         style={{
-                          color: isBooked ? "gray" : "black",
-                          backgroundColor: isBooked ? "#f2f2f2" : "white",
+                          color: disabled ? "gray" : "black",
+                          backgroundColor: disabled ? "#f2f2f2" : "white",
                         }}
                       >
-                        {time} {isBooked ? "(Booked)" : ""}
+                        {time} {isBooked ? "(Booked)" : pastTime ? "(Past)" : ""}
                       </option>
                     );
                   })}
+
                 </select>
 
                 {/* Availability alerts */}
@@ -315,6 +357,12 @@ const Appointment = () => {
                       No available time slots for this date. Please select another date.
                     </p>
                   </div>
+                )}
+
+                {appointmentData.pref_date && new Date(appointmentData.pref_date) < new Date(new Date().toDateString()) && (
+                  <p className="text-xs text-red-600 mt-1">
+                    ⚠️ You cannot select past dates or times.
+                  </p>
                 )}
 
                 {appointmentData.pref_date && getAvailableTimeSlots().length > 0 && (
@@ -335,16 +383,61 @@ const Appointment = () => {
                   accept="image/*"
                   onChange={handleFileChange}
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none 
-                  file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 
+                  file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 
                   file:text-sm file:font-semibold file:bg-[#00458b] file:text-white 
                   hover:file:bg-[#003567]"
                 />
               </div>
+
             </div>
           </div>
           <br></br>
           <hr></hr>
           <br></br>
+          <div className="flex justify-end mb-4">
+            <button
+              className="bg-[#00c3b8] text-white font-semibold px-4 py-2 rounded-lg hover:bg-teal-600 transition"
+              onClick={async () => {
+                try {
+                  const userId = localStorage.getItem("userId");
+                  const response = await axios.get(`http://localhost:3000/auth/users/${userId}`);
+                  const user = response.data;
+
+                  console.log("User data:", user);
+
+                  // Auto-fill fields using your context updater
+                  updateAppointment("p_fname", user.fname || "");
+                  updateAppointment("p_mname", user.mname || "");
+                  updateAppointment("p_lname", user.lname || "");
+                  updateAppointment("p_home_address", user.home_address || "");
+                  updateAppointment("p_email", user.email || "");
+                  updateAppointment("p_contact_no", user.contact_no || "");
+                  updateAppointment("p_gender", user.gender || "");
+                  updateAppointment("p_date_birth", user.date_birth ? user.date_birth.split("T")[0] : "");
+                  updateAppointment("p_blood_type", user.blood_type || "");
+
+                  // Auto-calculate age
+                  if (user.date_birth) {
+                    const today = new Date();
+                    const birthDate = new Date(user.date_birth);
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const m = today.getMonth() - birthDate.getMonth();
+                    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+                    updateAppointment("p_age", age);
+                  }
+
+                  showPopup("Your personal info has been auto-filled.", "success");
+                } catch (error) {
+                  console.error("Error fetching user info:", error);
+                  showPopup("Failed to retrieve your info.", "error");
+                }
+              }}
+
+            >
+              Auto-Fill My Info
+            </button>
+          </div>
+
           <p className="text-[#00458b] text-xl font-bold">Personal Information</p>
           <br></br>
         </div>
@@ -398,8 +491,8 @@ const Appointment = () => {
                 onChange={(e) => updateAppointment("p_gender", e.target.value)}
               >
                 <option value="">-- Select gender --</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
               </select>
             </div>
 
@@ -465,9 +558,9 @@ const Appointment = () => {
               {/* Next Button */}
               <div className="mt-6">
                 <button
-                  className={`font-semibold px-6 py-2 rounded-full w-full ${validateForm
-                      ? "bg-[#00c3b8] text-white hover:bg-teal-600"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  className={`font-semibold px-6 py-2 rounded-lg w-full ${validateForm
+                    ? "bg-[#00c3b8] text-white hover:bg-teal-600"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   onClick={() => {
                     if (!validateForm()) return;

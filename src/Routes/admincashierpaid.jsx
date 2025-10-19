@@ -10,7 +10,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  PhilippinePeso
+  PhilippinePeso,
+  IdCard
 } from "lucide-react";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
@@ -97,7 +98,8 @@ const AdminCashierPaid = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -181,7 +183,9 @@ const AdminCashierPaid = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -344,7 +348,7 @@ const AdminCashierPaid = () => {
                         <td className="px-2 py-3 whitespace-nowrap">
                           <button
                             onClick={() => navigate(`/adminconsultationpartial/${record.appoint_id}`)}
-                            className={`px-4 py-2 rounded-lg font-semibold bg-blue-500 hover:bg-blue-700 text-white `}
+                            className={`px-4 py-2 rounded-lg font-semibold bg-[#008CBA] text-white `}
                           >
                             View
                           </button>

@@ -33,25 +33,79 @@ const JWT_SECRET = process.env.JWT_SECRET || "your_jwt_secret_key";
 
 // for register.jsx (REGISTRATION)
 router.post('/register', async (req, res) => {
-  const { user_name, user_password, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type } = req.body;
+  const {
+    user_name,
+    user_password,
+    email,
+    contact_no,
+    fname,
+    mname,
+    lname,
+    date_birth,
+    gender,
+    age,
+    religion,
+    nationality,
+    home_address,
+    city,
+    province,
+    occupation,
+    gcash_num,
+    blood_type
+  } = req.body;
 
+  // 🛑 Validate required fields
   if (!user_name || !email || !user_password) {
     return res.status(400).json({ message: "Username, email, and password are required" });
   }
 
   try {
     const db = await connectToDatabase();
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length > 0) return res.status(409).json({ message: "User already exists" });
 
+    // 🔍 Check if username OR email already exists
+    const [existingUsers] = await db.query(
+      "SELECT * FROM users WHERE user_name = ? OR email = ?",
+      [user_name, email]
+    );
+
+    if (existingUsers.length > 0) {
+      const existing = existingUsers[0];
+      if (existing.user_name === user_name) {
+        return res.status(409).json({ message: "Username is already taken" });
+      } else if (existing.email === email) {
+        return res.status(409).json({ message: "Email is already registered" });
+      }
+    }
+
+    // 🔒 Hash password
     const hashedPassword = await bcrypt.hash(user_password, 10);
+
+    // 💾 Insert new user
     await db.query(
       `INSERT INTO users 
       (user_name, user_password, role, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type, user_status) 
       VALUES (?, ?, "patient", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "active")`,
-      [user_name, hashedPassword, email, contact_no, fname, mname, lname, date_birth, gender, age, religion, nationality, home_address, city, province, occupation, gcash_num, blood_type]
+      [
+        user_name,
+        hashedPassword,
+        email,
+        contact_no,
+        fname,
+        mname,
+        lname,
+        date_birth,
+        gender,
+        age,
+        religion,
+        nationality,
+        home_address,
+        city,
+        province,
+        occupation,
+        gcash_num,
+        blood_type
+      ]
     );
-
     return res.status(201).json({ message: "User created successfully" });
   } catch (err) {
     console.error("Register error:", err);
@@ -239,18 +293,6 @@ router.put("/change-password", async (req, res) => {
   }
 });
 
-//for appointment (BOOKING AN APPOINTMENT)
-// Multer storage configuration
-// const storage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, path.join(__dirname, "../uploads")); // all files go to uploads/
-//   },
-//   filename: (req, file, cb) => {
-//     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-//     cb(null, uniqueSuffix + "-" + file.originalname);
-//   },
-// });
-
 // For Appointments
 const appointmentStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -394,6 +436,23 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
   } catch (err) {
     console.error("Create appointment error:", err);
     return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.get("/users/:id", async (req, res) => {
+  try {
+    const db = await connectToDatabase();
+    const userId = req.params.id;
+    
+    const [rows] = await db.query("SELECT * FROM users WHERE user_id = ?", [userId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json(rows[0]);
+  } catch (error) {
+    console.error("Error fetching user:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -3319,14 +3378,24 @@ router.post("/journal", async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ message: "No token provided" });
 
-  const { date, description, account_id, subaccount_id, debit, credit, comment } = req.body;
+  const {
+    date,
+    description,
+    account_id,
+    subaccount_id,
+    debit,
+    credit,
+    comment,
+  } = req.body;
 
   const debitAmount = parseFloat(debit) || 0;
   const creditAmount = parseFloat(credit) || 0;
-  const totalAmount = debitAmount > 0 ? debitAmount : creditAmount; 
+  const totalAmount = debitAmount > 0 ? debitAmount : creditAmount;
 
   if (!date || !description || !account_id || (!debit && !credit)) {
-    return res.status(400).json({ message: "All required fields must be filled" });
+    return res
+      .status(400)
+      .json({ message: "All required fields must be filled" });
   }
 
   try {
@@ -3336,12 +3405,38 @@ router.post("/journal", async (req, res) => {
     console.log("🧾 Starting journal entry...");
     console.log("📦 Request body:", req.body);
 
-    // 1️⃣ Insert into journalentry
-    const [journalResult] = await db.query(
-      "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id, total_amount) VALUES (?,?,?,?,?,?,?,?)",
-      [date, description, account_id, debitAmount, creditAmount, comment || "n/a", subaccount_id,totalAmount]
-    );
+    // 1️⃣ Insert into journalentry (conditionally include subaccount_id)
+    let journalQuery;
+    let journalParams;
 
+    if (subaccount_id) {
+      journalQuery =
+        "INSERT INTO journalentry (`date`, description, account_id, subaccount_id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?,?)";
+      journalParams = [
+        date,
+        description,
+        account_id,
+        subaccount_id,
+        debitAmount,
+        creditAmount,
+        comment || "n/a",
+        totalAmount,
+      ];
+    } else {
+      journalQuery =
+        "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?)";
+      journalParams = [
+        date,
+        description,
+        account_id,
+        debitAmount,
+        creditAmount,
+        comment || "n/a",
+        totalAmount,
+      ];
+    }
+
+    const [journalResult] = await db.query(journalQuery, journalParams);
     const entryId = journalResult.insertId;
     console.log("✅ Journal entry inserted with ID:", entryId);
 
@@ -3366,7 +3461,9 @@ router.post("/journal", async (req, res) => {
       [account_id]
     );
 
-    let lastBalance = lastBalanceRows.length ? parseFloat(lastBalanceRows[0].balance) : 0;
+    let lastBalance = lastBalanceRows.length
+      ? parseFloat(lastBalanceRows[0].balance)
+      : 0;
     console.log("💰 Last balance for", accountName, "=", lastBalance);
 
     // 4️⃣ Compute new balance
@@ -3381,13 +3478,22 @@ router.post("/journal", async (req, res) => {
     // 5️⃣ Insert into general_ledger
     await db.query(
       "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
-      [entryId, account_id, description, debitAmount, creditAmount, newBalance, date,totalAmount]
+      [
+        entryId,
+        account_id,
+        description,
+        debitAmount,
+        creditAmount,
+        newBalance,
+        date,
+        totalAmount,
+      ]
     );
     console.log("🧮 General ledger updated for", accountName);
 
     // ✅ ➕ AUTO CASH ENTRY (only if Expense is debited)
-   if (accountType === "Expense" && debitAmount > 0 && comment !== "auto entry") {
-  console.log("💸 Auto cash credit triggered for Expense:", accountName);
+    if (accountType === "Expense" && debitAmount > 0 && comment !== "auto entry") {
+      console.log("💸 Auto cash credit triggered for Expense:", accountName);
 
       const [cashRows] = await db.query(
         "SELECT account_id FROM chartofaccounts WHERE account_name = 'Cash on Bank' LIMIT 1"
@@ -3395,7 +3501,6 @@ router.post("/journal", async (req, res) => {
 
       if (cashRows.length > 0) {
         const cashId = cashRows[0].account_id;
-        console.log("🏦 Found Cash account ID:", cashId);
 
         // Get latest Cash balance
         const [cashBalanceRows] = await db.query(
@@ -3407,22 +3512,33 @@ router.post("/journal", async (req, res) => {
           ? parseFloat(cashBalanceRows[0].balance)
           : 0;
         const newCashBalance = cashLastBalance - debitAmount;
-        console.log(
-          "💵 Old Cash balance:",
-          cashLastBalance,
-          "| New Cash balance:",
-          newCashBalance
-        );
 
         // Insert credit journal for Cash
         const [cashJournal] = await db.query(
-          "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id, total_amount) VALUES (?,?,?,?,?,?,?,?)",
-          [date, `${accountName}: ${description} `, cashId, 0, debitAmount, "auto entry", 0,debitAmount]
+          "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?)",
+          [
+            date,
+            `${accountName}: ${description}`,
+            cashId,
+            0,
+            debitAmount,
+            "auto entry",
+            debitAmount,
+          ]
         );
 
         await db.query(
-          "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date,total_amount) VALUES (?,?,?,?,?,?,?,?)",
-          [cashJournal.insertId, cashId, `Auto Cash Credit for ${accountName}`, 0, debitAmount, newCashBalance, date, debitAmount]
+          "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
+          [
+            cashJournal.insertId,
+            cashId,
+            `Auto Cash Credit for ${accountName}`,
+            0,
+            debitAmount,
+            newCashBalance,
+            date,
+            debitAmount,
+          ]
         );
 
         console.log("✅ Auto cash credit entry added for", accountName);
@@ -3430,59 +3546,74 @@ router.post("/journal", async (req, res) => {
         console.warn("⚠️ Cash account not found — skipping auto credit");
       }
     }
-//NEW CODE
-    // Cash on Hand → Cash on Bank
-if (accountName === "Cash on Hand" && creditAmount > 0 && comment !== "gcash transfer to bank") {
-  console.log("🏦 Auto transfer triggered: Cash on Hand → Cash on Bank");
 
-  // Find the Cash on Bank account
-  const [bankRows] = await db.query(
-    "SELECT account_id FROM chartofaccounts WHERE account_name = 'Cash on Bank' LIMIT 1"
-  );
+    // 💳 AUTO TRANSFER BETWEEN CASH ACCOUNTS (works both ways)
+    if (
+      (accountName === "Cash on Hand" || accountName === "Cash on Bank") &&
+      creditAmount > 0 &&
+      comment !== "auto transfer"
+    ) {
+      console.log(`🏦 Auto transfer triggered: ${accountName} credited`);
 
-  if (bankRows.length > 0) {
-    const bankId = bankRows[0].account_id;
-    console.log("🏧 Found Cash on Bank account ID:", bankId);
+      const transferFrom = accountName;
+      const transferTo =
+        accountName === "Cash on Bank" ? "Cash on Hand" : "Cash on Bank";
 
-    // Get latest bank balance
-    const [bankBalanceRows] = await db.query(
-      "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
-      [bankId]
-    );
+      const [targetRows] = await db.query(
+        "SELECT account_id FROM chartofaccounts WHERE account_name = ? LIMIT 1",
+        [transferTo]
+      );
 
-    let lastBankBalance = bankBalanceRows.length
-      ? parseFloat(bankBalanceRows[0].balance)
-      : 0;
+      if (targetRows.length > 0) {
+        const targetId = targetRows[0].account_id;
 
-    const newBankBalance = lastBankBalance + creditAmount;
+        // Get latest balance of target account
+        const [targetBalanceRows] = await db.query(
+          "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
+          [targetId]
+        );
 
-    // Insert auto journal for Cash on Bank (Debit)
-    const [bankJournal] = await db.query(
-      "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, id, total_amount) VALUES (?,?,?,?,?,?,?,?)",
-      [date, "Transfer from Cash on Hand", bankId, creditAmount, 0, "auto transfer", 0, creditAmount]
-    );
+        let lastTargetBalance = targetBalanceRows.length
+          ? parseFloat(targetBalanceRows[0].balance)
+          : 0;
 
-    // Insert into General Ledger
-    await db.query(
-      "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
-      [
-        bankJournal.insertId,
-        bankId,
-        "Auto Debit for Cash on Hand Transfer",
-        creditAmount,
-        0,
-        newBankBalance,
-        date,
-        creditAmount,
-      ]
-    );
+        const newTargetBalance = lastTargetBalance + creditAmount;
 
-    console.log("✅ Auto debit entry added for Cash on Bank");
-  } else {
-    console.warn("⚠️ Cash on Bank account not found — skipping auto transfer");
-  }
-}
+        // Insert journal entry for receiving account
+        const [transferJournal] = await db.query(
+          "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?)",
+          [
+            date,
+            `Transfer from ${transferFrom}`,
+            targetId,
+            creditAmount,
+            0,
+            "auto transfer",
+            creditAmount,
+          ]
+        );
 
+        await db.query(
+          "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
+          [
+            transferJournal.insertId,
+            targetId,
+            `Auto Debit for ${transferFrom} transfer`,
+            creditAmount,
+            0,
+            newTargetBalance,
+            date,
+            creditAmount,
+          ]
+        );
+
+        console.log(`✅ Auto debit entry added for ${transferTo}`);
+      } else {
+        console.warn(
+          `⚠️ Target cash account (${transferTo}) not found — skipping auto transfer`
+        );
+      }
+    }
 
     // 6️⃣ Insert audit trail
     const action = "Add Journal Entry";
@@ -3498,15 +3629,16 @@ if (accountName === "Cash on Hand" && creditAmount > 0 && comment !== "gcash tra
 
     console.log("🪶 Audit trail entry added for:", decoded.user_name);
 
-    return res.status(201).json({
-      message: "Journal entry and general ledger updated successfully!",
-    });
+    return res
+      .status(201)
+      .json({ message: "Journal entry and general ledger updated successfully!" });
   } catch (err) {
     console.error("❌ Journal insert error:", err.message);
-    console.error(err.stack);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+
 
 
 //get general ledger f

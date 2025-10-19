@@ -10,7 +10,6 @@ const Navbar = () => {
   const [role, setRole] = useState("");
   const navigate = useNavigate();
 
-  // Check localStorage whenever login state changes
   useEffect(() => {
     const token = localStorage.getItem("token");
     const storedUser = localStorage.getItem("userName");
@@ -34,6 +33,13 @@ const Navbar = () => {
   // Helper: check if links should show
   const showPublicLinks = !isLoggedIn || role === "patient";
 
+  // ✅ Logo click handler (only for patients)
+  const handleLogoClick = () => {
+    if (role === "patient") {
+      navigate("/");
+    }
+  };
+
   return (
     <nav className="bg-white shadow-lg" style={{ color: "#00458B" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,8 +47,16 @@ const Navbar = () => {
 
           {/* Left: Logo */}
           <div className="flex items-center space-x-8">
-            <div>
-              <img src="./favicon.png" style={{ width: "140px" }} alt="Logo" />
+            <div
+              onClick={handleLogoClick}
+              className={`cursor-${role === "patient" ? "pointer" : "default"}`}
+            >
+              <img
+                src="./favicon.png"
+                style={{ width: "140px" }}
+                alt="Logo"
+                title={role === "patient" ? "Go to Home" : ""}
+              />
             </div>
 
             {/* Desktop Menu */}
@@ -131,7 +145,7 @@ const Navbar = () => {
               <>
                 <Link to="/login" className="block px-3 py-2 rounded">Login</Link>
                 <Link to="/register" className="block px-3 py-2 rounded">Register</Link>
-                <br></br>
+                <br />
               </>
             ) : (
               <div className="border-t pt-4">
@@ -149,8 +163,8 @@ const Navbar = () => {
                 >
                   Logout
                 </button>
-                <br></br>
-                <br></br>
+                <br />
+                <br />
               </div>
             )}
           </div>

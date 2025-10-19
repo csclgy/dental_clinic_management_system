@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronUp,
-  PhilippinePeso
+  PhilippinePeso,
+  IdCard
 } from "lucide-react";
 
 const AdminHMOService = () => {
@@ -47,8 +48,8 @@ const AdminHMOService = () => {
     setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
   };
 
-    // Convert hmoId to number if needed
-    const selectedHMO = hmos.find(hmo => hmo.hmo_id === parseInt(hmoId));
+  // Convert hmoId to number if needed
+  const selectedHMO = hmos.find(hmo => hmo.hmo_id === parseInt(hmoId));
 
 
   useEffect(() => {
@@ -74,19 +75,19 @@ const AdminHMOService = () => {
     }
   }, [location]);
 
-useEffect(() => {
-  const fetchServices = async () => {
-    try {
-      const res = await axios.get(`http://localhost:3000/auth/hmo_services/${hmo_id}`);
-      setServices(res.data);
-    } catch (err) {
-      console.error("Error fetching HMO services:", err);
-      showPopup("Failed to fetch HMO services.", "error");
-       setLoading(false);
-    }
-  };
-  fetchServices();
-}, [hmo_id]);
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/hmo_services/${hmo_id}`);
+        setServices(res.data);
+      } catch (err) {
+        console.error("Error fetching HMO services:", err);
+        showPopup("Failed to fetch HMO services.", "error");
+        setLoading(false);
+      }
+    };
+    fetchServices();
+  }, [hmo_id]);
 
 
   const filteredHmos = hmos.filter((hmo) =>
@@ -164,7 +165,8 @@ useEffect(() => {
 
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -202,7 +204,7 @@ useEffect(() => {
           {role === "admin" && (
             <>
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
@@ -246,7 +248,9 @@ useEffect(() => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -349,7 +353,7 @@ useEffect(() => {
 
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#00458B]">
-           HMO Management 
+            HMO Management
           </h1>
 
           <div className="flex gap-3">
@@ -368,7 +372,7 @@ useEffect(() => {
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
             {/* Search Bar */}
             <div className="flex justify-end mb-4">
-                
+
               <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
                 <input
                   type="text"
@@ -388,63 +392,61 @@ useEffect(() => {
                       <th className="px-4 py-2 text-left">Service</th>
                       <th className="px-4 py-2 text-center">status</th>
                       <th className="px-4 py-2 text-center">Coverage</th>
-                      
-                      <th className="px-4 py-2 text-center">Actions</th>             
+
+                      <th className="px-4 py-2 text-center">Actions</th>
                     </tr>
                   </thead>
-                  
-<tbody>
-  {services.length > 0 ? (
-    services.map((service) => {
-      const isInactive = service.status?.toLowerCase() === "inactive";
-      return (
-        <tr key={service.service_id}>
-          <td className="px-4 py-2 text-blue-700">{service.service}</td>
-          <td
-            className={`px-4 py-2 text-center font-semibold ${
-              isInactive ? "text-red-500" : "text-green-600"
-            }`}
-          >
-            {isInactive ? "Inactive" : "Active"}
-          </td>
-          <td className="px-4 py-2 text-center">{service.coverage}</td>
-          <td className="px-4 py-2 text-center space-x-2">
-            <Link to={`/adminhmoserviceedit/${service.service_id}`}>
-              <button className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600">
-                Edit
-              </button>
-            </Link>
-            <button
-              disabled={isInactive}
-              onClick={() => {
-                if (!isInactive) {
-                  setConfirmBox({
-                    show: true,
-                    hmoId: service.service_id,
-                    hmoName: service.service_name,
-                  });
-                }
-              }}
-              className={`px-4 py-2 rounded-lg ${
-                isInactive
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-red-500 text-white hover:bg-red-600"
-              }`}
-            >
-              Deactivate
-            </button>
-          </td>
-        </tr>
-      );
-    })
-  ) : (
-    <tr>
-      <td colSpan="4" className="text-center text-gray-500 py-4">
-        No services found
-      </td>
-    </tr>
-  )}
-</tbody>
+
+                  <tbody>
+                    {services.length > 0 ? (
+                      services.map((service) => {
+                        const isInactive = service.status?.toLowerCase() === "inactive";
+                        return (
+                          <tr key={service.service_id}>
+                            <td className="px-4 py-2 text-blue-700">{service.service}</td>
+                            <td
+                              className={`px-4 py-2 text-center font-semibold ${isInactive ? "text-red-500" : "text-green-600"
+                                }`}
+                            >
+                              {isInactive ? "Inactive" : "Active"}
+                            </td>
+                            <td className="px-4 py-2 text-center">{service.coverage}</td>
+                            <td className="px-4 py-2 text-center space-x-2">
+                              <Link to={`/adminhmoserviceedit/${service.service_id}`}>
+                                <button className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600">
+                                  Edit
+                                </button>
+                              </Link>
+                              <button
+                                disabled={isInactive}
+                                onClick={() => {
+                                  if (!isInactive) {
+                                    setConfirmBox({
+                                      show: true,
+                                      hmoId: service.service_id,
+                                      hmoName: service.service_name,
+                                    });
+                                  }
+                                }}
+                                className={`px-4 py-2 rounded-lg ${isInactive
+                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-red-500 text-white hover:bg-red-600"
+                                  }`}
+                              >
+                                Deactivate
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan="4" className="text-center text-gray-500 py-4">
+                          No services found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
 
                 </table>
               </div>

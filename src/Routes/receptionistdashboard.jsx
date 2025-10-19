@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { Calendar, Users, BarChart3, Menu, X, Clock, XCircle, CheckCircle, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { Calendar, Users, BarChart3, Menu, X, Clock, XCircle, CheckCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 
 function ReceptionistDashboard() {
@@ -31,34 +31,34 @@ function ReceptionistDashboard() {
 
 
   useEffect(() => {
-  const fetchDashboardData = async () => {
-    try {
-      const res = await axios.get("http://localhost:3000/auth/receptionistdashboard");
-      const data = res.data;
+    const fetchDashboardData = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/auth/receptionistdashboard");
+        const data = res.data;
 
-      console.log("📊 Dashboard Data:", data);
+        console.log("📊 Dashboard Data:", data);
 
-      // ✅ Assign backend data to React states properly
-      setTotalAppointments(data.totalAppointments);
-      setPatientsCount(data.patientsCount);
-      setPendingAppointments(data.pendingAppointments);
-      setCancelledAppointments(data.cancelledAppointments);
-      setCompletedAppointments(data.completedAppointments);
+        // ✅ Assign backend data to React states properly
+        setTotalAppointments(data.totalAppointments);
+        setPatientsCount(data.patientsCount);
+        setPendingAppointments(data.pendingAppointments);
+        setCancelledAppointments(data.cancelledAppointments);
+        setCompletedAppointments(data.completedAppointments);
 
-      // ✅ Charts
-      setPatientDemographics(data.patientDemographics || []);
-      setAppointmentTrends(data.appointmentTrends || []);
+        // ✅ Charts
+        setPatientDemographics(data.patientDemographics || []);
+        setAppointmentTrends(data.appointmentTrends || []);
 
-      // ✅ Today's appointments
-      setTodayAppointments(data.todayAppointments || []);
+        // ✅ Today's appointments
+        setTodayAppointments(data.todayAppointments || []);
 
-    } catch (err) {
-      console.error("Error fetching dashboard data:", err);
-    }
-  };
+      } catch (err) {
+        console.error("Error fetching dashboard data:", err);
+      }
+    };
 
-  fetchDashboardData();
-}, []);
+    fetchDashboardData();
+  }, []);
 
 
   return (
@@ -66,7 +66,7 @@ function ReceptionistDashboard() {
 
       {/* Sidebar */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -107,7 +107,9 @@ function ReceptionistDashboard() {
               <Link to="/admintrial" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Trial Balance</Link>
             </div>
           )}
-
+          <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+            <IdCard size={18} /> HMO
+          </Link>
           <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
             <Users size={18} /> Users
           </Link>
