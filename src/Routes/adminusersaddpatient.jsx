@@ -295,7 +295,7 @@ const AdminUsersAddPatient = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Username
+                    Username: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -308,7 +308,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Password
+                    Password: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="password"
@@ -321,7 +321,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Email
+                    Email: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="email"
@@ -332,7 +332,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Contact Number
+                    Contact Number: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -358,12 +358,12 @@ const AdminUsersAddPatient = () => {
               <hr></hr>
               <br></br>
               <h2 className="text-xl font-semibold text-[#00458B] mb-4">
-                Personal Information
+                Personal Information:
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    First Name
+                    First Name: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -374,7 +374,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Middle Name
+                    Middle Name: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -385,7 +385,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Last Name
+                    Last Name: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -396,7 +396,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Gender
+                    Gender: <span style={{ color: "red" }}>*</span>
                   </label>
                   <select
                     value={registerData.gender}
@@ -411,7 +411,7 @@ const AdminUsersAddPatient = () => {
 
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Date of Birth
+                    Date of Birth: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="date"
@@ -424,7 +424,7 @@ const AdminUsersAddPatient = () => {
 
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Age
+                    Age:
                   </label>
                   <input
                     type="number"
@@ -436,18 +436,32 @@ const AdminUsersAddPatient = () => {
 
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Religion
+                    Religion: <span style={{ color: "red" }}>*</span>
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={registerData.religion}
                     onChange={(e) => updateFormData("religion", e.target.value)}
-                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                  />
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-[#00c3b8]"
+                  >
+                    <option value="">-- Select Religion --</option>
+                    <option value="Catholic">Catholic</option>
+                    <option value="Islam">Islam</option>
+                    <option value="Iglesia ni Cristo">Iglesia ni Cristo</option>
+                    <option value="Evangelicals">Evangelicals</option>
+                    <option value="Protestant">Protestant</option>
+                    <option value="Seventh-day Adventist">
+                      Seventh-day Adventist
+                    </option>
+                    <option value="Bible Baptist Church">Bible Baptist Church</option>
+                    <option value="Aglipayan">Aglipayan</option>
+                    <option value="UCCP">UCCP</option>
+                    <option value="Jehovah's Witnesses">Jehovah's Witnesses</option>
+                    <option value="Others">Others</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Nationality
+                    Nationality: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -461,7 +475,7 @@ const AdminUsersAddPatient = () => {
 
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Home Address
+                    Home Address: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -474,7 +488,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Blood Type
+                    Blood Type: <span style={{ color: "red" }}>*</span>
                   </label>
                   <select
                     value={registerData.blood_type}
@@ -501,7 +515,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    City
+                    City: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -512,7 +526,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Occupation
+                    Occupation: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"
@@ -525,7 +539,7 @@ const AdminUsersAddPatient = () => {
                 </div>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Province
+                    Province: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="text"

@@ -271,7 +271,7 @@ const AdminInventoryAdd = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Item Type
+                Item Type: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.inv_item_type || ""}
@@ -286,7 +286,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Item Name
+                Item Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -298,7 +298,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Price Per Item
+                Price Per Item (₱): <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="number"
@@ -312,22 +312,62 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Quantity
+                Quantity: <span style={{color:"red"}}>*</span>
               </label>
-              <input
-                type="number"
-                value={registerData.inv_quantity}
-                onChange={(e) => updateFormData("inv_quantity", e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
+              <div className="flex items-center border border-[#00458b] rounded-lg w-fit">
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateFormData(
+                      "inv_quantity",
+                      Math.max(0, Number(registerData.inv_quantity) - 1)
+                    )
+                  }
+                  className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+                >
+                  −
+                </button>
+
+                <input
+                  type="text"
+                  value={registerData.inv_quantity}
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    // Allow only numbers (no negatives, no special chars)
+                    if (/^\d*$/.test(value)) {
+                      updateFormData("inv_quantity", value);
+                    }
+                  }}
+                  onBlur={() => {
+                    // If empty, set to 0
+                    if (registerData.inv_quantity === "") {
+                      updateFormData("inv_quantity", 0);
+                    }
+                  }}
+                  className="w-16 text-center outline-none border-x border-[#00458b] py-2"
+                  inputMode="numeric"
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateFormData("inv_quantity", Number(registerData.inv_quantity) + 1)
+                  }
+                  className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+                >
+                  +
+                </button>
+              </div>
             </div>
+
 
             {/* Show only when medicine is selected */}
             {registerData.inv_item_type === "Medicine" && (
               <>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Amount of mL
+                    Amount of mL: <span style={{color:"red"}}>*</span>
                   </label>
                   <input
                     type="number"
@@ -339,7 +379,7 @@ const AdminInventoryAdd = () => {
 
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Expiration Date
+                    Expiration Date: <span style={{color:"red"}}>*</span>
                   </label>
                   <input
                     type="date"
@@ -355,7 +395,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Supplier
+                Supplier: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.supplier_id}

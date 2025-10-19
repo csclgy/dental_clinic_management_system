@@ -301,7 +301,7 @@ const AdminJournalAdd = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Date
+                Date: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="date"
@@ -314,7 +314,7 @@ const AdminJournalAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account
+                Account: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 name="account"
@@ -333,7 +333,7 @@ const AdminJournalAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Sub Account
+                Sub Account: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 name="subaccount"
@@ -352,7 +352,7 @@ const AdminJournalAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Description
+                Description: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -366,7 +366,7 @@ const AdminJournalAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Debit/Credit
+                  Debit/Credit: <span style={{color:"red"}}>*</span>
                 </label>
                 <select
                   name="type"
@@ -380,7 +380,7 @@ const AdminJournalAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Amount
+                  Amount: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="number"
@@ -394,7 +394,7 @@ const AdminJournalAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Comment
+                Comment: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"

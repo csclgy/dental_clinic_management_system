@@ -411,7 +411,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Date
+                  Date: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="date"
@@ -423,7 +423,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Invoice Number
+                  Invoice Number: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="text"
@@ -439,7 +439,7 @@ const AdminSubsidiaryPayableAdd = () => {
             {/* Name + Suggestions */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Name
+                Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -479,7 +479,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Debit/Credit
+                  Debit/Credit:
                 </label>
                 <input
                   type="text"
@@ -491,7 +491,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Amount
+                  Amount: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="number"
@@ -508,7 +508,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Account
+                  Account:
                 </label>
                 <input
                   type="text"
@@ -519,7 +519,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Expense Account
+                  Expense Account:
                 </label>
 
                 {/* if pay mode */}
@@ -567,7 +567,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Comments/Items:
+                  Comments/Items: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="text"
@@ -580,7 +580,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Agreement
+                  Agreement: <span style={{color:"red"}}>*</span>
                 </label>
                 <select
                   name="day_agreement"

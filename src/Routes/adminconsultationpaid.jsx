@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer } from "lucide-react";
 
 const Adminconsultationpaid = () => {
   const { appointId } = useParams();
@@ -676,9 +676,9 @@ const Adminconsultationpaid = () => {
                   </p>
                   <button
                     disabled={consultation.appointment_status !== "done"}
-                    className={`px-6 py-2 rounded-lg font-semibold border w-full sm:w-auto ${consultation.appointment_status === "done"
-                      ? "bg-white text-[#00458B] border-[#00458b] hover:bg-gray-100 cursor-pointer"
-                      : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
+                    className={`flex items-center justify-center gap-2 px-6 py-2 rounded-lg font-semibold border w-full sm:w-auto transition ${consultation.appointment_status === "done"
+                        ? "bg-white text-[#00458B] border-[#00458b] hover:bg-gray-100 cursor-pointer"
+                        : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
                       }`}
                     onClick={() => {
                       if (consultation.appointment_status === "done") {
@@ -686,8 +686,10 @@ const Adminconsultationpaid = () => {
                       }
                     }}
                   >
-                    Print
+                    <Printer size={18} />
+                    <span>Print</span>
                   </button>
+
                 </div>
 
                 <hr />

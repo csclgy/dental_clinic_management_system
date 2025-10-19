@@ -80,7 +80,7 @@ const Register2 = () => {
         <hr></hr>
         <br></br>
 
-        <p className="text-[#00c3b8] text-left text-xl font-bold mb-4">Personal Information:</p>
+        <p className="text-[#00c3b8] text-left text-xl font-bold mb-4">Personal Information</p>
 
         {/* Form Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -88,7 +88,7 @@ const Register2 = () => {
           <div className="space-y-4 text-left">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                First Name
+                First Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -100,7 +100,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Last Name
+                Last Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -112,7 +112,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Gender
+                Gender: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.gender || ""}
@@ -127,7 +127,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Religion
+                Religion: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.religion || ""}
@@ -153,7 +153,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Home Address
+                Home Address: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -165,7 +165,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                City
+                City: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -177,7 +177,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Province
+                Province: 
               </label>
               <input
                 type="text"
@@ -192,7 +192,7 @@ const Register2 = () => {
           <div className="space-y-4 text-left">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Middle Name
+                Middle Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -204,7 +204,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Date of Birth
+                Date of Birth: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="date"
@@ -231,7 +231,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Nationality
+                Nationality: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -243,7 +243,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Occupation
+                Occupation: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -255,7 +255,7 @@ const Register2 = () => {
 
             <div className="mb-4 text-left">
               <label className="block text-[#00458b] font-semibold mb-1">
-                Blood Type
+                Blood Type: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"

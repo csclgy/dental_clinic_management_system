@@ -279,7 +279,7 @@ const AdminUsersAdd = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Username
+                Username: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -292,7 +292,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Email
+                Email: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="email"
@@ -305,7 +305,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Password
+                Password: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="password"
@@ -320,7 +320,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Contact Number
+                Contact Number: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -344,7 +344,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Access Level
+                Access Level: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.role}
@@ -362,7 +362,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                First Name
+                First Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -374,7 +374,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Middle Name
+                Middle Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -386,7 +386,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Last Name
+                Last Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -397,7 +397,7 @@ const AdminUsersAdd = () => {
             </div>
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Gender
+                Gender: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.gender}
@@ -412,7 +412,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Date of Birth
+                Date of Birth: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="date"

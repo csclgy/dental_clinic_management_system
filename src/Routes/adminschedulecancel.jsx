@@ -250,7 +250,7 @@ const AdminScheduleCancel = () => {
             {/* Cancel Info */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Reason for Cancellation
+                Reason for Cancellation: <span style={{ color: "red" }}>*</span>
               </label>
               <select
                 value={reason}
@@ -264,7 +264,7 @@ const AdminScheduleCancel = () => {
               </select>
 
               <label className="block text-[#00458b] font-semibold mb-1">
-                Note
+                Note: <span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="text"
@@ -278,7 +278,7 @@ const AdminScheduleCancel = () => {
             {showRefund && (
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Refund Method
+                  Refund Method: <span style={{ color: "red" }}>*</span>
                 </label>
                 <select
                   value={refundMethod}
@@ -292,7 +292,7 @@ const AdminScheduleCancel = () => {
                 </select>
 
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Upload Proof of Refund
+                  Upload Proof of Refund: <span style={{ color: "red" }}>*</span>
                 </label>
                 <input
                   type="file"

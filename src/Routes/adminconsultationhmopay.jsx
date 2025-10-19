@@ -288,7 +288,7 @@ const AdminConsultationHmoPay = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Date
+                  Date: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="date"
@@ -303,7 +303,7 @@ const AdminConsultationHmoPay = () => {
 
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Invoice Number
+                  Invoice Number:
                 </label>
                 <input
                   type="text"
@@ -332,7 +332,7 @@ const AdminConsultationHmoPay = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Patient Name
+                Patient Name:
               </label>
               <input
                 type="text"
@@ -347,7 +347,7 @@ const AdminConsultationHmoPay = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Debit
+                  Debit:
                 </label>
                 <select
                   name="type"
@@ -363,7 +363,7 @@ const AdminConsultationHmoPay = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Amount
+                  Amount: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="number"

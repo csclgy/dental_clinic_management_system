@@ -285,7 +285,7 @@ const AdminHMOAdd = () => {
             {/* ✅ HMO Name */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                HMO Name
+                HMO Name: <span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="text"
@@ -298,7 +298,7 @@ const AdminHMOAdd = () => {
             {/* ✅ Status */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Status
+                Status: <span style={{ color: "red" }}>*</span>
               </label>
               <select
                 value={status}
@@ -313,7 +313,7 @@ const AdminHMOAdd = () => {
             {/* ✅ MOA File */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                MOA Letter
+                MOA Letter: <span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="file"

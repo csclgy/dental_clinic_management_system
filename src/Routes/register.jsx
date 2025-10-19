@@ -98,11 +98,11 @@ const Register = () => {
         <hr></hr>
         <br></br>
 
-        <p className="text-[#00c3b8] text-left text-xl font-bold mb-4">Login Information:</p>
+        <p className="text-[#00c3b8] text-left text-xl font-bold mb-4">Login Information</p>
 
         {/* Username */}
         <div className="mb-4 text-left">
-          <label className="block text-[#00458b] font-semibold mb-1">Username</label>
+          <label className="block text-[#00458b] font-semibold mb-1">Username: <span style={{color:"red"}}>*</span></label>
           <input
             type="text"
             value={registerData.user_name || ""}
@@ -116,7 +116,7 @@ const Register = () => {
 
         {/* Password */}
         <div className="mb-4 text-left">
-          <label className="block text-[#00458b] font-semibold mb-1">Password</label>
+          <label className="block text-[#00458b] font-semibold mb-1">Password: <span style={{color:"red"}}>*</span></label>
 
           {/* Input + Eye Icon */}
           <div className="relative">
@@ -180,7 +180,7 @@ const Register = () => {
 
         {/* Confirm Password */}
         <div className="mb-4 text-left">
-          <label className="block text-[#00458b] font-semibold mb-1">Confirm Password</label>
+          <label className="block text-[#00458b] font-semibold mb-1">Confirm Password: <span style={{color:"red"}}>*</span></label>
           <div className="relative">
             <input
               type={showConfirmPassword ? "text" : "password"}
@@ -203,7 +203,7 @@ const Register = () => {
 
         {/* Email */}
         <div className="mb-4 text-left">
-          <label className="block text-[#00458b] font-semibold mb-1">Email</label>
+          <label className="block text-[#00458b] font-semibold mb-1">Email: <span style={{color:"red"}}>*</span></label>
           <input
             type="email"
             value={registerData.email || ""}
@@ -218,7 +218,7 @@ const Register = () => {
         {/* Contact No */}
         <div className="mb-4 text-left">
           <label className="block text-[#00458b] font-semibold mb-1">
-            Contact Number
+            Contact Number: <span style={{color:"red"}}>*</span>
           </label>
           <input
             type="tel"

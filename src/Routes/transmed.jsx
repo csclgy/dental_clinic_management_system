@@ -312,7 +312,7 @@ const TransMed = () => {
             {/* Print Button */}
             <div className="flex justify-end mt-6">
               <button
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-teal-600"
+                className="bg-[#00458B] text-white font-semibold px-6 py-2 rounded-lg hover:bg-teal-600"
                 onClick={handlePrintReport}
               >
                 <Printer size={18} />

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, PlusCircle, Printer } from "lucide-react";
 
 const AdminPatients = () => {
   const location = useLocation();
@@ -371,16 +371,16 @@ const AdminPatients = () => {
           {/* Button Group */}
           <div className="flex space-x-3">
             <button
-              className="bg-[#00c3b8] font-bold text-white px-4 py-2 rounded-lg"
+              className="flex items-center gap-2 bg-[#00c3b8] font-semibold text-white px-4 py-2 rounded-lg"
               onClick={handlePrintReport}
             >
-              Generate Report
+              <Printer size={18} /> Generate Report
             </button>
             <button
-              className="bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
+              className="flex items-center gap-2 bg-[#00458B] font-semibold text-white px-4 py-2 rounded-lg"
               onClick={() => navigate("/adminusersaddpatient")}
             >
-              + Add New Patient
+              <PlusCircle size={18} /> Add New Patient
             </button>
           </div>
         </div>

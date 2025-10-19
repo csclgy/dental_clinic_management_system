@@ -358,8 +358,9 @@ function InventoryDashboard() {
                 <table className="w-full border-collapse border border-gray-200">
                   <thead>
                     <tr className="bg-gray-100 text-[#00458B]">
-                      <th className="px-4 py-2 text-left">Item Name</th>
+                      <th className="px-4 py-2 text-center">Item Name</th>
                       <th className="px-4 py-2 text-center">Quantity</th>
+                      <th className="px-4 py-2 text-center">Item Type</th>
                       <th className="px-4 py-2 text-center">Status</th>
                       <th className="px-4 py-2 text-center">Expiration Date</th>
                     </tr>
@@ -369,11 +370,12 @@ function InventoryDashboard() {
                       .filter((item) => Number(item.inv_quantity) <= 50)
                       .map((item) => (
                         <tr key={item.inv_id} className="border-b border-gray-200">
-                          <td className="px-4 py-2">{item.inv_item_name}</td>
+                          <td className="px-4 py-2 text-center">{item.inv_item_name}</td>
                           <td className="px-4 py-2 text-center">{item.inv_quantity}</td>
                           <td className="px-4 py-2 text-center text-red-600 font-bold">
                             Low
                           </td>
+                          <td className="px-4 py-2 text-center">{item.inv_item_type}</td>
                           <td className="px-4 py-2 text-center">
                             {item.inv_exp_date
                               ? new Date(item.inv_exp_date).toLocaleDateString()

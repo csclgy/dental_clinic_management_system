@@ -110,34 +110,37 @@ const AppointmentSubmit = () => {
           APPOINTMENT REQUEST FORM
         </h2>
 
-        <p className="text-[#00458B] text-sm sm:text-base mb-6">
+        <p className="text-[#00458B] text-semibold sm:text-base mb-6">
           Thank you for booking! Your appointment is not yet confirmed.
         </p>
+
+        <hr></hr>
+        <br></br>
 
         {/* Summary */}
         <div className="text-left mb-6 text-sm sm:text-base">
           <h4 className="text-[#00c3b8] font-bold text-base sm:text-lg mb-2">
-            Summary
+            Appointment Details
           </h4>
-          <p><b>Procedure:</b> {appointmentData.procedure_type || "..."}</p>
-          <p><b>Date:</b> {appointmentData.pref_date || "..."}</p>
-          <p><b>Time:</b> {appointmentData.pref_time || "..."}</p>
-          <p><b>Payment Method:</b> {appointmentData.payment_method || "Cash"}</p>
+          <p className="text-[#00458B]"><b>Procedure:</b> {appointmentData.procedure_type || "..."}</p>
+          <p className="text-[#00458B]"><b>Date:</b> {appointmentData.pref_date || "..."}</p>
+          <p className="text-[#00458B]"><b>Time:</b> {appointmentData.pref_time || "..."}</p>
+          <p className="text-[#00458B]"><b>Payment Method:</b> {appointmentData.payment_method || "Cash"}</p>
 
           <h4 className="text-[#00c3b8] font-bold text-base sm:text-lg mt-4 mb-2">
             Patient Information
           </h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <p><b>First Name:</b> {appointmentData.p_fname || "..."}</p>
-            <p><b>Gender:</b> {appointmentData.p_gender || "..."}</p>
-            <p><b>Last Name:</b> {appointmentData.p_lname || "..."}</p>
-            <p><b>Date of Birth:</b> {appointmentData.p_date_birth || "..."}</p>
-            <p><b>Middle Name:</b> {appointmentData.p_mname || "..."}</p>
-            <p><b>Age:</b> {appointmentData.p_age || "..."}</p>
-            <p><b>Email:</b> {appointmentData.p_email || "..."}</p>
-            <p><b>Contact No:</b> {appointmentData.p_contact_no || "..."}</p>
-            <p><b>Blood Type:</b> {appointmentData.p_blood_type || "..."}</p>
-            <p className="sm:col-span-2">
+            <p className="text-[#00458B]"><b>First Name:</b> {appointmentData.p_fname || "..."}</p>
+            <p className="text-[#00458B]"><b>Gender:</b> {appointmentData.p_gender || "..."}</p>
+            <p className="text-[#00458B]"><b>Last Name:</b> {appointmentData.p_lname || "..."}</p>
+            <p className="text-[#00458B]"><b>Date of Birth:</b> {appointmentData.p_date_birth || "..."}</p>
+            <p className="text-[#00458B]"><b>Middle Name:</b> {appointmentData.p_mname || "..."}</p>
+            <p className="text-[#00458B]"><b>Age:</b> {appointmentData.p_age || "..."}</p>
+            <p className="text-[#00458B]"><b>Email:</b> {appointmentData.p_email || "..."}</p>
+            <p className="text-[#00458B]"><b>Contact No:</b> {appointmentData.p_contact_no || "..."}</p>
+            <p className="text-[#00458B]"><b>Blood Type:</b> {appointmentData.p_blood_type || "..."}</p>
+            <p className="sm:col-span-2 text-[#00458B]">
               <b>Home Address:</b> {appointmentData.p_home_address || "..."}
             </p>
           </div>
@@ -155,7 +158,7 @@ const AppointmentSubmit = () => {
               </ul>
             </div>
           ) : (
-            <p><b>Uploaded Files:</b> None</p>
+            <p className="text-[#00458B]"><b>Uploaded Files:</b> None</p>
           )}
 
           {/* Downpayment receipt */}

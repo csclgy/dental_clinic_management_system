@@ -156,7 +156,7 @@ const CancelAppointment = () => {
                 <br />
                 <div className="mb-4 text-left">
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Reasons of Cancellation:
+                    Reasons of Cancellation: <span style={{color:"red"}}>*</span>
                   </label>
                   <select
                     value={reason}

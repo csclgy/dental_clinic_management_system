@@ -251,7 +251,7 @@ const Appointment = () => {
               {/* Procedure */}
               <div className="mb-4 text-left">
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Procedure
+                  Procedure: <span style={{color:"red"}}>*</span>
                 </label>
                 <select
                   className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
@@ -295,7 +295,7 @@ const Appointment = () => {
               {/* Preferred Date */}
               <div className="mb-4 text-left">
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Preferred Date
+                  Preferred Date: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="date"
@@ -316,7 +316,7 @@ const Appointment = () => {
               {/* Preferred Time */}
               <div className="mb-4 text-left">
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Preferred Time
+                  Preferred Time: <span style={{color:"red"}}>*</span>
                 </label>
                 <select
                   className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
@@ -394,52 +394,54 @@ const Appointment = () => {
           <br></br>
           <hr></hr>
           <br></br>
-          <div className="flex justify-end mb-4">
-            <button
-              className="bg-[#00c3b8] text-white font-semibold px-4 py-2 rounded-lg hover:bg-teal-600 transition"
-              onClick={async () => {
-                try {
-                  const userId = localStorage.getItem("userId");
-                  const response = await axios.get(`http://localhost:3000/auth/users/${userId}`);
-                  const user = response.data;
+         {/* Title and Button Row */}
+<div className="flex items-center justify-between mb-4">
+  {/* Left side: text */}
+  <p className="text-[#00458b] text-xl font-bold m-0">Personal Information</p>
 
-                  console.log("User data:", user);
+  {/* Right side: button */}
+  <button
+    className="bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-lg hover:bg-teal-600 transition"
+    onClick={async () => {
+      try {
+        const userId = localStorage.getItem("userId");
+        const response = await axios.get(`http://localhost:3000/auth/users/${userId}`);
+        const user = response.data;
 
-                  // Auto-fill fields using your context updater
-                  updateAppointment("p_fname", user.fname || "");
-                  updateAppointment("p_mname", user.mname || "");
-                  updateAppointment("p_lname", user.lname || "");
-                  updateAppointment("p_home_address", user.home_address || "");
-                  updateAppointment("p_email", user.email || "");
-                  updateAppointment("p_contact_no", user.contact_no || "");
-                  updateAppointment("p_gender", user.gender || "");
-                  updateAppointment("p_date_birth", user.date_birth ? user.date_birth.split("T")[0] : "");
-                  updateAppointment("p_blood_type", user.blood_type || "");
+        console.log("User data:", user);
 
-                  // Auto-calculate age
-                  if (user.date_birth) {
-                    const today = new Date();
-                    const birthDate = new Date(user.date_birth);
-                    let age = today.getFullYear() - birthDate.getFullYear();
-                    const m = today.getMonth() - birthDate.getMonth();
-                    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
-                    updateAppointment("p_age", age);
-                  }
+        // Auto-fill fields
+        updateAppointment("p_fname", user.fname || "");
+        updateAppointment("p_mname", user.mname || "");
+        updateAppointment("p_lname", user.lname || "");
+        updateAppointment("p_home_address", user.home_address || "");
+        updateAppointment("p_email", user.email || "");
+        updateAppointment("p_contact_no", user.contact_no || "");
+        updateAppointment("p_gender", user.gender || "");
+        updateAppointment("p_date_birth", user.date_birth ? user.date_birth.split("T")[0] : "");
+        updateAppointment("p_blood_type", user.blood_type || "");
 
-                  showPopup("Your personal info has been auto-filled.", "success");
-                } catch (error) {
-                  console.error("Error fetching user info:", error);
-                  showPopup("Failed to retrieve your info.", "error");
-                }
-              }}
+        // Auto-calculate age
+        if (user.date_birth) {
+          const today = new Date();
+          const birthDate = new Date(user.date_birth);
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const m = today.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+          updateAppointment("p_age", age);
+        }
 
-            >
-              Auto-Fill My Info
-            </button>
-          </div>
+        showPopup("Your personal info has been auto-filled.", "success");
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+        showPopup("Failed to retrieve your info.", "error");
+      }
+    }}
+  >
+    Auto-Fill My Info
+  </button>
+</div>
 
-          <p className="text-[#00458b] text-xl font-bold">Personal Information</p>
-          <br></br>
         </div>
         {/* Form Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -455,7 +457,7 @@ const Appointment = () => {
             ].map((field) => (
               <div key={field.key} className="mb-4 text-left">
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  {field.label}
+                  {field.label}: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type={field.type}
@@ -483,7 +485,7 @@ const Appointment = () => {
             {/* Gender */}
             <div className="mb-4 text-left">
               <label className="block text-[#00458b] font-semibold mb-1">
-                Gender
+                Gender: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
@@ -499,7 +501,7 @@ const Appointment = () => {
             {/* Date of Birth */}
             <div className="mb-4 text-left">
               <label className="block text-[#00458b] font-semibold mb-1">
-                Date of Birth
+                Date of Birth: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="date"
@@ -524,7 +526,7 @@ const Appointment = () => {
               />
             </div>
             <label className="block text-[#00458b] font-semibold mb-1">
-              Blood Type
+              Blood Type: <span style={{color:"red"}}>*</span>
             </label>
             <select
               className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"

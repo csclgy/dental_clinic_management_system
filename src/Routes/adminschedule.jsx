@@ -336,7 +336,7 @@ const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="border border-[#00458B] rounded-full px-3 py-1 text-sm text-gray-700"
+                className="border border-[#00458B] rounded-lg px-3 py-2 text-sm text-[#00458B] font-medium"
               >
                 <option value="all">All</option>
                 <option value="pending">Pending</option>

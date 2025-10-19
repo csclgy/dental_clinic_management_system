@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, PlusCircle } from "lucide-react";
 
 const AdminSubsidiaryReceivable = () => {
   const location = useLocation();
@@ -252,7 +252,7 @@ const AdminSubsidiaryReceivable = () => {
             onClick={() => navigate("/adminsubsidiaryadd")}
             className="flex items-center gap-2 bg-[#00458B] font-semibold text-white px-4 py-2 rounded-lg"
           >
-            + Add New Receivable
+            <PlusCircle size={18} /> Add New Receivable
           </button>
         </div>
 
@@ -260,30 +260,30 @@ const AdminSubsidiaryReceivable = () => {
         {/* Table */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
           {/* Search Bar */}
-          <div className="flex justify-between mb-4">
-            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
+            {/* Dropdown on the Left */}
+            <select
+              defaultValue="/adminsubsidiaryreceivable"
+              onChange={(e) => navigate(e.target.value)}
+              className="border border-[#00458B] rounded-lg px-3 py-2 text-sm text-[#00458B] font-medium p-2.5 focus:ring-2 focus:ring-[#00458B] focus:border-[#00458B] transition"
+            >
+              <option value="/adminsubsidiaryreceivable">Accounts Receivable</option>
+              <option value="/adminsubsidiarypayable">Accounts Payable</option>
+            </select>
+
+            {/* Search Bar on the Right */}
+            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1.5 w-full sm:w-64 bg-white">
               <input
                 type="text"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 outline-none text-sm text-gray-700"
+                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400"
               />
-              <i className="fa fa-search text-[#00458B]"></i>
+              <i className="fa fa-search text-[#00458B] text-sm"></i>
             </div>
-
-            {/* Switch Dropdown */}
-            <select
-              defaultValue="/adminsubsidiaryreceivable"
-              onChange={(e) => navigate(e.target.value)}
-              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"
-            >
-              <option value="/adminsubsidiaryreceivable">
-                Accounts Receivable
-              </option>
-              <option value="/adminsubsidiarypayable">Accounts Payable</option>
-            </select>
           </div>
+
 
           <div className="max-h-[500px] overflow-y-auto">
             <table className="w-full border-collapse border border-gray-200">

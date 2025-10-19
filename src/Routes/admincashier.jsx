@@ -398,8 +398,9 @@ const AdminCashier = () => {
         </button>
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="items-center mb-6">
           <h1 className="text-2xl font-bold text-[#00458B]"> Payments </h1>
+          <p className="text-gray-600">(Unpaid)</p>
         </div>
 
         {/* Content */}
@@ -410,7 +411,7 @@ const AdminCashier = () => {
               <select
                 defaultValue="/admincashier"
                 onChange={(e) => navigate(e.target.value)}
-                className="border border-[#00458B] rounded-full px-3 py-1 text-sm text-gray-700"
+                className="border border-[#00458B] rounded-lg px-3 py-2 text-1xl bg-[#00458B] font-semibold text-white"
               >
                 <option value="/admincashier">Unpaid</option>
                 <option value="/admincashierpaid">Paid</option>

@@ -284,7 +284,7 @@ const AdminCoaAdd = () => {
           <div className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account Name
+                Account Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -296,7 +296,7 @@ const AdminCoaAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account Type
+                Account Type: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={accountType}
@@ -314,7 +314,7 @@ const AdminCoaAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Description
+                Description:
               </label>
               <input
                 type="text"

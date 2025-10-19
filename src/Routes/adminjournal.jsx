@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer, PlusCircle } from "lucide-react";
 import axios from "axios";
 
 const AdminJournal = () => {
@@ -380,10 +380,10 @@ const AdminJournal = () => {
               <Printer size={18} /> Generate Report
             </button>
             <button
-              className="flex items-center gap-2 bg-[#00458B] font-semibold text-white px-4 py-2 rounded-lg"
+              className="flex items-center gap-2 bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
               onClick={() => navigate("/adminjournaladd")}
             >
-              + Add Entry
+              <PlusCircle size={18} /> Add Entry
             </button>
           </div>
         </div>

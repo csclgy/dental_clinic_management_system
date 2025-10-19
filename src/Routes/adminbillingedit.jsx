@@ -695,7 +695,7 @@ const Adminbillingedit = () => {
           {/* Payment Info */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold">OR Number:</label>
+              <label className="block font-bold text-gray-700">OR Number: <span style={{color:"red"}}>*</span></label>
               <input
                 type="text"
                 className="w-full border rounded px-3 py-2"
@@ -705,7 +705,7 @@ const Adminbillingedit = () => {
             </div>
 
             <div>
-              <label className="block font-medium">Payment Status</label>
+              <label className="block font-bold text-gray-700">Payment Status: <span style={{color:"red"}}>*</span></label>
               <select
                 className="border p-2 w-full rounded"
                 value={paymentStatus}
@@ -719,7 +719,7 @@ const Adminbillingedit = () => {
             </div>
 
             <div>
-              <label className="block font-medium">Mode of Payment</label>
+              <label className="block font-bold text-gray-700">Mode of Payment: <span style={{color:"red"}}>*</span></label>
               <select
                 className="border p-2 w-full rounded"
                 value={paymentMode}
@@ -734,7 +734,7 @@ const Adminbillingedit = () => {
             </div>
 
             <div>
-              <label className="block font-semibold">Main Service Charge(₱) :</label>
+              <label className="block font-bold text-gray-700">Main Service Charge(₱) : <span style={{color:"red"}}>*</span></label>
               <input
                 type="number"
                 className="w-full border rounded px-3 py-2"
@@ -747,7 +747,7 @@ const Adminbillingedit = () => {
             {/* ✅ Show upload input ONLY if paymentMode === "GCash" */}
             {paymentMode === "GCash" && (
               <div className="col-span-2">
-                <label className="block font-medium">Upload GCash Proof</label>
+                <label className="block font-bold text-gray-700">Upload GCash Proof: <span style={{color:"red"}}>*</span></label>
                 <input
                   type="file"
                   accept="image/*"
@@ -759,10 +759,10 @@ const Adminbillingedit = () => {
 
             {/* ✅ Show HMO Number ONLY if paymentMode === "HMO" */}
             {paymentMode === "HMO" && (
-              <div className="col-span-2 mt-4">
+              <div className="col-span-2 mt-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-medium">HMO Provider</label>
+                    <label className="block font-bold text-gray-700">HMO Provider: <span style={{color:"red"}}>*</span></label>
                     <select
                       className="w-full border rounded px-3 py-2"
                       value={hmoProvider}
@@ -778,7 +778,7 @@ const Adminbillingedit = () => {
                   </div>
 
                   <div>
-                    <label className="block font-medium">HMO Number</label>
+                    <label className="block font-bold text-gray-700">HMO Number: <span style={{color:"red"}}>*</span></label>
                     <input
                       type="text"
                       className="w-full border rounded px-3 py-2"
@@ -789,7 +789,7 @@ const Adminbillingedit = () => {
                   </div>
 
                   <div>
-                    <label className="block font-medium">Service Coverage</label>
+                    <label className="block font-bold text-gray-700">Service Coverage: <span style={{color:"red"}}>*</span></label>
                     <select
                       className="w-full border rounded px-3 py-2"
                       value={hmoCoverage}
@@ -819,7 +819,7 @@ const Adminbillingedit = () => {
               />
             </div> */}
             <div>
-              <label className="block font-semibold">Billing Date</label>
+              <label className="block font-bold text-gray-700">Billing Date: <span style={{color:"red"}}>*</span></label>
               <input
                 type="date"
                 className="w-full border rounded px-3 py-2"
@@ -831,7 +831,7 @@ const Adminbillingedit = () => {
             {/* 👇 Add this right next to Billing Date */}
             {paymentStatus === "Partial" && (
               <div>
-                <label className="block font-semibold">Due Date</label>
+                <label className="block font-bold text-gray-700">Due Date</label>
                 <input
                   type="date"
                   className="w-full border rounded px-3 py-2"
@@ -852,7 +852,7 @@ const Adminbillingedit = () => {
           <p className="text-2xl text-[#00458B] font-bold mb-4">Additional Items & Services</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <div className="flex flex-col">
-              <label className="mb-1 font-semibold text-sm text-gray-700">Select Service:</label>
+              <label className="mb-1 font-bold text-gray-700">Select Service:</label>
               <select
                 className="border rounded px-3 py-2"
                 value={newServiceName}
@@ -875,7 +875,7 @@ const Adminbillingedit = () => {
             </div>
 
             <div className="flex flex-col">
-              <label className="mb-1 font-semibold text-sm text-gray-700">Service Charge:(₱)</label>
+              <label className="mb-1 font-bold text-gray-700">Service Charge:(₱)</label>
               <input
                 type="number"
                 className="px-3 py-2 border rounded"
@@ -888,7 +888,7 @@ const Adminbillingedit = () => {
             <div className="flex flex-col justify-end">
               <button
                 onClick={handleAddService}
-                className="bg-[#00c3b8] text-white px-4 py-2 rounded"
+                className="bg-[#00c3b8] text-white px-4 py-2 rounded font-bold"
               >
                 + Add Service
               </button>
@@ -898,7 +898,7 @@ const Adminbillingedit = () => {
           {/* Item Selection */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <div className="flex flex-col">
-              <label className="mb-1 font-semibold text-sm text-gray-700">Select Item:</label>
+              <label className="mb-1 text-gray-700 font-bold">Select Item:</label>
               <select
                 className="border rounded px-3 py-2"
                 value={newInvId}
@@ -924,22 +924,56 @@ const Adminbillingedit = () => {
               </select>
             </div>
 
-            <div className="flex flex-col">
-              <label className="mb-1 font-semibold text-sm text-gray-700">Item Quantity:</label>
-              <input
-                type="number"
-                min="1"
-                className="px-3 py-2 border rounded"
-                value={newQuantity}
-                onChange={(e) => setNewQuantity(parseInt(e.target.value || "1"))}
-                placeholder="Quantity"
-              />
-            </div>
+<div className="flex flex-col">
+  <label className="mb-1 font-bold text-gray-700">
+    Item Quantity:
+  </label>
+  <div className="flex items-center border border-[#00458b] rounded-lg w-fit">
+    <button
+      type="button"
+      onClick={() => setNewQuantity(Math.max(1, Number(newQuantity) - 1))}
+      className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+    >
+      −
+    </button>
+
+    <input
+      type="text"
+      value={newQuantity}
+      onChange={(e) => {
+        const value = e.target.value;
+
+        // Allow only digits (no negative or special characters)
+        if (/^\d*$/.test(value)) {
+          setNewQuantity(value === "" ? "" : Number(value));
+        }
+      }}
+      onBlur={() => {
+        // If empty or less than 1, reset to 1
+        if (newQuantity === "" || Number(newQuantity) < 1) {
+          setNewQuantity(1);
+        }
+      }}
+      className="w-16 text-center outline-none border-x border-[#00458b] py-2"
+      inputMode="numeric"
+      placeholder="Qty"
+    />
+
+    <button
+      type="button"
+      onClick={() => setNewQuantity(Number(newQuantity) + 1)}
+      className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+    >
+      +
+    </button>
+  </div>
+</div>
+
 
             <div className="flex flex-col justify-end">
               <button
                 onClick={handleAddItem}
-                className="bg-[#00c3b8] text-white px-4 py-2 rounded"
+                className="bg-[#00c3b8] text-white px-4 py-2 rounded font-bold"
               >
                 + Add Item
               </button>

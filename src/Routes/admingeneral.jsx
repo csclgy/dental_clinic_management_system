@@ -414,13 +414,20 @@ const Admingeneral = () => {
             >
               <Printer size={18} /> Generate Report
             </button>
+          </div>
+        </div>
 
-            <div className="flex flex-col">
+
+        {/* Table */}
+        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            {/* Dropdown */}
+            <div className="flex flex-col w-full sm:w-1/3">
               <label
                 htmlFor="accounts"
                 className="block mb-1 text-sm font-medium text-gray-700"
               >
-                Account Name
+                Account Name:
               </label>
               <select
                 id="accounts"
@@ -429,7 +436,7 @@ const Admingeneral = () => {
                   setSelectedAccount(e.target.value);
                   filterRecord(e.target.value);
                 }}
-                className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"
+                className="border border-[#00458B] rounded-lg px-3 py-2 text-sm text-[#00458B] font-medium focus:ring-2 focus:ring-[#00458B] focus:border-[#00458B] transition"
               >
                 <option value="">All</option>
                 {accounts.map((acc) => (
@@ -439,25 +446,20 @@ const Admingeneral = () => {
                 ))}
               </select>
             </div>
-          </div>
-        </div>
 
-
-        {/* Table */}
-        <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
-          {/* Search Bar */}
-          <div className="flex justify-end mb-4">
-            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
+            {/* Search Bar */}
+            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1.5 w-full sm:w-64 bg-white">
               <input
                 type="text"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 outline-none text-sm text-gray-700"
+                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400"
               />
-              <i className="fa fa-search text-[#00458B]"></i>
+              <i className="fa fa-search text-[#00458B] text-sm"></i>
             </div>
           </div>
+
 
           <div className="max-h-[500px] overflow-y-auto">
             <table className="w-full border-collapse border border-gray-200">

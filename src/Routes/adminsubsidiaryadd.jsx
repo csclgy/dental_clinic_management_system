@@ -306,7 +306,7 @@ const AdminSubsidiaryAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Date
+                  Date: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="date"
@@ -318,7 +318,7 @@ const AdminSubsidiaryAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Invoice Number
+                  Invoice Number: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="text"
@@ -332,7 +332,7 @@ const AdminSubsidiaryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Patient Name
+                Patient Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -370,7 +370,7 @@ const AdminSubsidiaryAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Debit/Credit
+                  Debit/Credit: <span style={{color:"red"}}>*</span>
                 </label>
                 <select
                   name="type"
@@ -384,7 +384,7 @@ const AdminSubsidiaryAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Amount
+                  Amount: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="number"

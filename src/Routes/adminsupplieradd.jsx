@@ -263,7 +263,7 @@ const AdminSupplierAdd = () => {
           <form className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Supplier Name:
+                Supplier Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -277,7 +277,7 @@ const AdminSupplierAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Contact Person Name:
+                Contact Person Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -291,7 +291,7 @@ const AdminSupplierAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Contact Number:
+                Contact Number: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="number"
@@ -305,7 +305,7 @@ const AdminSupplierAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Description:
+                Description: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"

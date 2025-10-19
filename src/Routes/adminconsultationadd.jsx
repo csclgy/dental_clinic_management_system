@@ -413,7 +413,7 @@ const AdminConsultationAdd = () => {
             {/* Left Side */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Attending Dentist *
+                Attending Dentist: <span style={{ color: "red" }}>*</span>
               </label>
               <select
                 value={dentist}
@@ -433,7 +433,7 @@ const AdminConsultationAdd = () => {
               </select>
 
               <label className="block text-[#00458b] font-semibold mb-1">
-                Date of Visit *
+                Date of Visit:<span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="date"
@@ -452,7 +452,7 @@ const AdminConsultationAdd = () => {
               )}
 
               <label className="block text-[#00458b] font-semibold mb-1 mt-4">
-                Preferred Time *
+                Preferred Time: <span style={{ color: "red" }}>*</span>
               </label>
               <select
                 className="border border-gray-400 rounded-lg px-3 py-2 w-full"
@@ -509,7 +509,7 @@ const AdminConsultationAdd = () => {
 
             {/* Right Side */}
             <div>
-              <p className="text-xl font-bold text-[#00458B] mb-4">Services *</p>
+              <p className="text-xl font-bold text-[#00458B] mb-4">Services: <span style={{ color: "red" }}>*</span></p>
               <div className="grid grid-cols-2 gap-4">
                 {procedureTypes.map((type, index) => (
                   <label

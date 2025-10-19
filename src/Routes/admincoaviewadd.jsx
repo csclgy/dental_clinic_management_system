@@ -260,7 +260,7 @@ const AdminCoaViewAdd = () => {
           <div className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Sub-Account Name
+                Sub-Account Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"

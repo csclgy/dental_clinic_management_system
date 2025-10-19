@@ -342,19 +342,53 @@ const AdminInventoryEditItem = () => {
               <label className="block text-[#00458b] font-semibold mb-1">
                 Quantity
               </label>
-              <input
-                type="number"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                required
-              />
+              <div className="flex items-center border border-[#00458b] rounded-lg w-fit">
+                <button
+                  type="button"
+                  onClick={() => setQuantity(Math.max(0, Number(quantity) - 1))}
+                  className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+                >
+                  −
+                </button>
+
+                <input
+                  type="text"
+                  value={quantity}
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    // Allow only digits (no negative or special characters)
+                    if (/^\d*$/.test(value)) {
+                      setQuantity(value);
+                    }
+                  }}
+                  onBlur={() => {
+                    // Reset to 0 if left empty
+                    if (quantity === "") {
+                      setQuantity(0);
+                    }
+                  }}
+                  className="w-16 text-center outline-none border-x border-[#00458b] py-2"
+                  inputMode="numeric"
+                  required
+                />
+
+                <button
+                  type="button"
+                  onClick={() => setQuantity(Number(quantity) + 1)}
+                  className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+                >
+                  +
+                </button>
+              </div>
             </div>
+
+
 
             {/* Price */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Price Per Item
+                Price Per Item (₱)
               </label>
               <input
                 type="number"
