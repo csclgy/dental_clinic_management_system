@@ -3411,7 +3411,7 @@ router.post("/journal", async (req, res) => {
 
     if (subaccount_id) {
       journalQuery =
-        "INSERT INTO journalentry (`date`, description, account_id, subaccount_id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?,?)";
+        "INSERT INTO journalentry (`date`, description, account_id, id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?,?)";
       journalParams = [
         date,
         description,
@@ -4652,12 +4652,12 @@ router.get("/appointments/all", async (req, res) => {
   }
 });
 
-//NEW
+//NEW (MAIN HMO)
 router.get("/HMO", async (req, res) => {
    const db = await connectToDatabase();
   try {
     const [rows] = await db.query(
-      "SELECT * FROM hmo where status = 'active' "
+      "SELECT * FROM hmo  "
     );
     res.json(rows);
   } catch (err) {
@@ -4666,7 +4666,7 @@ router.get("/HMO", async (req, res) => {
   }
 });
 
-//NEW
+//NEW (HMO ADD)
 const hmoStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(__dirname, "../uploads/hmo")); // ✅ HMO-specific folder
@@ -4679,9 +4679,12 @@ const hmoStorage = multer.diskStorage({
 
 const uploadHMO = multer({ storage: hmoStorage });
 
-// ✅ Use uploadHMO here
+// Use uploadHMO here
 router.post("/hmo", uploadHMO.single("moa_letter"), async (req, res) => {
+    const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token provided" });
   try {
+    const decoded = jwt.verify(token, JWT_SECRET);
     const db = await connectToDatabase();
     const { hmo_name, status } = req.body;
 
@@ -4691,15 +4694,238 @@ router.post("/hmo", uploadHMO.single("moa_letter"), async (req, res) => {
 
     const moaPath = req.file.filename;
 
+      const [existing] = await db.query(
+      "SELECT * FROM hmo WHERE hmo_name = ? ",
+      [hmo_name]
+    );
+
+    if (existing.length > 0) {
+        return res.status(409).json({ message: "HMO already exists" });
+    }
+
     await db.query(
       "INSERT INTO hmo (hmo_name, status, moa_letter) VALUES (?, ?, ?)",
       [hmo_name, status, moaPath]
     );
 
+    // ✅ Insert audit trail record
+    const at_action = "Add HMO Service";
+    const at_description = `User "${decoded.user_name}" added a new HMO "${hmo_name}".`;
+    const created_at = new Date();
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, at_action, at_description, created_at]
+    );
+
     res.json({ message: "HMO added successfully!" });
-  } catch (error) {
-    console.error("Error adding HMO:", error);
-    res.status(500).json({ message: "Error adding HMO." });
+  } catch (err) {
+    console.error("❌ MySQL Error inserting subaccount:", {
+      code: err.code,
+      sqlMessage: err.sqlMessage,
+      sql: err.sql,
+    });
+    return res.status(500).json({
+      error: "Database error",
+      details: err.sqlMessage,
+    });
+  }
+});
+
+
+//NEW (HMO SERVICE ADD)
+router.post("/hmoservice/:hmo_id", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token provided" });
+
+  const { hmo_id } = req.params;
+  const { service, status, coverage } = req.body;
+
+  if (!service || ! coverage) {
+    return res.status(400).json({ error: "service name and coverage is required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const db = await connectToDatabase();
+
+    //  Check if subaccount already exists
+    const [existing] = await db.query(
+      "SELECT * FROM hmo_service WHERE hmo_id = ? AND service = ?",
+      [hmo_id, service]
+    );
+
+    if (existing.length > 0) {
+        return res.status(409).json({ message: "HMO service already exists" });
+    }
+
+    //  Insert new service
+    const [result] = await db.query(
+      "INSERT INTO hmo_service (hmo_id, service, coverage, status) VALUES (?, ?, ?, ?)",
+      [hmo_id, service, coverage, status]
+    );
+
+    // ✅ Insert audit trail record
+    const at_action = "Add HMO Service";
+    const at_description = `User "${decoded.user_name}" added a new service "${service}" under HMO Id: ${hmo_id}.`;
+    const created_at = new Date();
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, at_action, at_description, created_at]
+    );
+
+    return res.status(201).json({
+      message: "HMO Service added successfully",
+      subaccountId: result.insertId,
+    });
+  } catch (err) {
+    console.error("❌ MySQL Error inserting subaccount:", {
+      code: err.code,
+      sqlMessage: err.sqlMessage,
+      sql: err.sql,
+    });
+    return res.status(500).json({
+      error: "Database error",
+      details: err.sqlMessage,
+    });
+  }
+});
+
+const EditHMOstorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = "uploads/hmo";
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname)); // unique file name
+  },
+});
+
+const HMOupload = multer({ storage: EditHMOstorage });
+
+router.put("/hmo/:hmo_id", HMOupload.single("moa_letter"), async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { hmo_id } = req.params;
+    const { hmo_name, status } = req.body;
+    const db = await connectToDatabase();
+
+    //  Keep old file if no new one uploaded
+    let moaFile = req.file ? req.file.filename : null;
+
+    if (!moaFile) {
+      // Get current file name from DB
+      const [existing] = await db.query("SELECT moa_letter FROM hmo WHERE hmo_id = ?", [hmo_id]);
+      moaFile = existing[0]?.moa_letter || null;
+    }
+
+    //  Update record
+    const [result] = await db.query(
+      "UPDATE hmo SET hmo_name = ?, status = ?, moa_letter = ? WHERE hmo_id = ?",
+      [hmo_name, status, moaFile, hmo_id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "HMO not found" });
+    }
+
+    //  Insert audit trail
+    const action = "Update HMO";
+    const description = `Updated HMO: ${hmo_name} (${moaFile})`;
+    const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    res.json({ message: "HMO updated successfully." });
+  } catch (err) {
+    console.error("Update HMO error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.delete("/hmo/:hmoId", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { hmoId } = req.params;
+    const db = await connectToDatabase();
+
+    // ✅ Fetch existing account for audit trail details
+    const [existing] = await db.query(
+      "SELECT hmo_name FROM hmo WHERE hmo_id = ?",
+      [hmoId]
+    );
+
+    if (existing.length === 0) {
+      return res.status(404).json({ message: "HMO not found" });
+    }
+
+    const HMOName = existing[0].account_name;
+
+    // ✅ Instead of DELETE, update the status
+    const [result] = await db.query(
+      "UPDATE hmo SET status = 'Inactive' WHERE hmo_id = ?",
+      [hmoId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "HMO not found" });
+    }
+
+    // ✅ Insert audit trail record
+    const at_action = "Update HMO Status";
+    const at_description = `User "${decoded.user_name}" marked the HMO "${HMOName}" as Inactive.`;
+    const created_at = new Date();
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, at_action, at_description, created_at]
+    );
+
+    return res.json({ message: "Account marked as inactive successfully" });
+  } catch (err) {
+    console.error("Error updating COA status:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.put("/hmo_service_status/:service_id", async (req, res) => {
+  try {
+    const { service_id } = req.params;
+    const { status } = req.body;
+
+    const db = await connectToDatabase();
+
+    const [result] = await db.query(
+      "UPDATE hmo_service SET status = ? WHERE service_id = ?",
+      [status, service_id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    res.json({ message: "Service deactivated successfully" });
+  } catch (err) {
+    console.error("Error deactivating service:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -4718,7 +4944,7 @@ router.get("/hmo", async (req, res) => {
   }
 });
 
-//NEW
+//NEW (BILLING)
 router.get("/hmo/:hmoId/services", async (req, res) => {
   const { hmoId } = req.params;
   const db = await connectToDatabase();
@@ -4735,7 +4961,7 @@ router.get("/hmo/:hmoId/services", async (req, res) => {
   }
 });
 
-// new
+// NEW (SERVICES UNDER A HMO)
 router.get("/hmo_services/:hmo_id", async (req, res) => {
   const { hmo_id } = req.params;
    const db = await connectToDatabase();
@@ -4751,8 +4977,54 @@ router.get("/hmo_services/:hmo_id", async (req, res) => {
   }
 });
 
-//NEW
-router.get("/hmo/:id", async (req, res) => {
+// NEW SPECIFIC SERVICE
+router.get("/hmo_service/:service_id", async (req, res) => {
+  const { service_id } = req.params;
+  const db = await connectToDatabase();
+
+  try {
+    const [rows] = await db.query(
+      "SELECT service, coverage, status FROM hmo_service WHERE service_id = ?",
+      [service_id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    res.json(rows[0]); 
+  } catch (err) {
+    console.error("Error fetching HMO services:", err);
+    res.status(500).json({ message: "Failed to fetch HMO services" });
+  }
+});
+
+
+// //NEW (SPECIFC HMO)
+// router.get("/hmo/:id", async (req, res) => {
+//   try {
+//     const { hmo_id } = req.params;
+//     const db = await connectToDatabase();
+
+//     const [result] = await db.query(
+//       "SELECT * FROM hmo WHERE hmo_id = ?",
+//       [hmo_id]
+//     );
+
+//     if (result.length === 0) {
+//       return res.status(404).json({ message: "HMO not found" });
+//     }
+
+//     res.json(result[0]);
+//   } catch (err) {
+//     console.error("Fetch COA error:", err);
+//     return res.status(500).json({ message: "Internal server error" });
+//   }
+// });
+
+
+// NEW HMO MAIN
+router.get("/hmo1/:hmo_id", async (req, res) => {
   try {
     const { hmo_id } = req.params;
     const db = await connectToDatabase();
@@ -4763,7 +5035,7 @@ router.get("/hmo/:id", async (req, res) => {
     );
 
     if (result.length === 0) {
-      return res.status(404).json({ message: "Account not found" });
+      return res.status(404).json({ message: "HMO not found" });
     }
 
     res.json(result[0]);
@@ -4772,6 +5044,104 @@ router.get("/hmo/:id", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+//NEW (ADD NEW SERVICE HMO)
+router.post("/hmoservice/:hmo_id", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ error: "No token provided" });
+
+  const { hmo_id } = req.params;
+  const { service, status, coverage } = req.body;
+
+  if (!service || ! coverage) {
+    return res.status(400).json({ error: "service name and coverage is required" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const db = await connectToDatabase();
+
+    //  Check if subaccount already exists
+    const [existing] = await db.query(
+      "SELECT * FROM hmo_service WHERE hmo_id = ? AND service = ?",
+      [hmo_id, service]
+    );
+
+    if (existing.length > 0) {
+        return res.status(409).json({ message: "HMO service already exists" });
+    }
+
+    //  Insert new service
+    const [result] = await db.query(
+      "INSERT INTO hmo_service (hmo_id, service, coverage, status) VALUES (?, ?, ?, ?)",
+      [hmo_id, service, coverage, status]
+    );
+
+    // ✅ Insert audit trail record
+    const at_action = "Add HMO Service";
+    const at_description = `User "${decoded.user_name}" added a new service "${service}" under HMO Id: ${hmo_id}.`;
+    const created_at = new Date();
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, at_action, at_description, created_at]
+    );
+
+    return res.status(201).json({
+      message: "HMO Service added successfully",
+      subaccountId: result.insertId,
+    });
+  } catch (err) {
+    console.error("❌ MySQL Error inserting subaccount:", {
+      code: err.code,
+      sqlMessage: err.sqlMessage,
+      sql: err.sql,
+    });
+    return res.status(500).json({
+      error: "Database error",
+      details: err.sqlMessage,
+    });
+  }
+});
+
+//NEW (EDIT HMO SERVICE)
+router.put("/hmo_service/:service_id", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { service_id } = req.params;
+    const { service, coverage, hmo_status } = req.body;
+    const db = await connectToDatabase();
+
+    const [result] = await db.query(
+      "UPDATE hmo_service SET service = ?, status = ?, coverage = ? WHERE service_id = ?",
+      [service, hmo_status, coverage, service_id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "HMO service not found" });
+    }
+
+    const action = "Update HMO Service";
+    const description = `Updated HMO Service: ${service} (${hmo_status}), coverage: ${coverage}`;
+    const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+       VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    res.json({ message: "HMO service updated successfully." });
+  } catch (err) {
+    console.error("Update HMO Service error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 // ADMIN DASHBOARDS
 // Count Appointments

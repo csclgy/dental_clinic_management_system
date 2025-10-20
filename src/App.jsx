@@ -81,6 +81,9 @@ import AdminHMOService from "./Routes/adminhmoservice.jsx";
 import AdminCashierHmo from "./Routes/admincashierhmo.jsx";
 import AdminConsultationHmo from "./Routes/adminconsultationhmo.jsx";
 import AdminConsultationHmoPay from "./Routes/adminconsultationhmopay.jsx";
+import AdminHMOServiceAdd from "./Routes/adminhmoserviceadd.jsx";
+import AdminHMOEdit from "./Routes/adminhmoedit.jsx";
+import AdminHMOServiceEdit from "./Routes/adminhmoserviceedit.jsx";
 
 function App() {
   return (
@@ -357,6 +360,31 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AdminHMOService />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/adminhmoserviceadd/:hmo_id"
+              element={
+                <ProtectedRoute>
+                  <AdminHMOServiceAdd />
+                </ProtectedRoute>
+              }
+            />
+             <Route
+              path="/adminhmoedit/:hmo_id"
+              element={
+                <ProtectedRoute>
+                  <AdminHMOEdit/>
+                </ProtectedRoute>
+              }
+            />
+
+             <Route
+              path="/adminhmoserviceedit/:service_id"
+              element={
+                <ProtectedRoute>
+                  <AdminHMOServiceEdit/>
                 </ProtectedRoute>
               }
             />

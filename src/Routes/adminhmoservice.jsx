@@ -29,6 +29,7 @@ const AdminHMOService = () => {
   const [openDashboard, setOpenDashboard] = useState(false);
   const { hmo_id } = useParams();
   const [services, setServices] = useState([]);
+  const [hmo, setHMO] = useState({});
 
   // ✅ Popup state and fade animation (same as AdminCoaEdit)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -48,8 +49,8 @@ const AdminHMOService = () => {
     setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
   };
 
-  // Convert hmoId to number if needed
-  const selectedHMO = hmos.find(hmo => hmo.hmo_id === parseInt(hmoId));
+  // // Convert hmoId to number if needed
+  // const selectedHMO = hmos.find(hmo => hmo.hmo_id === parseInt(hmo_id));
 
 
   useEffect(() => {
@@ -71,56 +72,79 @@ const AdminHMOService = () => {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
         }, 100);
-      }
+      } 
     }
   }, [location]);
 
   useEffect(() => {
+
+      const fetchHMO = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/hmo1/${hmo_id}`);
+        setHMO(res.data);
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching HMO:", err);
+        showPopup("Failed to fetch HMO.", "error");
+      }
+    };
+
     const fetchServices = async () => {
       try {
         const res = await axios.get(`http://localhost:3000/auth/hmo_services/${hmo_id}`);
         setServices(res.data);
+        setLoading(false);
       } catch (err) {
         console.error("Error fetching HMO services:", err);
         showPopup("Failed to fetch HMO services.", "error");
-        setLoading(false);
       }
     };
     fetchServices();
+    fetchHMO();
   }, [hmo_id]);
 
 
-  const filteredHmos = hmos.filter((hmo) =>
-    hmo.hmo_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // const filteredHmos = hmos.filter((hmo) =>
+  //   hmo.hmo_name.toLowerCase().includes(searchTerm.toLowerCase())
+  // );
 
-  const handleDelete = async () => {
-    try {
-      const token = localStorage.getItem("token"); // or wherever you store your JWT
-      if (!token) {
-        showPopup("No token found. Please login again.", "error");
-        return;
-      }
-
-      await axios.delete(`http://localhost:3000/auth/coa/${confirmBox.accountId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // <- include 'Bearer '
-        },
-      });
-
-      setAccounts(accounts.filter((a) => a.account_id !== confirmBox.accountId));
-      setConfirmBox({ show: false, accountId: null, accountName: "" });
-      showPopup("Account deleted successfully.", "success");
-    } catch (err) {
-      console.error("Error deleting account:", err);
-      showPopup("Failed to delete account.", "error");
+ const handleDelete = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showPopup("No token found. Please login again.", "error");
+      return;
     }
-  };
+
+    // PUT request to change status to inactive
+    await axios.put(
+      `http://localhost:3000/auth/hmo_service_status/${confirmBox.hmoId}`,
+      { status: "Inactive" },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    setConfirmBox({ show: false, hmoId: null, hmoName: "" });
+
+    showPopup("Service deactivated successfully.", "success");
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 1200);
+  } catch (err) {
+    console.error("Error deactivating service:", err);
+    showPopup("Failed to deactivate service.", "error");
+  }
+};
 
 
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
-      {/* ✅ Popup Notification (same style as AdminCoaEdit) */}
+      {/*  Popup Notification (same style as AdminCoaEdit) */}
       {popup.show && (
         <div
           className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
@@ -352,13 +376,13 @@ const AdminHMOService = () => {
         </button>
 
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#00458B]">
-            HMO Management
-          </h1>
+          <h2 className="text-2xl font-bold text-[#00458B]">
+            HMO Management 
+          </h2>
 
           <div className="flex gap-3">
             <Link
-              to="/adminhmoadd"
+             to= {`/adminhmoserviceadd/${hmo.hmo_id}`}
               className="flex items-center gap-2 bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
             >
               <PlusCircle size={18} /> Add Service
@@ -371,8 +395,10 @@ const AdminHMOService = () => {
         ) : (
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
             {/* Search Bar */}
-            <div className="flex justify-end mb-4">
-
+            <div className="flex justify-between mb-4">
+               <h1 className="text-2xl font-bold text-[#00458B]">
+                {hmo?.hmo_name }
+              </h1>
               <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
                 <input
                   type="text"
@@ -382,7 +408,7 @@ const AdminHMOService = () => {
                   className="flex-1 outline-none text-sm text-gray-700"
                 />
                 <i className="fa fa-search text-[#00458B]"></i>
-              </div>
+              </div> 
             </div>
             <div className="overflow-x-auto">
               <div className="max-h-[500px] overflow-y-auto">
@@ -390,7 +416,7 @@ const AdminHMOService = () => {
                   <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
                     <tr className="bg-gray-100 text-[#00458B]">
                       <th className="px-4 py-2 text-left">Service</th>
-                      <th className="px-4 py-2 text-center">status</th>
+                      <th className="px-4 py-2 text-center">Status</th>
                       <th className="px-4 py-2 text-center">Coverage</th>
 
                       <th className="px-4 py-2 text-center">Actions</th>
@@ -451,6 +477,13 @@ const AdminHMOService = () => {
                 </table>
               </div>
             </div>
+            <div className="mt-6">
+                        <Link to="/adminhmo">
+                          <button className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg">
+                            Back to List
+                          </button>
+                        </Link>
+                      </div>
           </div>
         )}
       </main>

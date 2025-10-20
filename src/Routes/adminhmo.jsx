@@ -95,15 +95,16 @@ const AdminHMO = () => {
         return;
       }
 
-      await axios.delete(`http://localhost:3000/auth/coa/${confirmBox.accountId}`, {
+      await axios.delete(`http://localhost:3000/auth/hmo/${confirmBox.hmoId}`, {
         headers: {
           Authorization: `Bearer ${token}`, // <- include 'Bearer '
         },
       });
 
-      setAccounts(accounts.filter((a) => a.account_id !== confirmBox.accountId));
-      setConfirmBox({ show: false, accountId: null, accountName: "" });
-      showPopup("Account deleted successfully.", "success");
+    
+      setConfirmBox({ show: false, hmoIdId: null, hmoName: "" });
+      window.location.reload();
+      showPopup("HMO changed to inactive successfully.", "success");
     } catch (err) {
       console.error("Error deleting account:", err);
       showPopup("Failed to delete account.", "error");
