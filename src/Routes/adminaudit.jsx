@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso } from "lucide-react";
+import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso, IdCard, Printer } from "lucide-react";
 import axios from "axios";
 
 function adminaudit() {
@@ -17,9 +17,10 @@ function adminaudit() {
 
   useEffect(() => {
     const fetchAuditTrail = async () => {
+      setLoading(true); // ✅ show spinner
       try {
         const token = localStorage.getItem("token"); // JWT token
-        const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/audit-trail", {
+        const response = await axios.get("http://localhost:3000/auth/audit-trail", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -35,6 +36,8 @@ function adminaudit() {
         setRecords(mappedRecords);
       } catch (err) {
         console.error("Error fetching audit trail:", err);
+      } finally {
+        setLoading(false); // ✅ hide spinner after fetch finishes
       }
     };
 
@@ -207,7 +210,7 @@ function adminaudit() {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -222,15 +225,24 @@ function adminaudit() {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link
+                to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -283,7 +295,9 @@ function adminaudit() {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -492,15 +506,13 @@ function adminaudit() {
 
           <div className="w-full sm:w-auto flex justify-end">
             <button
-              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full sm:w-auto"
               onClick={handlePrintReport}
+              className="px-6 py-3 bg-[#00458B] hover:bg-[#003366] text-white font-bold rounded-lg flex items-center gap-2"
             >
-              Generate Report
+              <Printer size={18} /> Generate Report
             </button>
           </div>
         </div>
-
-
 
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
           {/* Search Bar */}
@@ -522,7 +534,7 @@ function adminaudit() {
             <div className="max-h-[500px] overflow-y-auto">
               <table className="w-full border-collapse border border-gray-200">
                 <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
-                  <tr className="bg-gray-100 text-[#00458B]">
+                  <tr className="bg-gray-100 text-[#00458B] ">
                     <th className="px-4 py-2">Date</th>
                     <th className="px-4 py-2">User</th>
                     <th className="px-4 py-2">Role</th>
@@ -530,7 +542,6 @@ function adminaudit() {
                     <th className="px-4 py-2">Description</th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {loading ? (
                     <tr>
@@ -576,7 +587,6 @@ function adminaudit() {
                   )}
                 </tbody>
               </table>
-
             </div>
           </div>
         </div>

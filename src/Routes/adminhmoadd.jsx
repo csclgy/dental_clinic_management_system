@@ -3,28 +3,24 @@ import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
-const AdminJournalAdd = () => {
+const AdminHMOAdd = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [account, setAccount] = useState([]);
-  const [sub, setSub] = useState([]);
+
+  const [hmoName, setHmoName] = useState("");
+  const [status, setStatus] = useState("Active");
+  const [moaFile, setMoaFile] = useState(null);
+
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
 
-  const [formData, setFormData] = useState({
-    date: "",
-    description: "",
-    account: "",
-    subaccount: "",
-    type: "debit",
-    amount: "",
-    comment: "",
-  });
 
-  // ✅ Popup state and fade animation (same style as AdminCoaViewAdd)
+
+  // ✅ Popup state and fade animation (copied from ProfileChange)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
   const [fade, setFade] = useState(false);
 
@@ -44,85 +40,54 @@ const AdminJournalAdd = () => {
         }, 100);
       }
     }
-
-    const fetchAccount = async () => {
-      try {
-        const res = await axios.get(`http://localhost:3000/auth/coa1`);
-        setAccount(res.data);
-      } catch (err) {
-        console.error("Error fetching account:", err);
-      }
-    };
-    fetchAccount();
   }, [location]);
 
-  useEffect(() => {
-    if (formData.account) {
-      const fetchSubAccounts = async () => {
-        try {
-          const res = await axios.get(
-            `http://localhost:3000/auth/subaccs/${formData.account}`
-          );
-          setSub(res.data);
-        } catch (err) {
-          console.error("Error fetching subaccounts:", err);
-        }
-      };
-      fetchSubAccounts();
-    } else {
-      setSub([]);
-    }
-  }, [formData.account]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (
-      !formData.date ||
-      !formData.description ||
-      !formData.account ||
-      !formData.amount
-    ) {
-      showPopup("Please fill in all required fields.", "error");
+  const handleSave = async () => {
+    if (!hmoName.trim() || !status.trim() || !moaFile) {
+      showPopup("Please fill in all required fields including MOA Letter.", "error");
       return;
     }
 
     try {
-      const token = localStorage.getItem("token"); // get your saved JWT token
-      const debit = formData.type === "debit" ? Number(formData.amount) : 0;
-      const credit = formData.type === "credit" ? Number(formData.amount) : 0;
+      const token = localStorage.getItem("token");
 
-      await axios.post("http://localhost:3000/auth/journal", {
-        date: formData.date,
-        description: formData.description,
-        account_id: formData.account,
-        subaccount_id: formData.subaccount,
-        debit,
-        credit,
-        comment: formData.comment,
-      },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ add this
-          },
-        }
-      );
+      const formData = new FormData();
+      formData.append("hmo_name", hmoName.trim());
+      formData.append("status", status);
+      formData.append("moa_letter", moaFile);
 
-      showPopup("Journal entry saved successfully!", "success");
-      setTimeout(() => navigate("/adminjournal"), 1500);
+      const res = await axios.post("http://localhost:3000/auth/hmo", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      showPopup(res.data.message || "HMO added successfully!", "success");
+      setHmoName("");
+      setStatus("Active");
+      setMoaFile(null);
+
+      setTimeout(() => navigate("/adminhmo"), 1500);
     } catch (err) {
-      console.error(err);
+      console.error("Error adding HMO:", err);
       showPopup(err.response?.data?.message || "Something went wrong.", "error");
     }
-
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 relative">
+      {/* ✅ Popup Notification (same style as ProfileChange) */}
+      {popup.show && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          style={{ zIndex: 9999 }}
+        >
+          {popup.message}
+        </div>
+      )}
+
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
@@ -164,7 +129,7 @@ const AdminJournalAdd = () => {
           {role === "admin" && (
             <>
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
@@ -184,7 +149,7 @@ const AdminJournalAdd = () => {
                   </Link>
                   <Link
                     to="/adminjournal"
-                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
                   >
                     Journal Entries
                   </Link>
@@ -208,7 +173,7 @@ const AdminJournalAdd = () => {
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
               </Link>
               <Link
@@ -272,20 +237,38 @@ const AdminJournalAdd = () => {
         </nav>
       </aside>
 
+      {/* Mobile Sidebar */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 bg-[#01D5C4] text-black p-2 rounded-lg"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[#01D5C4] hover:text-black"
+              >
+                <Users size={18} /> Users
+              </Link>
+            </nav>
+          </aside>
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* ✅ Popup Notification (same style as AdminCoaViewAdd) */}
-        {popup.show && (
-          <div
-            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
-              } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
-            style={{ zIndex: 9999 }}
-          >
-            {popup.message}
-          </div>
-        )}
-
-        {/* Mobile menu */}
+        {/* Mobile Menu Button */}
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -295,136 +278,73 @@ const AdminJournalAdd = () => {
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add Journal Entry
+            Add New HMO
           </h1>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
+            {/* ✅ HMO Name */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Date: <span style={{color:"red"}}>*</span>
-              </label>
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account: <span style={{color:"red"}}>*</span>
-              </label>
-              <select
-                name="account"
-                value={formData.account}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="">-- Select Account --</option>
-                {account.map((acc) => (
-                  <option key={acc.account_id} value={acc.account_id}>
-                    {acc.account_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Sub Account: <span style={{color:"red"}}>*</span>
-              </label>
-              <select
-                name="subaccount"
-                value={formData.subaccount}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="">-- Select Subaccount --</option>
-                {sub.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.account_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Description: <span style={{color:"red"}}>*</span>
+                HMO Name: <span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="text"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
+                value={hmoName}
+                onChange={(e) => setHmoName(e.target.value)}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[#00458b] font-semibold mb-1">
-                  Debit/Credit: <span style={{color:"red"}}>*</span>
-                </label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                >
-                  <option value="debit">Debit</option>
-                  <option value="credit">Credit</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[#00458b] font-semibold mb-1">
-                  Amount: <span style={{color:"red"}}>*</span>
-                </label>
-                <input
-                  type="number"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                />
-              </div>
-            </div>
-
+            {/* ✅ Status */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Comment: <span style={{color:"red"}}>*</span>
+                Status: <span style={{ color: "red" }}>*</span>
+              </label>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            {/* ✅ MOA File */}
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                MOA Letter: <span style={{ color: "red" }}>*</span>
               </label>
               <input
-                type="text"
-                name="comment"
-                value={formData.comment}
-                onChange={handleChange}
+                type="file"
+                onChange={(e) => setMoaFile(e.target.files[0])}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
             </div>
 
+            {/* ✅ Buttons */}
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
-                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/adminjournal")}
+                className="bg-white text-[#00458b] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
+                onClick={() => navigate("/adminhmo")}
               >
-                Back
+                Back to List
               </button>
+
               <button
-                type="submit"
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+                type="button"
+                className="bg-[#00458b] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#003a7a]"
+                onClick={handleSave}
               >
                 Save
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </main>
     </div>
   );
 };
 
-export default AdminJournalAdd;
+export default AdminHMOAdd;

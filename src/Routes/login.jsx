@@ -8,7 +8,7 @@ const Login = () => {
   const handleLogin = async () => {
     setError(""); // clear old error
     try {
-      const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/login", {
+      const res = await fetch("http://localhost:3000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_name, user_password }),
@@ -22,11 +22,13 @@ const Login = () => {
       }
 
       if (res.ok) {
+        // ✅ Save all important user info
         localStorage.setItem("token", data.token);
         localStorage.setItem("userName", data.user.user_name);
-        localStorage.setItem("role", data.user.role); // 👈 save the role
+        localStorage.setItem("role", data.user.role);
+        localStorage.setItem("userId", data.user.user_id); // ✅ <-- add this line!
 
-        // 🔑 redirect based on role
+        // 🔑 Redirect based on role
         if (data.user.role === "admin") {
           window.location.href = "/admindashboard";
         } else if (data.user.role === "dentist") {
@@ -35,8 +37,7 @@ const Login = () => {
           window.location.href = "/admininventory";
         } else if (data.user.role === "receptionist") {
           window.location.href = "/adminschedule";
-        }
-        else {
+        } else {
           window.location.href = "/";
         }
       } else {
@@ -47,6 +48,7 @@ const Login = () => {
       setError("No response from server. Please try again later.");
     }
   };
+
 
   return (
     <div

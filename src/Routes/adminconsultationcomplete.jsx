@@ -13,7 +13,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  PhilippinePeso
+  PhilippinePeso,
+  IdCard
 } from "lucide-react";
 
 const Adminconsultationcomplete = () => {
@@ -104,7 +105,7 @@ const Adminconsultationcomplete = () => {
     const fetchConsultation = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultation/${appointId}`, {
+        const res = await fetch(`http://localhost:3000/auth/displayconsultation/${appointId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -153,7 +154,7 @@ const Adminconsultationcomplete = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/completeconsultation/${appointId}`, {
+      const res = await fetch(`http://localhost:3000/auth/completeconsultation/${appointId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -171,7 +172,7 @@ const Adminconsultationcomplete = () => {
       if (!res.ok) throw new Error("Failed to complete consultation");
 
       showPopup("Consultation marked as complete!", "success");
-      setTimeout(() => navigate("/adminpatients"), 5000);
+      setTimeout(() => navigate("/adminschedule"), 2000);
     } catch (err) {
       console.error("Error completing consultation:", err);
       showPopup("Error completing consultation. Try again.", "error");
@@ -182,7 +183,7 @@ const Adminconsultationcomplete = () => {
     const fetchDentists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists", {
+        const res = await axios.get("http://localhost:3000/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDentists(res.data);
@@ -201,6 +202,8 @@ const Adminconsultationcomplete = () => {
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -215,15 +218,22 @@ const Adminconsultationcomplete = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -275,7 +285,9 @@ const Adminconsultationcomplete = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"

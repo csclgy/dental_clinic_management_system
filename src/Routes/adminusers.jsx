@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso } from "lucide-react";
+import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso, IdCard } from "lucide-react";
 
 import axios from "axios";
 
@@ -55,7 +55,7 @@ function AdminUsers() {
 
         const token = rawToken.startsWith("Bearer ") ? rawToken.split(" ")[1] : rawToken;
 
-        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayusers", {
+        const res = await fetch("http://localhost:3000/auth/displayusers", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -82,7 +82,7 @@ function AdminUsers() {
           : rawToken;
 
       await axios.delete(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/deleteuserinfo/${confirmBox.userId}`,
+        `http://localhost:3000/auth/deleteuserinfo/${confirmBox.userId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -116,7 +116,7 @@ function AdminUsers() {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -131,15 +131,22 @@ function AdminUsers() {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -191,7 +198,9 @@ function AdminUsers() {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -253,6 +262,7 @@ function AdminUsers() {
         </nav>
       </aside>
 
+      {/* Main Content */}
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
 

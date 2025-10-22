@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
-const AdminConsultationPartial = () => {
+const AdminConsultationHmo = () => {
   const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -87,11 +87,11 @@ const AdminConsultationPartial = () => {
   useEffect(() => {
     if (consultation && payments.length > 0) {
       const totalPaid = payments.reduce((sum, p) => sum + Number(p.credit || 0), 0);
-      const totalCharged = consultation.total_charged || 0;
+      const totalCharged = consultation.hmo_charge || 0;
       const remainingBalance = totalCharged - totalPaid;
       setBalance(remainingBalance);
     } else if (consultation) {
-      setBalance(consultation.total_charged || 0);
+      setBalance(consultation.hmo_charge || 0);
     }
   }, [payments, consultation]);
 
@@ -112,14 +112,14 @@ const AdminConsultationPartial = () => {
   const handleComplete = async () => {
     try {
 
-      const totalCharged = consultation.total_charged
+      const totalCharged = consultation.hmo_charge
       const appoint_id = appointId;
       // Combine patient name fields
       const patientName = `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`;
 
       const res = await axios.post(`http://localhost:3000/auth/complete/${appoint_id}`, {
         appoint_id: consultation.appoint_id,
-        total_charged: totalCharged,
+        hmo_charge: totalCharged,
         patient_name: patientName,
         description: `Payment received from ${patientName}`,
       });
@@ -148,7 +148,7 @@ const AdminConsultationPartial = () => {
     });
 
     const totalAmount = (
-      Number(consultation?.total_charged || 0) +
+      Number(consultation?.hmo_charge || 0) +
       payments.reduce((sum, p) => sum + Number(p.credit || 0), 0)
     ).toFixed(2);
 
@@ -335,8 +335,7 @@ const AdminConsultationPartial = () => {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
-
+        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -492,7 +491,8 @@ const AdminConsultationPartial = () => {
             >
               <X size={24} />
             </button>
-            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
             <nav className="flex flex-col gap-2">
               <Link
                 to="/admindashboard"
@@ -674,14 +674,14 @@ const AdminConsultationPartial = () => {
                     Payments (If Installment):
                   </p>
                   <button
-                    disabled={balance <= 0 || consultation?.payment_confirmation === "Complete"}
-                    className={`font-semibold px-6 py-2 rounded-lg w-full sm:w-auto ${balance <= 0 || consultation?.payment_confirmation === "Complete"
+                    disabled={balance <= 0 || consultation.hmo_payment === 'complete'}
+                    className={`font-semibold px-6 py-2 rounded-lg w-full sm:w-auto ${balance <= 0 || consultation?.hmo_payment === "Complete"
                       ? "bg-gray-400 text-white cursor-not-allowed"
                       : "bg-red-500 hover:bg-red-600 text-white"
                       }`}
                     onClick={() => {
                       if (balance > 0) {
-                        navigate(`/adminconsultationpartialpay/${appointId}`, {
+                        navigate(`/adminconsultationhmopay/${appointId}`, {
                           state: {
                             patientName: `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`,
                             invoiceNo: consultation.or_num || "",
@@ -811,25 +811,9 @@ const AdminConsultationPartial = () => {
 
                 <button
                   className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full sm:w-auto"
-                  onClick={() => navigate("/admincashierpartial")}
+                  onClick={() => navigate("/admincashierhmo")}
                 >
                   Back to List
-                </button>
-                <button
-                  disabled={balance > 0 || consultation?.payment_confirmation === "Complete"}
-                  className={`px-6 py-2 rounded-lg font-semibold w-full sm:w-auto ${balance > 0 || consultation?.payment_confirmation === "Complete"
-                    ? "bg-gray-400 text-white cursor-not-allowed"
-                    : "bg-green-600 hover:bg-green-700 text-white"
-                    }`}
-                  onClick={() => {
-                    if (balance === 0 && consultation?.payment_confirmation !== "Complete") {
-                      handleComplete();
-                    }
-                  }}
-                >
-                  {consultation?.payment_confirmation === "complete"
-                    ? "Completed"
-                    : "Complete"}
                 </button>
               </div>
             </div>
@@ -840,4 +824,4 @@ const AdminConsultationPartial = () => {
   );
 };
 
-export default AdminConsultationPartial;
+export default AdminConsultationHmo;

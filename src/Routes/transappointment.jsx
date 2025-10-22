@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Printer } from "lucide-react";
 
 const TransAppointment = () => {
   const location = useLocation();
@@ -15,7 +16,7 @@ const TransAppointment = () => {
     const fetchRecords = async () => {
       try {
         const token = localStorage.getItem("token"); // or however you store it
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/myappointmenthistory", {
+        const res = await axios.get("http://localhost:3000/auth/myappointmenthistory", {
           headers: {
             Authorization: `Bearer ${token}`, // 👈 send token
           },
@@ -249,11 +250,10 @@ const TransAppointment = () => {
             {/* Search Bar */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
               <div className="my-4">
-                <label className="mr-2 font-semibold">Filter by Status:</label>
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border rounded-md bg-white text-gray-700"
+                  className="border border-[#00458B] rounded-lg px-3 py-2 text-sm text-[#00458B] font-medium"
                 >
                   <option value="all">All</option>
                   <option value="done">Done</option>
@@ -335,10 +335,10 @@ const TransAppointment = () => {
             {/* Print Button */}
             <div className="flex justify-end mt-6">
               <button
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-teal-600 w-full sm:w-auto"
+                className="bg-[#00458B] text-white font-semibold px-6 py-2 rounded-lg hover:bg-teal-600 w-full sm:w-auto"
                 onClick={handlePrintReport}
               >
-                Print
+                <Printer size={18} />
               </button>
             </div>
           </div>

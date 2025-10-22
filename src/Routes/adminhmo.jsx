@@ -16,18 +16,16 @@ import {
   IdCard
 } from "lucide-react";
 
-const AdminCoa = () => {
+const AdminHMO = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [accounts, setAccounts] = useState([]);
+  const [hmos, setHmos] = useState([]);
   const [loading, setLoading] = useState(true);
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   // ✅ Popup state and fade animation (same as AdminCoaEdit)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -36,8 +34,8 @@ const AdminCoa = () => {
   // ✅ Confirmation Modal
   const [confirmBox, setConfirmBox] = useState({
     show: false,
-    accountId: null,
-    accountName: "",
+    hmoId: null,
+    hmoName: "",
   });
 
   const showPopup = (message, type) => {
@@ -71,27 +69,23 @@ const AdminCoa = () => {
   }, [location]);
 
   useEffect(() => {
-    const fetchAccounts = async () => {
+    const fetchHMOs = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/coa");
-        setAccounts(res.data);
+        const res = await axios.get("http://localhost:3000/auth/hmo");
+        setHmos(res.data);
       } catch (err) {
-        console.error("Error fetching accounts:", err);
-        showPopup("Failed to fetch accounts.", "error");
+        console.error("Error fetching HMOs:", err);
+        showPopup("Failed to fetch HMO records.", "error");
       } finally {
         setLoading(false);
       }
     };
-    fetchAccounts();
+    fetchHMOs();
   }, []);
 
-  const filteredAccounts = accounts.filter((account) => {
-    if (!searchTerm) return true;
-    return (
-      account.account_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      account.account_type.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+  const filteredHmos = hmos.filter((hmo) =>
+    hmo.hmo_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const handleDelete = async () => {
     try {
@@ -101,15 +95,16 @@ const AdminCoa = () => {
         return;
       }
 
-      await axios.delete(`http://localhost:3000/auth/coa/${confirmBox.accountId}`, {
+      await axios.delete(`http://localhost:3000/auth/hmo/${confirmBox.hmoId}`, {
         headers: {
           Authorization: `Bearer ${token}`, // <- include 'Bearer '
         },
       });
 
-      setAccounts(accounts.filter((a) => a.account_id !== confirmBox.accountId));
-      setConfirmBox({ show: false, accountId: null, accountName: "" });
-      showPopup("Account deleted successfully.", "success");
+    
+      setConfirmBox({ show: false, hmoIdId: null, hmoName: "" });
+      window.location.reload();
+      showPopup("HMO changed to inactive successfully.", "success");
     } catch (err) {
       console.error("Error deleting account:", err);
       showPopup("Failed to delete account.", "error");
@@ -203,7 +198,7 @@ const AdminCoa = () => {
           {role === "admin" && (
             <>
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
@@ -217,7 +212,7 @@ const AdminCoa = () => {
                 <div className="ml-6 flex flex-col gap-1 text-sm">
                   <Link
                     to="/admincoa"
-                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
                   >
                     Chart of Accounts
                   </Link>
@@ -247,7 +242,7 @@ const AdminCoa = () => {
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
               </Link>
               <Link
@@ -352,42 +347,22 @@ const AdminCoa = () => {
 
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#00458B]">
-            Chart of Accounts
+            HMO Managment
           </h1>
 
           <div className="flex gap-3">
             <Link
-              to="/admincoaadd"
+              to="/adminhmoadd"
               className="flex items-center gap-2 bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
             >
-              <PlusCircle size={18} /> Add Account
+              <PlusCircle size={18} /> Add HMO
             </Link>
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <svg
-              aria-hidden="true"
-              className="w-16 h-16 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
-              viewBox="0 0 100 101"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-                className="text-gray-300"
-                fill="currentColor"
-              />
-              <path
-                d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-                className="text-[#00c3b8]" // your website color
-                fill="currentFill"
-              />
-            </svg>
-          </div>
+          <p>Loading accounts...</p>
         ) : (
-
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
             {/* Search Bar */}
             <div className="flex justify-end mb-4">
@@ -407,36 +382,22 @@ const AdminCoa = () => {
                 <table className="w-full border-collapse border border-gray-200">
                   <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
                     <tr className="bg-gray-100 text-[#00458B]">
-                      <th className="px-4 py-2 text-left">Account Name</th>
-                      <th className="px-4 py-2 text-center">Account Type</th>
-                      <th className="px-4 py-2 text-center">Status</th>
-                      <th className="px-4 py-2 text-center">Subaccounts</th>
+                      <th className="px-4 py-2 text-left">HMO Name</th>
+                      <th className="px-4 py-2 text-center">status</th>
+                      <th className="px-4 py-2 text-center">MOA</th>
+                      <th className="px-4 py-2 text-center">Services</th>
                       <th className="px-4 py-2 text-center">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredAccounts.length > 0 ? (
-                      filteredAccounts.map((account) => {
-                        const isInactive = account.status?.toLowerCase() === "inactive";
+                    {filteredHmos.length > 0 ? (
+                      filteredHmos.map((hmo) => {
+                        const isInactive =
+                          hmo.status?.toLowerCase() === "inactive";
                         return (
-                          <tr
-                            key={account.account_id}
-                            className={`border-b border-gray-200 ${isInactive ? "bg-gray-100 text-gray-500" : ""
-                              }`}
-                          >
-                            <td className="px-4 py-2 text-blue-700" onClick={(e) => {
-                              const rect = e.currentTarget.getBoundingClientRect();
-                              setTooltipPosition({
-                                x: rect.right + 10 + window.scrollX,
-                                y: rect.top + window.scrollY,
-                              });
-                              setSelectedRecord(account);
-                            }}
-                            >
-                              {account.account_name}
-                            </td>
-                            <td className="px-4 py-2 text-center">
-                              {account.account_type}
+                          <tr key={hmo.hmo_id}>
+                            <td className="px-4 py-2 text-blue-700">
+                              {hmo.hmo_name}
                             </td>
                             <td
                               className={`px-4 py-2 text-center font-semibold ${isInactive ? "text-red-500" : "text-green-600"
@@ -444,91 +405,69 @@ const AdminCoa = () => {
                             >
                               {isInactive ? "Inactive" : "Active"}
                             </td>
-
                             <td className="px-4 py-2 text-center">
-                              {/* ✅ View button ALWAYS clickable */}
-                              <Link to={`/admincoaview/${account.account_id}`}>
+                              {hmo.moa_letter ? (
                                 <button
-                                  className={`px-4 py-2 rounded-lg text-white ${isInactive
-                                    ? "bg-[#008CBA] hover:bg-[#0077a6] opacity-80" // Slightly dimmer if inactive
-                                    : "bg-[#008CBA] hover:bg-[#0077a6]"
-                                    }`}
+                                  onClick={() =>
+                                    window.open(
+                                      `http://localhost:3000/uploads/hmo/${hmo.moa_letter}`,
+                                      "_blank"
+                                    )
+                                  }
+                                  className="px-4 py-2 rounded-lg bg-[white] border border-[#00458B] font-medium text-[#008CBA]"
                                 >
+                                  View MOA
+                                </button>
+                              ) : (
+                                "No File"
+                              )}
+                            </td>
+                            <td className="px-4 py-2 text-center">
+                              <Link to={`/adminhmoservice/${hmo.hmo_id}`}>
+                                <button className="px-4 py-2 rounded-lg bg-[#008CBA] text-white">
                                   View
                                 </button>
                               </Link>
                             </td>
-
                             <td className="px-4 py-2 text-center space-x-2">
-                              {/* ✅ Edit button ALWAYS clickable */}
-                              <Link to={`/admincoaedit/${account.account_id}`}>
+                              <Link to={`/adminhmoedit/${hmo.hmo_id}`}>
                                 <button className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600">
                                   Edit
                                 </button>
                               </Link>
-
-                              {/* ❌ Deactivate button disabled if inactive */}
                               <button
                                 disabled={isInactive}
                                 onClick={() => {
                                   if (!isInactive) {
                                     setConfirmBox({
                                       show: true,
-                                      accountId: account.account_id,
-                                      accountName: account.account_name,
+                                      hmoId: hmo.hmo_id,
+                                      hmoName: hmo.hmo_name,
                                     });
                                   }
                                 }}
                                 className={`px-4 py-2 rounded-lg ${isInactive
-                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                  : "bg-red-500 text-white hover:bg-red-600"
+                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                    : "bg-red-500 text-white hover:bg-red-600"
                                   }`}
                               >
-                                {isInactive ? "Deactivate" : "Deactivate"}
+                                Deactivate
                               </button>
                             </td>
-
-
                           </tr>
                         );
                       })
                     ) : (
                       <tr>
-                        <td colSpan="5" className="text-center text-gray-500 py-4">
+                        <td
+                          colSpan="4"
+                          className="text-center text-gray-500 py-4"
+                        >
                           No records found
                         </td>
                       </tr>
                     )}
                   </tbody>
-                  {selectedRecord && (
-                    <div
-                      id="floatingTooltipBox"
-                      style={{
-                        position: "absolute",
-                        top: tooltipPosition.y,
-                        left: tooltipPosition.x,
-                        zIndex: 1000,
-                      }}
-                      className="bg-white border border-gray-300 shadow-lg p-4 rounded-md w-80"
-                    >
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
-                          Account Details
-                        </h3>
-                        <br></br>
-                        <button
-                          onClick={() => setSelectedRecord(null)}
-                          className="text-gray-500 hover:text-red-500"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                      <div className="text-sm text-gray-800">
-                        <p className="mt-2 text-blue-800"><strong>{selectedRecord.account_name}</strong></p>
-                        <p className="mt-1 ml-3 text-black"> {selectedRecord.description}</p>
-                      </div>
-                    </div>
-                  )}
                 </table>
               </div>
             </div>
@@ -539,4 +478,4 @@ const AdminCoa = () => {
   );
 };
 
-export default AdminCoa;
+export default AdminHMO;

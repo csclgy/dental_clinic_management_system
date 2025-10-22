@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { BarChart3, Users, Calendar, Menu, X, PlusCircle, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, PlusCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminInventoryPending = () => {
   const location = useLocation();
@@ -49,7 +49,7 @@ const AdminInventoryPending = () => {
     const fetchItems = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/pendingitems", {
+        const res = await fetch("http://localhost:3000/auth/pendingitems", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -69,7 +69,7 @@ const AdminInventoryPending = () => {
   const handleDelete = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/rejectitem/${confirmBox.itemId}`, {
+      const res = await fetch(`http://localhost:3000/auth/rejectitem/${confirmBox.itemId}`, {
         method: "PUT", // <-- match backend
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -92,7 +92,7 @@ const AdminInventoryPending = () => {
   const handleApprove = async (id) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/approveitem/${id}`, {
+      const res = await fetch(`http://localhost:3000/auth/approveitem/${id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -131,7 +131,8 @@ const AdminInventoryPending = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -146,15 +147,22 @@ const AdminInventoryPending = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -206,7 +214,9 @@ const AdminInventoryPending = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"

@@ -10,7 +10,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
-  PhilippinePeso
+  PhilippinePeso,
+  IdCard
 } from "lucide-react";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 
@@ -29,7 +30,7 @@ const AdminCashier = () => {
   const [viewMode, setViewMode] = useState("table"); // table | calendar
   const [view, setView] = useState("week");
   const [date, setDate] = useState(new Date());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
@@ -50,11 +51,12 @@ const AdminCashier = () => {
   // Fetch consultations
   useEffect(() => {
     const fetchConsultations = async () => {
+      setLoading(true); // ✅ show spinner
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultations1", {
+        const res = await fetch("http://localhost:3000/auth/displayconsultations1", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -64,6 +66,8 @@ const AdminCashier = () => {
         setRecords(Array.isArray(data.consultations) ? data.consultations : []);
       } catch (err) {
         console.error("Error fetching consultations:", err);
+      } finally {
+        setLoading(false); // ✅ hide spinner after fetch finishes
       }
     };
 
@@ -100,7 +104,8 @@ const AdminCashier = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -115,15 +120,22 @@ const AdminCashier = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -176,7 +188,12 @@ const AdminCashier = () => {
                   </Link>
                 </div>
               )}
-
+              <Link
+                to="/adminhmo"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -304,7 +321,9 @@ const AdminCashier = () => {
                       </Link>
                     </div>
                   )}
-
+                  <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <IdCard size={18} /> HMO
+                  </Link>
                   <Link
                     to="/adminusers"
                     className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -379,8 +398,9 @@ const AdminCashier = () => {
         </button>
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="items-center mb-6">
           <h1 className="text-2xl font-bold text-[#00458B]"> Payments </h1>
+          <p className="text-gray-600">(Unpaid)</p>
         </div>
 
         {/* Content */}
@@ -391,11 +411,12 @@ const AdminCashier = () => {
               <select
                 defaultValue="/admincashier"
                 onChange={(e) => navigate(e.target.value)}
-                className="border border-[#00458B] rounded-full px-3 py-1 text-sm text-gray-700"
+                className="border border-[#00458B] rounded-lg px-3 py-2 text-1xl bg-[#00458B] font-semibold text-white"
               >
                 <option value="/admincashier">Unpaid</option>
                 <option value="/admincashierpaid">Paid</option>
                 <option value="/admincashierpartial">Partial</option>
+                <option value="/admincashierhmo">HMO</option>
               </select>
 
               <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64">
@@ -425,7 +446,6 @@ const AdminCashier = () => {
                     <th className="px-4 py-2"></th>
                   </tr>
                 </thead>
-
                 <tbody>
                   {loading ? (
                     <tr>
@@ -481,7 +501,6 @@ const AdminCashier = () => {
                   )}
                 </tbody>
               </table>
-
             </div>
           </div>
         ) : (

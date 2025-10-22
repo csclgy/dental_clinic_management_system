@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminUsersAdd = () => {
   const location = useLocation();
@@ -49,7 +49,7 @@ const AdminUsersAdd = () => {
       const token = localStorage.getItem("token"); // get your saved JWT token
 
       const response = await axios.post(
-        "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/adduser",
+        "http://localhost:3000/auth/adduser",
         registerData, // ✅ send flat object
         {
           headers: {
@@ -105,7 +105,7 @@ const AdminUsersAdd = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -120,15 +120,22 @@ const AdminUsersAdd = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -180,7 +187,9 @@ const AdminUsersAdd = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -270,7 +279,7 @@ const AdminUsersAdd = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Username
+                Username: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -283,7 +292,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Email
+                Email: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="email"
@@ -296,7 +305,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Password
+                Password: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="password"
@@ -311,7 +320,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Contact Number
+                Contact Number: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -335,7 +344,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Access Level
+                Access Level: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.role}
@@ -353,7 +362,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                First Name
+                First Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -365,7 +374,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Middle Name
+                Middle Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -377,7 +386,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Last Name
+                Last Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -388,7 +397,7 @@ const AdminUsersAdd = () => {
             </div>
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Gender
+                Gender: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.gender}
@@ -403,7 +412,7 @@ const AdminUsersAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Date of Birth
+                Date of Birth: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="date"

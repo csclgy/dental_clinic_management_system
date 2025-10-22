@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, Package, AlertTriangle, PlusCircle, PhilippinePeso } from "lucide-react";
+import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, Package, AlertTriangle, PlusCircle, PhilippinePeso, IdCard } from "lucide-react";
 import axios from "axios";   // ✅ make sure axios is installed
 
 const Adminbillingedit = () => {
@@ -38,10 +38,15 @@ const Adminbillingedit = () => {
   const [newServiceName, setNewServiceName] = useState("");
   const [newServiceAmount, setNewServiceAmount] = useState(0);
 
-  // const [hmoNumber, setHmoNumber] = useState("");
+  const [hmoNumber, setHmoNumber] = useState("");
+  const [hmoProvider, setHmoProvider] = useState("");
+  const [hmoCoverage, setHmoCoverage] = useState("");
+  const [hmoList, setHmoList] = useState([]); //NEW
+  const [hmoServices, setHmoServices] = useState([]);//NEW
   // const [pwdDiscount, setPwdDiscount] = useState("");
 
   const [billingDate, setBillingDate] = useState("");
+  const [dueDate, setDueDate] = useState(""); //NEW
 
   const [appointment, setAppointment] = useState(null);
 
@@ -56,15 +61,17 @@ const Adminbillingedit = () => {
     setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
   };
 
+  //NEW
+
   const fetchBillingData = async () => {
     try {
       const token = localStorage.getItem("token");
 
       const [billingRes, invRes] = await Promise.all([
-        axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/${appointId}`, {
+        axios.get(`http://localhost:3000/auth/billing/${appointId}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inventory", {
+        axios.get("http://localhost:3000/auth/inventory", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -93,6 +100,7 @@ const Adminbillingedit = () => {
 
   useEffect(() => {
     fetchBillingData();
+    fetchHmos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointId]);
 
@@ -116,7 +124,7 @@ const Adminbillingedit = () => {
       const inv = inventory.find((i) => String(i.inv_id) === String(newInvId));
 
       const res = await axios.post(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/${appointId}`,
+        `http://localhost:3000/auth/billing/${appointId}`,
         {
           inv_id: inv.inv_id,
           ci_item_name: inv.inv_item_name,
@@ -151,7 +159,7 @@ const Adminbillingedit = () => {
     if (!window.confirm("Delete this item?")) return;
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/deletebilling/${ci_id}`, {
+      await axios.delete(`http://localhost:3000/auth/deletebilling/${ci_id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchBillingData(); // refresh
@@ -172,7 +180,7 @@ const Adminbillingedit = () => {
 
       // Call backend to save the service
       const res = await axios.post(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/${appointId}`,
+        `http://localhost:3000/auth/billing/${appointId}`,
         {
           ci_item_name: newServiceName,
           ci_quantity: 1, // services usually count as 1
@@ -223,10 +231,19 @@ const Adminbillingedit = () => {
     if (!serviceCharge || Number(serviceCharge) <= 0) {
       return showPopup("Main Service Charge must be greater than 0", "error");
     }
+    //NEW
+    if (paymentStatus === "Partial" && !dueDate) {
+      return showPopup("Please enter due date", "error");
+    }
+
 
     // ✅ Optional: additional validation for GCash proof or HMO number
     if (paymentMode === "GCash" && !gcashProof) {
       return showPopup("Please upload GCash proof", "error");
+    }
+    //NEW
+    if (paymentStatus === "Partial" && !dueDate) {
+      return showPopup("Please enter due date", "error");
     }
 
     try {
@@ -239,7 +256,7 @@ const Adminbillingedit = () => {
       try {
         const token = localStorage.getItem("token");
         const checkRes = await axios.get(
-          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/checkOR/${paymentOR}`,
+          `http://localhost:3000/auth/checkOR/${paymentOR}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -262,9 +279,21 @@ const Adminbillingedit = () => {
       if (paymentMode === "GCash" && gcashProof) {
         formData.append("gcash_proof", gcashProof);
       }
+      if (paymentStatus === "Partial" && dueDate) {
+        formData.append("due_date", dueDate);
+      }
+
+      if (paymentMode === "HMO") {
+        formData.append("hmo_number", hmoNumber);
+        formData.append("hmo_provider", hmoProvider);
+        formData.append("coverage", hmoCoverage);
+        if (!hmoNumber) {
+          return showPopup("Hmo Number is required", "error");
+        }
+      }
 
       await axios.post(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/${appointId}`,
+        `http://localhost:3000/auth/billing/${appointId}`,
         formData,
         {
           headers: {
@@ -296,6 +325,47 @@ const Adminbillingedit = () => {
     navigate(`/adminconsultationview/${appointId}`);
   };
 
+  //NEW
+  const fetchHmos = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("http://localhost:3000/auth/hmo", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setHmoList(res.data);
+    } catch (err) {
+      console.error("Failed to fetch HMOs:", err);
+    }
+  };
+
+  //NEW
+  useEffect(() => {
+    const fetchHmoServices = async () => {
+      if (!hmoProvider) {
+        setHmoServices([]);
+        setHmoCoverage("");
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("token");
+
+        const res = await axios.get(
+          `http://localhost:3000/auth/hmo/${hmoProvider}/services`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        setHmoServices(res.data);
+        setHmoCoverage(res.data.length > 0 ? res.data[0].coverage : "");
+
+      } catch (err) {
+        console.error("Failed to fetch HMO services:", err);
+        setHmoServices([]);
+      }
+    };
+
+    fetchHmoServices();
+  }, [hmoProvider]);
 
   // Scroll to the section if state.scrollTo is passed
   useEffect(() => {
@@ -313,7 +383,8 @@ const Adminbillingedit = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -328,15 +399,24 @@ const Adminbillingedit = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link
+                to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -389,7 +469,9 @@ const Adminbillingedit = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -613,7 +695,7 @@ const Adminbillingedit = () => {
           {/* Payment Info */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold">OR Number:</label>
+              <label className="block font-bold text-gray-700">OR Number: <span style={{color:"red"}}>*</span></label>
               <input
                 type="text"
                 className="w-full border rounded px-3 py-2"
@@ -623,7 +705,7 @@ const Adminbillingedit = () => {
             </div>
 
             <div>
-              <label className="block font-medium">Payment Status</label>
+              <label className="block font-bold text-gray-700">Payment Status: <span style={{color:"red"}}>*</span></label>
               <select
                 className="border p-2 w-full rounded"
                 value={paymentStatus}
@@ -637,7 +719,7 @@ const Adminbillingedit = () => {
             </div>
 
             <div>
-              <label className="block font-medium">Mode of Payment</label>
+              <label className="block font-bold text-gray-700">Mode of Payment: <span style={{color:"red"}}>*</span></label>
               <select
                 className="border p-2 w-full rounded"
                 value={paymentMode}
@@ -647,12 +729,12 @@ const Adminbillingedit = () => {
                 <option value="">--Select--</option>
                 <option value="Cash">Cash</option>
                 <option value="GCash">GCash</option>
-                {/* <option value="HMO">HMO</option> fixed value */}
+                <option value="HMO">HMO</option> fixed value
               </select>
             </div>
 
             <div>
-              <label className="block font-semibold">Main Service Charge(₱) :</label>
+              <label className="block font-bold text-gray-700">Main Service Charge(₱) : <span style={{color:"red"}}>*</span></label>
               <input
                 type="number"
                 className="w-full border rounded px-3 py-2"
@@ -665,7 +747,7 @@ const Adminbillingedit = () => {
             {/* ✅ Show upload input ONLY if paymentMode === "GCash" */}
             {paymentMode === "GCash" && (
               <div className="col-span-2">
-                <label className="block font-medium">Upload GCash Proof</label>
+                <label className="block font-bold text-gray-700">Upload GCash Proof: <span style={{color:"red"}}>*</span></label>
                 <input
                   type="file"
                   accept="image/*"
@@ -676,18 +758,54 @@ const Adminbillingedit = () => {
             )}
 
             {/* ✅ Show HMO Number ONLY if paymentMode === "HMO" */}
-            {/* {paymentMode === "HMO" && (
-              <div className="col-span-2">
-                <label className="block font-medium">HMO Number</label>
-                <input
-                  type="text"
-                  className="col-sm-6 border rounded px-3 py-2"
-                  value={hmoNumber}
-                  onChange={(e) => setHmoNumber(e.target.value)}
-                  placeholder="Enter HMO Number"
-                />
+            {paymentMode === "HMO" && (
+              <div className="col-span-2 mt-2">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-gray-700">HMO Provider: <span style={{color:"red"}}>*</span></label>
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={hmoProvider}
+                      onChange={(e) => setHmoProvider(e.target.value)}
+                    >
+                      <option value="">-- Select HMO Provider --</option>
+                      {hmoList.map((hmo) => (
+                        <option key={hmo.hmo_id} value={hmo.hmo_id}>
+                          {hmo.hmo_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-700">HMO Number: <span style={{color:"red"}}>*</span></label>
+                    <input
+                      type="text"
+                      className="w-full border rounded px-3 py-2"
+                      value={hmoNumber}
+                      onChange={(e) => setHmoNumber(e.target.value)}
+                      placeholder="Enter HMO Number"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-gray-700">Service Coverage: <span style={{color:"red"}}>*</span></label>
+                    <select
+                      className="w-full border rounded px-3 py-2"
+                      value={hmoCoverage}
+                      onChange={(e) => setHmoCoverage(e.target.value)}
+                    >
+                      <option value="">-- Select Service Coverage --</option>
+                      {hmoServices.map((svc) => (
+                        <option key={svc.service_id} value={svc.coverage}>
+                          {svc.service} -  {svc.coverage} %
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
-            )} */}
+            )}
 
             {/* ✅ Always show PWD Discount field */}
             {/* <div className="col-span-2">
@@ -701,7 +819,7 @@ const Adminbillingedit = () => {
               />
             </div> */}
             <div>
-              <label className="block font-semibold">Billing Date</label>
+              <label className="block font-bold text-gray-700">Billing Date: <span style={{color:"red"}}>*</span></label>
               <input
                 type="date"
                 className="w-full border rounded px-3 py-2"
@@ -709,7 +827,24 @@ const Adminbillingedit = () => {
                 onChange={(e) => setBillingDate(e.target.value)}
               />
             </div>
+
+            {/* 👇 Add this right next to Billing Date */}
+            {paymentStatus === "Partial" && (
+              <div>
+                <label className="block font-bold text-gray-700">Due Date</label>
+                <input
+                  type="date"
+                  className="w-full border rounded px-3 py-2"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              </div>
+            )}
+
           </div>
+
+
 
           {/* Service Selection */}
           <hr></hr>
@@ -717,7 +852,7 @@ const Adminbillingedit = () => {
           <p className="text-2xl text-[#00458B] font-bold mb-4">Additional Items & Services</p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <div className="flex flex-col">
-              <label className="mb-1 font-semibold text-sm text-gray-700">Select Service:</label>
+              <label className="mb-1 font-bold text-gray-700">Select Service:</label>
               <select
                 className="border rounded px-3 py-2"
                 value={newServiceName}
@@ -740,7 +875,7 @@ const Adminbillingedit = () => {
             </div>
 
             <div className="flex flex-col">
-              <label className="mb-1 font-semibold text-sm text-gray-700">Service Charge:(₱)</label>
+              <label className="mb-1 font-bold text-gray-700">Service Charge:(₱)</label>
               <input
                 type="number"
                 className="px-3 py-2 border rounded"
@@ -753,7 +888,7 @@ const Adminbillingedit = () => {
             <div className="flex flex-col justify-end">
               <button
                 onClick={handleAddService}
-                className="bg-[#00c3b8] text-white px-4 py-2 rounded"
+                className="bg-[#00c3b8] text-white px-4 py-2 rounded font-bold"
               >
                 + Add Service
               </button>
@@ -763,7 +898,7 @@ const Adminbillingedit = () => {
           {/* Item Selection */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
             <div className="flex flex-col">
-              <label className="mb-1 font-semibold text-sm text-gray-700">Select Item:</label>
+              <label className="mb-1 text-gray-700 font-bold">Select Item:</label>
               <select
                 className="border rounded px-3 py-2"
                 value={newInvId}
@@ -789,22 +924,56 @@ const Adminbillingedit = () => {
               </select>
             </div>
 
-            <div className="flex flex-col">
-              <label className="mb-1 font-semibold text-sm text-gray-700">Item Quantity:</label>
-              <input
-                type="number"
-                min="1"
-                className="px-3 py-2 border rounded"
-                value={newQuantity}
-                onChange={(e) => setNewQuantity(parseInt(e.target.value || "1"))}
-                placeholder="Quantity"
-              />
-            </div>
+<div className="flex flex-col">
+  <label className="mb-1 font-bold text-gray-700">
+    Item Quantity:
+  </label>
+  <div className="flex items-center border border-[#00458b] rounded-lg w-fit">
+    <button
+      type="button"
+      onClick={() => setNewQuantity(Math.max(1, Number(newQuantity) - 1))}
+      className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+    >
+      −
+    </button>
+
+    <input
+      type="text"
+      value={newQuantity}
+      onChange={(e) => {
+        const value = e.target.value;
+
+        // Allow only digits (no negative or special characters)
+        if (/^\d*$/.test(value)) {
+          setNewQuantity(value === "" ? "" : Number(value));
+        }
+      }}
+      onBlur={() => {
+        // If empty or less than 1, reset to 1
+        if (newQuantity === "" || Number(newQuantity) < 1) {
+          setNewQuantity(1);
+        }
+      }}
+      className="w-16 text-center outline-none border-x border-[#00458b] py-2"
+      inputMode="numeric"
+      placeholder="Qty"
+    />
+
+    <button
+      type="button"
+      onClick={() => setNewQuantity(Number(newQuantity) + 1)}
+      className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+    >
+      +
+    </button>
+  </div>
+</div>
+
 
             <div className="flex flex-col justify-end">
               <button
                 onClick={handleAddItem}
-                className="bg-[#00c3b8] text-white px-4 py-2 rounded"
+                className="bg-[#00c3b8] text-white px-4 py-2 rounded font-bold"
               >
                 + Add Item
               </button>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { BarChart3, Menu, X, Package, AlertTriangle, Clock, Calendar, Users, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Menu, X, Package, AlertTriangle, Clock, Calendar, Users, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -17,14 +17,13 @@ function InventoryDashboard() {
   const [loading, setLoading] = useState(true);
   const [openDashboard, setOpenDashboard] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const role = localStorage.getItem("role");
 
   // Fetch inventory data from backend
   useEffect(() => {
     const fetchItems = async () => {
       try {
         const token = localStorage.getItem("token"); // staff login token
-        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inventory", {
+        const res = await fetch("http://localhost:3000/auth/inventory", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -84,7 +83,8 @@ function InventoryDashboard() {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -99,126 +99,97 @@ function InventoryDashboard() {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="bg-white text-[#00458B] hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link
+                to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
 
-          {/* Ledger dropdown */}
-          {role === "admin" && (
-            <>
-              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <span className="flex items-center gap-2">
-                  <i className="fa fa-book"></i> Ledger
-                </span>
-                {isLedgerOpen ?
-                  <ChevronUp size={16} /> :
-                  <ChevronDown size={16} />}
-              </button>
-
-              {isLedgerOpen && (
-                <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link
-                    to="/admincoa"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Chart of Accounts
-                  </Link>
-                  <Link
-                    to="/adminjournal"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Journal Entries
-                  </Link>
-                  <Link
-                    to="/adminsubsidiaryreceivable"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Subsidiary
-                  </Link>
-                  <Link
-                    to="/admingeneral"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    General Ledger
-                  </Link>
-                  <Link
-                    to="/admintrial"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Trial Balance
-                  </Link>
-                </div>
-              )}
-
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Users size={18} /> Users
+          {/* Ledger with dropdown */}
+          <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            {isLedgerOpen ?
+              <ChevronUp size={16} /> :
+              <ChevronDown size={16} />}
+          </button>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Chart of Accounts
               </Link>
-            </>
+              <Link to="/adminjournal" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Journal Entries
+              </Link>
+              <Link to="/adminsubsidiaryreceivable" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Subsidiary
+              </Link>
+              <Link to="/admingeneral" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                General Ledger
+              </Link>
+              <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Trial Balance
+              </Link>
+            </div>
           )}
-
-          {(role === "admin" || role === "inventory") && (
-            <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-archive"></i> Inventory
-              </Link>
-            </>
-          )}
-
-          {(role === "admin" || role === "dentist" || role === "receptionist") && (
-            <>
-              <Link
-                to="/adminpatients"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-user-plus"></i> Patients
-              </Link>
-              <Link
-                to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
-              </Link>
-            </>
-          )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
-          {role === "admin" && (
-            <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-eye"></i> Audit Trail
-              </Link>
-            </>
-          )}
+          <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+            <IdCard size={18} /> HMO
+          </Link>
+          <Link
+            to="/adminusers"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Users size={18} /> Users
+          </Link>
+          <Link
+            to="/admininventory"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link
+            to="/adminpatients"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link
+            to="/adminschedule"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link
+            to="/admincashier"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <PhilippinePeso size={18} /> Cashier
+          </Link>
+          <Link
+            to="/adminaudit"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+          >
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
         </nav>
       </aside>
 
@@ -268,28 +239,9 @@ function InventoryDashboard() {
         </h1>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <svg
-              aria-hidden="true"
-              className="w-16 h-16 text-gray-200 animate-spin dark:text-gray-600 fill-blue-600"
-              viewBox="0 0 100 101"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
-                className="text-gray-300"
-                fill="currentColor"
-              />
-              <path
-                d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
-                className="text-[#00c3b8]" // your website color
-                fill="currentFill"
-              />
-            </svg>
-          </div>
+          <p>Loading inventory data...</p>
         ) : (
-          <> 
+          <>
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-white p-6 rounded-xl shadow-md flex items-center gap-4 border-t-4 border-[#01D5C4]">
@@ -406,8 +358,9 @@ function InventoryDashboard() {
                 <table className="w-full border-collapse border border-gray-200">
                   <thead>
                     <tr className="bg-gray-100 text-[#00458B]">
-                      <th className="px-4 py-2 text-left">Item Name</th>
+                      <th className="px-4 py-2 text-center">Item Name</th>
                       <th className="px-4 py-2 text-center">Quantity</th>
+                      <th className="px-4 py-2 text-center">Item Type</th>
                       <th className="px-4 py-2 text-center">Status</th>
                       <th className="px-4 py-2 text-center">Expiration Date</th>
                     </tr>
@@ -417,11 +370,12 @@ function InventoryDashboard() {
                       .filter((item) => Number(item.inv_quantity) <= 50)
                       .map((item) => (
                         <tr key={item.inv_id} className="border-b border-gray-200">
-                          <td className="px-4 py-2">{item.inv_item_name}</td>
+                          <td className="px-4 py-2 text-center">{item.inv_item_name}</td>
                           <td className="px-4 py-2 text-center">{item.inv_quantity}</td>
                           <td className="px-4 py-2 text-center text-red-600 font-bold">
                             Low
                           </td>
+                          <td className="px-4 py-2 text-center">{item.inv_item_type}</td>
                           <td className="px-4 py-2 text-center">
                             {item.inv_exp_date
                               ? new Date(item.inv_exp_date).toLocaleDateString()

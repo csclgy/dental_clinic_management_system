@@ -1,40 +1,32 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link, useParams } from "react-router-dom";
 import axios from "axios";
 import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
-const AdminJournalAdd = () => {
+const AdminConsultationHmoPay = () => {
+  const { appointId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [account, setAccount] = useState([]);
-  const [sub, setSub] = useState([]);
-
+  const [nameSuggestions, setNameSuggestions] = useState([]);
+  const [selectedPatientId, setSelectedPatientId] = useState(null);
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
 
   const [formData, setFormData] = useState({
     date: "",
-    description: "",
+    name: "",
+    invoice_no: "",
     account: "",
-    subaccount: "",
+    accountName: "",
     type: "debit",
     amount: "",
-    comment: "",
+    procedure_type: "",
+    appoint_id: ""
   });
 
-  // ✅ Popup state and fade animation (same style as AdminCoaViewAdd)
-  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
-  const [fade, setFade] = useState(false);
-
-  const showPopup = (message, type) => {
-    setPopup({ show: true, message, type });
-    setFade(true);
-    setTimeout(() => setFade(false), 2500);
-    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
-  };
-
+  // Scroll into view if coming from another page
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -45,34 +37,39 @@ const AdminJournalAdd = () => {
       }
     }
 
-    const fetchAccount = async () => {
+    const fetchAccountReceivable = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/coa1`);
-        setAccount(res.data);
+        const res = await axios.get(
+          `http://localhost:3000/auth/accountReceivable`
+        );
+        if (res.data.length > 0) {
+          const { account_id, account_name } = res.data[0];
+          setFormData((prev) => ({
+            ...prev,
+            account: account_id,
+            accountName: account_name,
+          }));
+        }
       } catch (err) {
-        console.error("Error fetching account:", err);
+        console.error("Error fetching Account Receivable:", err);
       }
     };
-    fetchAccount();
+
+    fetchAccountReceivable();
   }, [location]);
 
   useEffect(() => {
-    if (formData.account) {
-      const fetchSubAccounts = async () => {
-        try {
-          const res = await axios.get(
-            `http://localhost:3000/auth/subaccs/${formData.account}`
-          );
-          setSub(res.data);
-        } catch (err) {
-          console.error("Error fetching subaccounts:", err);
-        }
-      };
-      fetchSubAccounts();
-    } else {
-      setSub([]);
+    if (location.state) {
+      const { patientName, invoiceNo, procedureType, appointId } = location.state;
+      setFormData((prev) => ({
+        ...prev,
+        name: patientName || "",
+        invoice_no: invoiceNo || "",
+        procedure_type: procedureType || "",
+        appoint_id: appointId || ""
+      }));
     }
-  }, [formData.account]);
+  }, [location.state]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -81,44 +78,31 @@ const AdminJournalAdd = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (
-      !formData.date ||
-      !formData.description ||
-      !formData.account ||
-      !formData.amount
-    ) {
-      showPopup("Please fill in all required fields.", "error");
+
+    if (!formData.date || !formData.name || !formData.account || !formData.amount) {
+      alert("Please fill in all required fields.");
       return;
     }
 
+    const debit = formData.type === "debit" ? Number(formData.amount) : 0;
+    const credit = formData.type === "credit" ? Number(formData.amount) : 0;
+
+
     try {
-      const token = localStorage.getItem("token"); // get your saved JWT token
-      const debit = formData.type === "debit" ? Number(formData.amount) : 0;
-      const credit = formData.type === "credit" ? Number(formData.amount) : 0;
-
-      await axios.post("http://localhost:3000/auth/journal", {
+      await axios.post("http://localhost:3000/auth/subsidiaryReceivableHmo", {
         date: formData.date,
-        description: formData.description,
-        account_id: formData.account,
-        subaccount_id: formData.subaccount,
-        debit,
-        credit,
-        comment: formData.comment,
-      },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ add this
-          },
-        }
-      );
-
-      showPopup("Journal entry saved successfully!", "success");
-      setTimeout(() => navigate("/adminjournal"), 1500);
+        name: formData.name,
+        invoice_no: formData.invoice_no,
+        amount: Number(formData.amount),
+        appoint_id: formData.appoint_id,
+        procedure_type: formData.procedure_type,
+      });
+      alert("Subsidiary entry saved successfully!");
+      navigate("/adminconsultation/:appointId");
     } catch (err) {
-      console.error(err);
-      showPopup(err.response?.data?.message || "Something went wrong.", "error");
+      console.error("Error saving entry:", err.response?.data || err.message);
+      alert(err.response?.data?.message || "Something went wrong");
     }
-
   };
 
   return (
@@ -131,7 +115,7 @@ const AdminJournalAdd = () => {
           {/* Dashboard Dropdown */}
           <button
             onClick={() => setOpenDashboard(!openDashboard)}
-            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+            className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
           >
             <span className="flex items-center gap-2">
               <BarChart3 size={18} /> Dashboard
@@ -164,7 +148,7 @@ const AdminJournalAdd = () => {
           {role === "admin" && (
             <>
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
@@ -184,7 +168,7 @@ const AdminJournalAdd = () => {
                   </Link>
                   <Link
                     to="/adminjournal"
-                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
                   >
                     Journal Entries
                   </Link>
@@ -274,17 +258,6 @@ const AdminJournalAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* ✅ Popup Notification (same style as AdminCoaViewAdd) */}
-        {popup.show && (
-          <div
-            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
-              } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
-            style={{ zIndex: 9999 }}
-          >
-            {popup.message}
-          </div>
-        )}
-
         {/* Mobile menu */}
         <button
           onClick={() => setSidebarOpen(true)}
@@ -295,83 +268,93 @@ const AdminJournalAdd = () => {
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add Journal Entry
+            Add Payment
           </h1>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Date: <span style={{color:"red"}}>*</span>
-              </label>
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Appointment No:
+                </label>
+                <input
+                  type="text"
+                  name="appoint_id"
+                  value={formData.appoint_id}
+                  onChange={handleChange}
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Date: <span style={{color:"red"}}>*</span>
+                </label>
+                <input
+                  type="date"
+                  name="date"
+                  value={formData.date}
+                  onChange={handleChange}
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                />
+              </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Invoice Number:
+                </label>
+                <input
+                  type="text"
+                  name="invoice_no"
+                  value={formData.invoice_no}
+                  onChange={handleChange}
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+              <div>
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Service:
+                </label>
+                <input
+                  type="text"
+                  name="procedure_type"
+                  value={formData.procedure_type}
+                  onChange={handleChange}
+                  readOnly
+                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+            </div>
+
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account: <span style={{color:"red"}}>*</span>
-              </label>
-              <select
-                name="account"
-                value={formData.account}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="">-- Select Account --</option>
-                {account.map((acc) => (
-                  <option key={acc.account_id} value={acc.account_id}>
-                    {acc.account_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Sub Account: <span style={{color:"red"}}>*</span>
-              </label>
-              <select
-                name="subaccount"
-                value={formData.subaccount}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="">-- Select Subaccount --</option>
-                {sub.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.account_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Description: <span style={{color:"red"}}>*</span>
+                Patient Name:
               </label>
               <input
                 type="text"
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                name="name"
+                value={formData.name}
+                readOnly
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none bg-gray-100 cursor-not-allowed"
               />
+
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Debit/Credit: <span style={{color:"red"}}>*</span>
+                  Debit:
                 </label>
                 <select
                   name="type"
                   value={formData.type}
                   onChange={handleChange}
+                  readOnly
+                  disabled
                   className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
                 >
                   <option value="debit">Debit</option>
@@ -392,24 +375,11 @@ const AdminJournalAdd = () => {
               </div>
             </div>
 
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Comment: <span style={{color:"red"}}>*</span>
-              </label>
-              <input
-                type="text"
-                name="comment"
-                value={formData.comment}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
-            </div>
-
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/adminjournal")}
+                onClick={() => navigate(`/adminconsultationpartial/${appointId}`)}
               >
                 Back
               </button>
@@ -427,4 +397,4 @@ const AdminJournalAdd = () => {
   );
 };
 
-export default AdminJournalAdd;
+export default AdminConsultationHmoPay

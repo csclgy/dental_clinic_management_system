@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminSubsidiaryPayableAdd = () => {
   const location = useLocation();
@@ -21,7 +21,7 @@ const AdminSubsidiaryPayableAdd = () => {
     account: "",
     accountName: "",
     account1: "",
-    type: "debit",
+    type: "credit",
     amount: "",
     items: "",
     day_agreement: "",
@@ -67,7 +67,7 @@ const AdminSubsidiaryPayableAdd = () => {
 
     const fetchInventory = async () => {
       try {
-        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/accountInventory`);
+        const res = await axios.get(`http://localhost:3000/auth/accountExpense`);
         if (res.data.length > 0) {
           setAccount(res.data);
         }
@@ -87,7 +87,7 @@ const AdminSubsidiaryPayableAdd = () => {
     }
     try {
       const res = await axios.get(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/supplier?name=${query}`
+        `http://localhost:3000/auth/supplier?name=${query}`
       );
       setNameSuggestions(res.data);
     } catch (err) {
@@ -160,7 +160,7 @@ const AdminSubsidiaryPayableAdd = () => {
       const credit = formData.type === "credit" ? Number(formData.amount) : 0;
 
 
-      await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subsidiary1", {
+      await axios.post("http://localhost:3000/auth/subsidiary1", {
         date: formData.date,
         name: formData.description,
         account_id: formData.account,
@@ -235,7 +235,8 @@ const AdminSubsidiaryPayableAdd = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -250,15 +251,22 @@ const AdminSubsidiaryPayableAdd = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -310,7 +318,9 @@ const AdminSubsidiaryPayableAdd = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -401,7 +411,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Date
+                  Date: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="date"
@@ -413,7 +423,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Invoice Number
+                  Invoice Number: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="text"
@@ -429,7 +439,7 @@ const AdminSubsidiaryPayableAdd = () => {
             {/* Name + Suggestions */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Name
+                Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -469,7 +479,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Debit/Credit
+                  Debit/Credit:
                 </label>
                 <input
                   type="text"
@@ -481,7 +491,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Amount
+                  Amount: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="number"
@@ -498,7 +508,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Account
+                  Account:
                 </label>
                 <input
                   type="text"
@@ -509,7 +519,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Expense Account
+                  Expense Account:
                 </label>
 
                 {/* if pay mode */}
@@ -557,7 +567,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Items:
+                  Comments/Items: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="text"
@@ -570,7 +580,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Agreement
+                  Agreement: <span style={{color:"red"}}>*</span>
                 </label>
                 <select
                   name="day_agreement"

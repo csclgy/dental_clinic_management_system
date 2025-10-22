@@ -1,30 +1,27 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
-const AdminJournalAdd = () => {
+const AdminHMOServiceEdit = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { service_id } = useParams();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [account, setAccount] = useState([]);
-  const [sub, setSub] = useState([]);
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
 
-  const [formData, setFormData] = useState({
-    date: "",
-    description: "",
-    account: "",
-    subaccount: "",
-    type: "debit",
-    amount: "",
-    comment: "",
+
+  const [hmo, setHMO] = useState({
+    service: "",
+    coverage: "",
+    hmo_status: "Active",
   });
 
-  // ✅ Popup state and fade animation (same style as AdminCoaViewAdd)
+  // ✅ Popup state and fade animation (copied from AdminCoaAdd)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
   const [fade, setFade] = useState(false);
 
@@ -35,6 +32,63 @@ const AdminJournalAdd = () => {
     setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
   };
 
+  // ✅ Fetch account by id
+  useEffect(() => {
+    const fetchHMO = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/hmo_service/${service_id}`);
+        setHMO(res.data);
+      } catch (err) {
+        console.error("Error fetching account:", err);
+        showPopup("Failed to fetch account details.", "error");
+      }
+    };
+    fetchHMO();
+  }, [service_id]);
+
+
+ const handleChange = (e) => { setHMO({ ...hmo, [e.target.name]: e.target.value }); };
+
+
+const handleUpdate = async () => {
+  if (!hmo.service.trim()) {
+    showPopup("Service name is required.", "error");
+    return;
+  }
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showPopup("No token found. Please login again.", "error");
+      return;
+    }
+
+    // Send as JSON
+    const response = await axios.put(
+      `http://localhost:3000/auth/hmo_service/${service_id}`,
+      {
+        service: hmo.service,
+        coverage: hmo.coverage,
+        hmo_status: hmo.hmo_status,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    showPopup(response.data.message || "HMO updated successfully!", "success");
+    setTimeout(() => navigate(-1), 1500);
+  } catch (err) {
+    console.error("Error updating HMO:", err);
+    showPopup(err.response?.data?.message || "Failed to update HMO.", "error");
+  }
+};
+
+
+  // ✅ Scroll to element if provided
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -44,85 +98,21 @@ const AdminJournalAdd = () => {
         }, 100);
       }
     }
-
-    const fetchAccount = async () => {
-      try {
-        const res = await axios.get(`http://localhost:3000/auth/coa1`);
-        setAccount(res.data);
-      } catch (err) {
-        console.error("Error fetching account:", err);
-      }
-    };
-    fetchAccount();
   }, [location]);
 
-  useEffect(() => {
-    if (formData.account) {
-      const fetchSubAccounts = async () => {
-        try {
-          const res = await axios.get(
-            `http://localhost:3000/auth/subaccs/${formData.account}`
-          );
-          setSub(res.data);
-        } catch (err) {
-          console.error("Error fetching subaccounts:", err);
-        }
-      };
-      fetchSubAccounts();
-    } else {
-      setSub([]);
-    }
-  }, [formData.account]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (
-      !formData.date ||
-      !formData.description ||
-      !formData.account ||
-      !formData.amount
-    ) {
-      showPopup("Please fill in all required fields.", "error");
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("token"); // get your saved JWT token
-      const debit = formData.type === "debit" ? Number(formData.amount) : 0;
-      const credit = formData.type === "credit" ? Number(formData.amount) : 0;
-
-      await axios.post("http://localhost:3000/auth/journal", {
-        date: formData.date,
-        description: formData.description,
-        account_id: formData.account,
-        subaccount_id: formData.subaccount,
-        debit,
-        credit,
-        comment: formData.comment,
-      },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ add this
-          },
-        }
-      );
-
-      showPopup("Journal entry saved successfully!", "success");
-      setTimeout(() => navigate("/adminjournal"), 1500);
-    } catch (err) {
-      console.error(err);
-      showPopup(err.response?.data?.message || "Something went wrong.", "error");
-    }
-
-  };
-
   return (
-    <div className="flex min-h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100 relative">
+      {/* ✅ Popup Notification (same style as AdminCoaAdd) */}
+      {popup.show && (
+        <div
+          className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
+            } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+          style={{ zIndex: 9999 }}
+        >
+          {popup.message}
+        </div>
+      )}
+
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
@@ -178,13 +168,13 @@ const AdminJournalAdd = () => {
                 <div className="ml-6 flex flex-col gap-1 text-sm">
                   <Link
                     to="/admincoa"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
                   >
                     Chart of Accounts
                   </Link>
                   <Link
                     to="/adminjournal"
-                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
                   >
                     Journal Entries
                   </Link>
@@ -274,18 +264,7 @@ const AdminJournalAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* ✅ Popup Notification (same style as AdminCoaViewAdd) */}
-        {popup.show && (
-          <div
-            className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
-              } ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
-            style={{ zIndex: 9999 }}
-          >
-            {popup.message}
-          </div>
-        )}
-
-        {/* Mobile menu */}
+        {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -295,136 +274,74 @@ const AdminJournalAdd = () => {
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add Journal Entry
+            Edit HMO Service
           </h1>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Date: <span style={{color:"red"}}>*</span>
-              </label>
-              <input
-                type="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account: <span style={{color:"red"}}>*</span>
-              </label>
-              <select
-                name="account"
-                value={formData.account}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="">-- Select Account --</option>
-                {account.map((acc) => (
-                  <option key={acc.account_id} value={acc.account_id}>
-                    {acc.account_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Sub Account: <span style={{color:"red"}}>*</span>
-              </label>
-              <select
-                name="subaccount"
-                value={formData.subaccount}
-                onChange={handleChange}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="">-- Select Subaccount --</option>
-                {sub.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.account_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Description: <span style={{color:"red"}}>*</span>
+                HMO Name
               </label>
               <input
                 type="text"
-                name="description"
-                value={formData.description}
+                name="service"
+                value={hmo.service}
                 onChange={handleChange}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-[#00458b] font-semibold mb-1">
-                  Debit/Credit: <span style={{color:"red"}}>*</span>
-                </label>
-                <select
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                >
-                  <option value="debit">Debit</option>
-                  <option value="credit">Credit</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[#00458b] font-semibold mb-1">
-                  Amount: <span style={{color:"red"}}>*</span>
-                </label>
-                <input
-                  type="number"
-                  name="amount"
-                  value={formData.amount}
-                  onChange={handleChange}
-                  className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-                />
-              </div>
             </div>
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Comment: <span style={{color:"red"}}>*</span>
+                HMO Coverage
               </label>
               <input
                 type="text"
-                name="comment"
-                value={formData.comment}
+                name="coverage"
+                value={hmo.coverage}
                 onChange={handleChange}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
             </div>
 
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                HMO Status
+              </label>
+              <select
+                name="status"
+                value={hmo.hmo_status}
+                onChange={handleChange}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+           
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
                 className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/adminjournal")}
+                onClick={() => navigate(-1)}
               >
-                Back
+                Back to List
               </button>
+
               <button
-                type="submit"
+                type="button"
                 className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+                onClick={handleUpdate}
               >
-                Save
+                Update
               </button>
             </div>
-          </form>
+          </div>
         </div>
       </main>
     </div>
   );
 };
 
-export default AdminJournalAdd;
+export default AdminHMOServiceEdit ;

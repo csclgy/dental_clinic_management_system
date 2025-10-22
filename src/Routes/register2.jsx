@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useRegister } from "../context/RegisterContext";
 
 const Register2 = () => {
   const navigate = useNavigate();
   const { registerData, setRegisterData } = useRegister();
+  const [showAlert, setShowAlert] = useState(false); // for alert modal
 
   // helper updater
   const updateFormData = (field, value) => {
@@ -31,6 +32,33 @@ const Register2 = () => {
     }
   };
 
+  const handleNext = () => {
+    const requiredFields = [
+      "fname",
+      "lname",
+      "mname",
+      "gender",
+      "religion",
+      "date_birth",
+      "home_address",
+      "city",
+      "nationality",
+      "occupation",
+      "blood_type",
+    ];
+
+    const missing = requiredFields.filter(
+      (field) => !registerData[field] || registerData[field].trim() === ""
+    );
+
+    if (missing.length > 0) {
+      setShowAlert(true); // show modal instead of native alert
+      return;
+    }
+
+    navigate("/presubmit");
+  };
+
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-[#20d3d1] to-[#6dd0f4] px-4"
@@ -38,24 +66,30 @@ const Register2 = () => {
         backgroundImage:
           "linear-gradient(to right, rgba(96,242,231,0.75), rgba(65,145,227,0.75)), url('/bg.jpg')",
         backgroundSize: "cover",
-        backgroundPosition: "center"
+        backgroundPosition: "center",
       }}
     >
       <br />
       <div className="w-full max-w-4xl bg-white p-6 sm:p-10 rounded-lg shadow-lg text-center">
-        <h2 className="text-[#00c3b8] text-2xl sm:text-3xl font-bold mb-2">SIGN UP</h2>
+        <h2 className="text-[#00c3b8] text-2xl sm:text-3xl font-bold mb-2">
+          SIGN UP
+        </h2>
         <p className="text-[#00458B] text-sm sm:text-base mb-6">
           Fill in the information below to sign up.
         </p>
+        <hr></hr>
+        <br></br>
 
-        <p className="text-[#00c3b8] font-bold mb-4">Personal Information</p>
+        <p className="text-[#00c3b8] text-left text-xl font-bold mb-4">Personal Information</p>
 
         {/* Form Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {/* LEFT SIDE */}
           <div className="space-y-4 text-left">
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">First Name</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                First Name: <span style={{color:"red"}}>*</span>
+              </label>
               <input
                 type="text"
                 value={registerData.fname || ""}
@@ -65,7 +99,9 @@ const Register2 = () => {
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Last Name</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Last Name: <span style={{color:"red"}}>*</span>
+              </label>
               <input
                 type="text"
                 value={registerData.lname || ""}
@@ -75,7 +111,9 @@ const Register2 = () => {
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Gender</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Gender: <span style={{color:"red"}}>*</span>
+              </label>
               <select
                 value={registerData.gender || ""}
                 onChange={(e) => updateFormData("gender", e.target.value)}
@@ -88,7 +126,9 @@ const Register2 = () => {
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Religion</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Religion: <span style={{color:"red"}}>*</span>
+              </label>
               <select
                 value={registerData.religion || ""}
                 onChange={(e) => updateFormData("religion", e.target.value)}
@@ -100,7 +140,9 @@ const Register2 = () => {
                 <option value="Iglesia ni Cristo">Iglesia ni Cristo</option>
                 <option value="Evangelicals">Evangelicals</option>
                 <option value="Protestant">Protestant</option>
-                <option value="Seventh-day Adventist">Seventh-day Adventist</option>
+                <option value="Seventh-day Adventist">
+                  Seventh-day Adventist
+                </option>
                 <option value="Bible Baptist Church">Bible Baptist Church</option>
                 <option value="Aglipayan">Aglipayan</option>
                 <option value="UCCP">UCCP</option>
@@ -110,7 +152,9 @@ const Register2 = () => {
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Home Address</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Home Address: <span style={{color:"red"}}>*</span>
+              </label>
               <input
                 type="text"
                 value={registerData.home_address || ""}
@@ -120,7 +164,9 @@ const Register2 = () => {
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">City</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                City: <span style={{color:"red"}}>*</span>
+              </label>
               <input
                 type="text"
                 value={registerData.city || ""}
@@ -130,7 +176,9 @@ const Register2 = () => {
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Province</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Province: 
+              </label>
               <input
                 type="text"
                 value={registerData.province || ""}
@@ -143,7 +191,9 @@ const Register2 = () => {
           {/* RIGHT SIDE */}
           <div className="space-y-4 text-left">
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Middle Name</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Middle Name: <span style={{color:"red"}}>*</span>
+              </label>
               <input
                 type="text"
                 value={registerData.mname || ""}
@@ -153,19 +203,23 @@ const Register2 = () => {
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Date of Birth</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Date of Birth: <span style={{color:"red"}}>*</span>
+              </label>
               <input
                 type="date"
                 value={registerData.date_birth || ""}
                 onChange={(e) => handleDateChange(e.target.value)}
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-[#00c3b8]"
-                max={new Date().toISOString().split("T")[0]} // prevents today & future dates
+                max={new Date().toISOString().split("T")[0]}
                 required
               />
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Age</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Age
+              </label>
               <input
                 type="number"
                 min={1}
@@ -176,7 +230,9 @@ const Register2 = () => {
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Nationality</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Nationality: <span style={{color:"red"}}>*</span>
+              </label>
               <input
                 type="text"
                 value={registerData.nationality || ""}
@@ -186,7 +242,9 @@ const Register2 = () => {
             </div>
 
             <div>
-              <label className="block text-[#00458b] font-semibold mb-1">Occupation</label>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Occupation: <span style={{color:"red"}}>*</span>
+              </label>
               <input
                 type="text"
                 value={registerData.occupation || ""}
@@ -195,9 +253,9 @@ const Register2 = () => {
               />
             </div>
 
-            <div class="mb-4 text-left">
+            <div className="mb-4 text-left">
               <label className="block text-[#00458b] font-semibold mb-1">
-                Blood Type
+                Blood Type: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
@@ -222,24 +280,45 @@ const Register2 = () => {
             </div>
           </div>
         </div>
+        <br></br>
 
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 mt-6">
           <button
-            className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full sm:w-1/2"
+            className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg w-full sm:w-1/2"
             onClick={() => navigate("/register")}
           >
             Back
           </button>
           <button
-            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-full w-full sm:w-1/2"
-            onClick={() => navigate("/presubmit")}
+            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full sm:w-1/2"
+            onClick={handleNext}
           >
             Next
           </button>
         </div>
       </div>
-      <br></br>
+
+      {/* 🔔 Custom Alert Modal */}
+      {showAlert && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-lg p-6 w-80 text-center">
+            <h3 className="text-lg font-bold text-[#00458b] mb-2">
+              ⚠️ Incomplete Information
+            </h3>
+            <p className="text-sm text-gray-700 mb-4">
+              Please fill in all required fields before continuing.
+            </p>
+            <button
+              onClick={() => setShowAlert(false)}
+              className="bg-[#00c3b8] text-white px-4 py-2 rounded-lg"
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
+      <br />
     </div>
   );
 };

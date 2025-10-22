@@ -1,6 +1,7 @@
 import axios from 'axios'; // for API requests
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Printer } from "lucide-react";
 
 const TransMed = () => {
   const location = useLocation();
@@ -26,7 +27,7 @@ const TransMed = () => {
     const fetchRecords = async () => {
       try {
         const token = localStorage.getItem("token"); // or however you store it
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/my-upcoming", {
+        const res = await axios.get("http://localhost:3000/auth/my-upcoming", {
           headers: {
             Authorization: `Bearer ${token}`, // 👈 send token
           },
@@ -311,10 +312,10 @@ const TransMed = () => {
             {/* Print Button */}
             <div className="flex justify-end mt-6">
               <button
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-teal-600"
+                className="bg-[#00458B] text-white font-semibold px-6 py-2 rounded-lg hover:bg-teal-600"
                 onClick={handlePrintReport}
               >
-                Print
+                <Printer size={18} />
               </button>
             </div>
           </div>

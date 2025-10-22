@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, Package, PlusCircle, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, Package, PlusCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminInventoryAdd = () => {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ const AdminInventoryAdd = () => {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/suppliers");
+        const response = await axios.get("http://localhost:3000/auth/suppliers");
         setSuppliers(response.data);
       } catch (error) {
         console.error("Error fetching suppliers:", error);
@@ -58,7 +58,7 @@ const AdminInventoryAdd = () => {
 
     try {
       const response = await axios.post(
-        "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/additem",
+        "http://localhost:3000/auth/additem",
         registerData,
         {
           headers: {
@@ -95,7 +95,8 @@ const AdminInventoryAdd = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -110,15 +111,22 @@ const AdminInventoryAdd = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -170,7 +178,9 @@ const AdminInventoryAdd = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -261,7 +271,7 @@ const AdminInventoryAdd = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Item Type
+                Item Type: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.inv_item_type || ""}
@@ -276,7 +286,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Item Name
+                Item Name: <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="text"
@@ -288,7 +298,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Price Per Item
+                Price Per Item (₱): <span style={{color:"red"}}>*</span>
               </label>
               <input
                 type="number"
@@ -302,22 +312,62 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Quantity
+                Quantity: <span style={{color:"red"}}>*</span>
               </label>
-              <input
-                type="number"
-                value={registerData.inv_quantity}
-                onChange={(e) => updateFormData("inv_quantity", e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
+              <div className="flex items-center border border-[#00458b] rounded-lg w-fit">
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateFormData(
+                      "inv_quantity",
+                      Math.max(0, Number(registerData.inv_quantity) - 1)
+                    )
+                  }
+                  className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+                >
+                  −
+                </button>
+
+                <input
+                  type="text"
+                  value={registerData.inv_quantity}
+                  onChange={(e) => {
+                    const value = e.target.value;
+
+                    // Allow only numbers (no negatives, no special chars)
+                    if (/^\d*$/.test(value)) {
+                      updateFormData("inv_quantity", value);
+                    }
+                  }}
+                  onBlur={() => {
+                    // If empty, set to 0
+                    if (registerData.inv_quantity === "") {
+                      updateFormData("inv_quantity", 0);
+                    }
+                  }}
+                  className="w-16 text-center outline-none border-x border-[#00458b] py-2"
+                  inputMode="numeric"
+                />
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateFormData("inv_quantity", Number(registerData.inv_quantity) + 1)
+                  }
+                  className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+                >
+                  +
+                </button>
+              </div>
             </div>
+
 
             {/* Show only when medicine is selected */}
             {registerData.inv_item_type === "Medicine" && (
               <>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Amount of mL
+                    Amount of mL: <span style={{color:"red"}}>*</span>
                   </label>
                   <input
                     type="number"
@@ -329,7 +379,7 @@ const AdminInventoryAdd = () => {
 
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Expiration Date
+                    Expiration Date: <span style={{color:"red"}}>*</span>
                   </label>
                   <input
                     type="date"
@@ -345,7 +395,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Supplier
+                Supplier: <span style={{color:"red"}}>*</span>
               </label>
               <select
                 value={registerData.supplier_id}

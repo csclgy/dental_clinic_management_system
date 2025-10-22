@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, PlusCircle } from "lucide-react";
 
 const AdminSubsidiaryPayable = () => {
   const location = useLocation();
@@ -14,7 +14,7 @@ const AdminSubsidiaryPayable = () => {
   const [openDashboard, setOpenDashboard] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -42,13 +42,16 @@ const AdminSubsidiaryPayable = () => {
   // Fetch subsidiary ledger for Accounts Payable
   useEffect(() => {
     const fetchSubsidiary = async (account_id) => {
+      setLoading(true); // ✅ show spinner
       try {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subsidiaryPayable", {
+        const res = await axios.get("http://localhost:3000/auth/subsidiaryPayable", {
           params: { account_id },
         });
         setSubsidiaryRecords(res.data);
       } catch (err) {
         console.error("Error fetching subsidiary records:", err);
+      } finally {
+        setLoading(false); // ✅ hide spinner after fetch finishes
       }
     };
 
@@ -81,7 +84,8 @@ const AdminSubsidiaryPayable = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -96,15 +100,22 @@ const AdminSubsidiaryPayable = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -156,7 +167,9 @@ const AdminSubsidiaryPayable = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -237,40 +250,40 @@ const AdminSubsidiaryPayable = () => {
             onClick={() => navigate("/adminsubsidiaryaddpayable")}
             className="flex items-center gap-2 bg-[#00458B] font-semibold text-white px-4 py-2 rounded-lg"
           >
-            + Add New Payable
+            <PlusCircle size={18} /> Add New Payable
           </button>
         </div>
 
         {/* Table */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
           {/* Search Bar */}
-          <div className="flex justify-between mb-4">
-            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
+            {/* Dropdown on the Left */}
+            <select
+              defaultValue="/adminsubsidiaryreceivable"
+              onChange={(e) => navigate(e.target.value)}
+              className="border border-[#00458B] rounded-lg px-3 py-2 text-sm text-[#00458B] font-medium p-2.5 focus:ring-2 focus:ring-[#00458B] focus:border-[#00458B] transition"
+            >
+              <option value="/adminsubsidiaryreceivable">Accounts Receivable</option>
+              <option value="/adminsubsidiarypayable">Accounts Payable</option>
+            </select>
+
+            {/* Search Bar on the Right */}
+            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1.5 w-full sm:w-64 bg-white">
               <input
                 type="text"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 outline-none text-sm text-gray-700"
+                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400"
               />
-              <i className="fa fa-search text-[#00458B]"></i>
+              <i className="fa fa-search text-[#00458B] text-sm"></i>
             </div>
-
-            {/* Switch Dropdown */}
-            <select
-              defaultValue="/adminsubsidiarypayable"
-              onChange={(e) => navigate(e.target.value)}
-              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"
-            >
-              <option value="/adminsubsidiaryreceivable">
-                Accounts Receivable
-              </option>
-              <option value="/adminsubsidiarypayable">Accounts Payable</option>
-            </select>
           </div>
 
           <table className="w-full border-collapse border border-gray-200">
             <thead>
+
               <tr className="bg-gray-100 text-[#00458B]">
                 <th className="px-4 py-2 text-left">Date</th>
                 <th className="px-4 py-2 text-left">Particulars</th>
@@ -280,8 +293,8 @@ const AdminSubsidiaryPayable = () => {
                 <th className="px-4 py-2 text-left">Balance</th>
                 <th className="px-4 py-2 text-left">Action</th>
               </tr>
-            </thead>
 
+            </thead>
             <tbody>
               {loading ? (
                 // 🌀 Show spinner when loading is true
@@ -297,35 +310,35 @@ const AdminSubsidiaryPayable = () => {
                       >
                         <path
                           d="M100 50.5908C100 78.2051 77.6142 100.591 
-                   50 100.591C22.3858 100.591 0 78.2051 
-                   0 50.5908C0 22.9766 22.3858 0.59082 
-                   50 0.59082C77.6142 0.59082 100 
-                   22.9766 100 50.5908ZM9.08144 
-                   50.5908C9.08144 73.1895 27.4013 
-                   91.5094 50 91.5094C72.5987 
-                   91.5094 90.9186 73.1895 
-                   90.9186 50.5908C90.9186 
-                   27.9921 72.5987 9.67226 
-                   50 9.67226C27.4013 9.67226 
-                   9.08144 27.9921 9.08144 
-                   50.5908Z"
+                 50 100.591C22.3858 100.591 0 78.2051 
+                 0 50.5908C0 22.9766 22.3858 0.59082 
+                 50 0.59082C77.6142 0.59082 100 
+                 22.9766 100 50.5908ZM9.08144 
+                 50.5908C9.08144 73.1895 27.4013 
+                 91.5094 50 91.5094C72.5987 
+                 91.5094 90.9186 73.1895 
+                 90.9186 50.5908C90.9186 
+                 27.9921 72.5987 9.67226 
+                 50 9.67226C27.4013 9.67226 
+                 9.08144 27.9921 9.08144 
+                 50.5908Z"
                           className="text-gray-300"
                           fill="currentColor"
                         />
                         <path
                           d="M93.9676 39.0409C96.393 38.4038 
-                   97.8624 35.9116 97.0079 33.5539C95.2932 
-                   28.8227 92.871 24.3692 89.8167 20.348C85.8452 
-                   15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 
-                   4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 
-                   0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 
-                   1.69328 37.813 4.19778 38.4501 6.62326C39.0873 
-                   9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 
-                   9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 
-                   10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 
-                   17.9648 79.3347 21.5619 82.5849 25.841C84.9175 
-                   28.9121 86.7997 32.2913 88.1811 35.8758C89.083 
-                   38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                 97.8624 35.9116 97.0079 33.5539C95.2932 
+                 28.8227 92.871 24.3692 89.8167 20.348C85.8452 
+                 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 
+                 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 
+                 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 
+                 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 
+                 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 
+                 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 
+                 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 
+                 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 
+                 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 
+                 38.2158 91.5421 39.6781 93.9676 39.0409Z"
                           className="text-[#00458B]"
                           fill="currentFill"
                         />
@@ -384,8 +397,8 @@ const AdminSubsidiaryPayable = () => {
                         }}
                         disabled={fullyPaidInvoices.has(record.invoice_no)}
                         className={`font-semibold px-4 py-2 rounded-lg ${fullyPaidInvoices.has(record.invoice_no)
-                            ? "bg-gray-400 cursor-not-allowed text-white"
-                            : "bg-[#00c3b8] hover:bg-[#00a99d] text-white"
+                          ? "bg-gray-400 cursor-not-allowed text-white"
+                          : "bg-[#00c3b8] hover:bg-[#00a99d] text-white"
                           }`}
                       >
                         Pay
@@ -417,7 +430,7 @@ const AdminSubsidiaryPayable = () => {
                   <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
                     Invoice Details
                   </h3>
-                  <br />
+                  <br></br>
                   <button
                     onClick={() => setSelectedRecord(null)}
                     className="text-gray-500 hover:text-red-500"
@@ -426,51 +439,33 @@ const AdminSubsidiaryPayable = () => {
                   </button>
                 </div>
                 <div className="text-sm text-gray-800">
-                  <p className="mt-2">
-                    <strong>Invoice No:</strong>
-                  </p>
-                  <p className="mt-1 ml-3 text-blue-800">
-                    {selectedRecord.invoice_no}
-                  </p>
-                  <p className="mt-1">
-                    <strong>Date:</strong>
-                  </p>
+                  <p className="mt-2"><strong>Invoice No:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.invoice_no}</p>
+
+                  {/* <p className="mt-1"><strong>Payment No:</strong> {selectedRecord.payment_reference}</p> */}
+
+                  <p className="mt-1"><strong>Date:</strong></p>
                   <p className="mt-1 ml-3 text-blue-800">{selectedRecord.date}</p>
-                  <p className="mt-1">
-                    <strong>Day Agreement:</strong>
-                  </p>
-                  <p className="mt-1 ml-3 text-blue-800">
-                    {selectedRecord.day_agreement}
-                  </p>
-                  <p className="mt-1">
-                    <strong>Due Date:</strong>
-                  </p>
-                  <p className="mt-1 ml-3 text-blue-800">{selectedRecord.due_date}</p>
-                  <p className="mt-1">
-                    <strong>Supplier Name:</strong>
-                  </p>
-                  <p className="mt-1 ml-3 text-blue-800">
-                    {selectedRecord.supplier_name}
-                  </p>
-                  <p className="mt-1">
-                    <strong>Items:</strong>
-                  </p>
-                  <p className="mt-1 ml-3 text-blue-800">{selectedRecord.items}</p>
-                  <p className="mt-1">
-                    <strong>Total Amount:</strong>
-                  </p>
-                  <p className="mt-1 ml-3 text-blue-800">
-                    ₱{" "}
-                    {(Number(selectedRecord.total_amount) || 0).toLocaleString(
-                      undefined,
-                      { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-                    )}
-                  </p>
+
+                  <p className="mt-1"><strong>Day Agreement:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.day_agreement}</p>
+
+                  <p className="mt-1"><strong>Due Date:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.due_date}</p>
+
+                  <p className="mt-1"><strong>Supplier Name:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.supplier_name}</p>
+
+                  <p className="mt-1"><strong>Items:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.items}</p>
+
+                  <p className="mt-1"><strong> Total Amount:</strong></p>
+                  <p className="mt-1 ml-3 text-blue-800">  ₱ {(Number(selectedRecord.total_amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+
                 </div>
               </div>
             )}
           </table>
-
         </div>
       </main>
     </div>

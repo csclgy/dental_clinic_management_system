@@ -9,6 +9,8 @@ import {
   ChevronDown,
   ChevronUp,
   Menu,
+  IdCard,
+  Printer
 } from "lucide-react";
 import {
   PieChart,
@@ -30,7 +32,6 @@ function AdminDashboard() {
   const [patientsCount, setPatientsCount] = useState(0);
   const [patientDemographics, setPatientDemographics] = useState([]);
   const [openDashboard, setOpenDashboard] = useState(false);
-  const role = localStorage.getItem("role");
 
   const [revenueData, setRevenueData] = useState([]);
   const [filteredRevenue, setFilteredRevenue] = useState([]);
@@ -38,10 +39,10 @@ function AdminDashboard() {
   const [endMonth, setEndMonth] = useState("Dec");
   const [year, setYear] = useState(new Date().getFullYear());
 
-const [ledgerData, setLedgerData] = useState([]);
-const [totalDebit, setTotalDebit] = useState(0);
-const [totalCredit, setTotalCredit] = useState(0);
-const [netBalance, setNetBalance] = useState(0);
+  const [ledgerData, setLedgerData] = useState([]);
+  const [totalDebit, setTotalDebit] = useState(0);
+  const [totalCredit, setTotalCredit] = useState(0);
+  const [netBalance, setNetBalance] = useState(0);
 
 
   const COLORS = ["#01D5C4", "#00458B", "#A3A3A3"];
@@ -49,19 +50,19 @@ const [netBalance, setNetBalance] = useState(0);
 
   // Fetch backend data
   useEffect(() => {
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/count")
+    axios.get("http://localhost:3000/auth/appointments/count")
       .then(res => setAppointmentsCount(res.data))
       .catch(err => console.error("Error fetching appointments:", err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/count")
+    axios.get("http://localhost:3000/auth/patients/count")
       .then(res => setPatientsCount(res.data))
       .catch(err => console.error("Error fetching patients:", err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/demographics")
+    axios.get("http://localhost:3000/auth/patients/demographics")
       .then(res => setPatientDemographics(res.data))
       .catch(err => console.error("Error fetching demographics:", err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/revenue")
+    axios.get("http://localhost:3000/auth/revenue")
       .then(res => {
         setRevenueData(res.data);
         setFilteredRevenue(res.data);
@@ -70,16 +71,16 @@ const [netBalance, setNetBalance] = useState(0);
   }, []);
 
   useEffect(() => {
-  axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/trial")
-    .then(res => {
-      const { data, totalDebit, totalCredit } = res.data;
-      setLedgerData(data);
-      setTotalDebit(totalDebit);
-      setTotalCredit(totalCredit);
-      setNetBalance(totalCredit - totalDebit);
-    })
-    .catch(err => console.error("Error fetching trial balance:", err));
-}, []);
+    axios.get("http://localhost:3000/auth/trial")
+      .then(res => {
+        const { data, totalDebit, totalCredit } = res.data;
+        setLedgerData(data);
+        setTotalDebit(totalDebit);
+        setTotalCredit(totalCredit);
+        setNetBalance(totalCredit - totalDebit);
+      })
+      .catch(err => console.error("Error fetching trial balance:", err));
+  }, []);
 
 
 
@@ -101,26 +102,96 @@ const [netBalance, setNetBalance] = useState(0);
   }, [startMonth, endMonth, year, revenueData]);
 
 
-const ledgerSummaryData = [
-  { name: "Total Debit", value: totalDebit },
-  { name: "Total Credit", value: totalCredit },
-];
+  const ledgerSummaryData = [
+    { name: "Total Debit", value: totalDebit },
+    { name: "Total Credit", value: totalCredit },
+  ];
 
-const topAccounts = ledgerData
-  .reduce((acc, curr) => {
-    const found = acc.find(a => a.account_name === curr.account_name);
-    if (found) found.balance += curr.credit - curr.debit;
-    else acc.push({ account: curr.account_name, balance: curr.credit - curr.debit });
-    return acc;
-  }, [])
-  .slice(0, 5);
+  const topAccounts = ledgerData
+    .reduce((acc, curr) => {
+      const found = acc.find(a => a.account_name === curr.account_name);
+      if (found) found.balance += curr.credit - curr.debit;
+      else acc.push({ account: curr.account_name, balance: curr.credit - curr.debit });
+      return acc;
+    }, [])
+    .slice(0, 5);
 
+  const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Dental Clinic Report</title>
+      <style>
+        body { font-family: Arial; margin: 20px; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #00458B; padding-bottom: 20px; }
+        .header h1 { color: #00458B; margin: 0; }
+        .summary { margin: 20px 0; padding: 15px; background-color: #f0f8ff; border-left: 4px solid #00c3b8; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+        th { background-color: #00458B; color: white; font-weight: bold; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .footer { margin-top: 30px; text-align: center; font-size: 12px; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Dental Clinic Dashboard Report</h1>
+        <p>Generated on: ${currentDate}</p>
+      </div>
+
+      <div class="summary">
+        <strong>Report Summary:</strong><br>
+        Total Appointments: ${appointmentsCount}<br>
+        Total Patients: ${patientsCount}<br>
+        Total Revenue: ₱${filteredRevenue.reduce((sum, r) => sum + (r.revenue || 0), 0).toLocaleString("en-PH")}
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filteredRevenue.map(r => `
+            <tr>
+              <td>${r.month} ${r.year}</td>
+              <td>₱${r.revenue.toLocaleString("en-PH")}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div class="footer">
+        <p>This report was automatically generated for Arciaga-Juntilla TMJ Ortho Dental Clinic.</p>
+      </div>
+
+      <script>
+        window.print();
+        window.addEventListener('afterprint', () => { window.close(); });
+      </script>
+    </body>
+    </html>
+  `);
+
+    printWindow.document.close();
+    printWindow.focus();
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -135,125 +206,53 @@ const topAccounts = ledgerData
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="bg-white text-[#00458B] hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link to="/admindashboard" className="bg-white text-[#00458B] hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
+              <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
             </div>
           )}
 
-          {/* Ledger dropdown */}
-          {role === "admin" && (
-            <>
-              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <span className="flex items-center gap-2">
-                  <i className="fa fa-book"></i> Ledger
-                </span>
-                {isLedgerOpen ?
-                  <ChevronUp size={16} /> :
-                  <ChevronDown size={16} />}
-              </button>
+          {/* Ledger Dropdown */}
+          <button
+            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+          >
+            <span className="flex items-center gap-2">
+              <i className="fa fa-book"></i> Ledger
+            </span>
+            {isLedgerOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
 
-              {isLedgerOpen && (
-                <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link
-                    to="/admincoa"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Chart of Accounts
-                  </Link>
-                  <Link
-                    to="/adminjournal"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Journal Entries
-                  </Link>
-                  <Link
-                    to="/adminsubsidiaryreceivable"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Subsidiary
-                  </Link>
-                  <Link
-                    to="/admingeneral"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    General Ledger
-                  </Link>
-                  <Link
-                    to="/admintrial"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
-                    Trial Balance
-                  </Link>
-                </div>
-              )}
-
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Users size={18} /> Users
-              </Link>
-            </>
+          {isLedgerOpen && (
+            <div className="ml-6 flex flex-col gap-1 text-sm">
+              <Link to="/admincoa" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Chart of Accounts</Link>
+              <Link to="/adminjournal" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Journal Entries</Link>
+              <Link to="/adminsubsidiaryreceivable" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Subsidiary</Link>
+              <Link to="/admingeneral" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">General Ledger</Link>
+              <Link to="/admintrial" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Trial Balance</Link>
+            </div>
           )}
-
-          {(role === "admin" || role === "inventory") && (
-            <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-archive"></i> Inventory
-              </Link>
-            </>
-          )}
-
-          {(role === "admin" || role === "dentist" || role === "receptionist") && (
-            <>
-              <Link
-                to="/adminpatients"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-user-plus"></i> Patients
-              </Link>
-              <Link
-                to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
-              </Link>
-            </>
-          )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
-          {role === "admin" && (
-            <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-eye"></i> Audit Trail
-              </Link>
-            </>
-          )}
+          <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+            <IdCard size={18} /> HMO
+          </Link>
+          <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+            <Users size={18} /> Users
+          </Link>
+          <Link to="/admininventory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+            <i className="fa fa-archive"></i> Inventory
+          </Link>
+          <Link to="/adminpatients" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+            <i className="fa fa-user-plus"></i> Patients
+          </Link>
+          <Link to="/adminschedule" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+            <Calendar size={18} /> Schedules
+          </Link>
+          <Link to="/admincashier" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+            <PhilippinePeso size={18} /> Cashier
+          </Link>
+          <Link to="/adminaudit" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+            <i className="fa fa-eye"></i> Audit Trail
+          </Link>
         </nav>
       </aside>
 
@@ -266,7 +265,15 @@ const topAccounts = ledgerData
           <Menu size={24} /> Menu
         </button>
 
-        <h1 className="text-2xl font-bold text-[#00458B] mb-6">Admin Dashboard</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-2xl font-bold text-[#00458B]">Admin Dashboard</h1>
+          <button
+            onClick={handlePrintReport}
+            className="px-6 py-3 bg-[#00458B] hover:bg-[#003366] text-white font-bold rounded-lg flex items-center gap-2"
+          >
+            <Printer size={18} /> Generate Report
+          </button>
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

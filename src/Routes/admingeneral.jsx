@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer } from "lucide-react";
 
 const Admingeneral = () => {
   const location = useLocation();
@@ -14,7 +14,8 @@ const Admingeneral = () => {
   const [selectedAccount, setSelectedAccount] = useState("");
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
@@ -44,11 +45,15 @@ const Admingeneral = () => {
 
   useEffect(() => {
     const fetchLedger = async () => {
+      setLoading(true); // ✅ show spinner
+
       try {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/general");
+        const res = await axios.get("http://localhost:3000/auth/general");
         setRecords(res.data);
       } catch (err) {
         console.error("Error fetching general ledger:", err);
+      } finally {
+        setLoading(false); // ✅ hide spinner after fetch finishes
       }
     };
     fetchLedger();
@@ -57,7 +62,7 @@ const Admingeneral = () => {
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa");
+        const res = await axios.get("http://localhost:3000/auth/coa");
         setAccounts(res.data);
       } catch (err) {
         console.error("Error fetching accounts:", err);
@@ -223,12 +228,12 @@ const Admingeneral = () => {
   const filterRecord = async (account_id) => {
     try {
       if (!account_id) {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/general");
+        const res = await axios.get("http://localhost:3000/auth/general");
         setRecords(res.data);
         return;
       }
 
-      const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/general_ledger1", {
+      const res = await axios.get("http://localhost:3000/auth/general_ledger1", {
         params: { account_id },
       });
       setRecords(res.data);
@@ -241,7 +246,8 @@ const Admingeneral = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -256,15 +262,22 @@ const Admingeneral = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -316,7 +329,9 @@ const Admingeneral = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -389,55 +404,67 @@ const Admingeneral = () => {
         </button>
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
           <h1 className="text-2xl font-bold text-[#00458B]">General Ledger</h1>
 
-          <div>
-            <label
-              htmlFor="accounts"
-              className="block mb-1 text-sm font-medium text-gray-700"
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <button
+              onClick={handlePrintReport}
+              className="px-6 py-3 bg-[#00458B] hover:bg-[#003366] text-white font-bold rounded-lg flex items-center gap-2"
             >
-              Account Name
-            </label>
-            <select
-              id="accounts"
-              value={selectedAccount}
-              onChange={(e) => {
-                setSelectedAccount(e.target.value);
-                filterRecord(e.target.value);
-              }}
-              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"
-            >
-              <option value="">All</option>
-              {accounts.map((acc) => (
-                <option key={acc.account_id} value={acc.account_id}>
-                  {acc.account_name}
-                </option>
-              ))}
-            </select>
+              <Printer size={18} /> Generate Report
+            </button>
           </div>
         </div>
 
+
         {/* Table */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
-          {/* Search Bar */}
-          <div className="flex justify-end mb-4">
-            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            {/* Dropdown */}
+            <div className="flex flex-col w-full sm:w-1/3">
+              <label
+                htmlFor="accounts"
+                className="block mb-1 text-sm font-medium text-gray-700"
+              >
+                Account Name:
+              </label>
+              <select
+                id="accounts"
+                value={selectedAccount}
+                onChange={(e) => {
+                  setSelectedAccount(e.target.value);
+                  filterRecord(e.target.value);
+                }}
+                className="border border-[#00458B] rounded-lg px-3 py-2 text-sm text-[#00458B] font-medium focus:ring-2 focus:ring-[#00458B] focus:border-[#00458B] transition"
+              >
+                <option value="">All</option>
+                {accounts.map((acc) => (
+                  <option key={acc.account_id} value={acc.account_id}>
+                    {acc.account_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Search Bar */}
+            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1.5 w-full sm:w-64 bg-white">
               <input
                 type="text"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 outline-none text-sm text-gray-700"
+                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400"
               />
-              <i className="fa fa-search text-[#00458B]"></i>
+              <i className="fa fa-search text-[#00458B] text-sm"></i>
             </div>
           </div>
+
 
           <div className="max-h-[500px] overflow-y-auto">
             <table className="w-full border-collapse border border-gray-200">
               <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
-                <tr>
+                <tr className="bg-gray-100 text-[#00458B]">
                   <th className="px-4 py-2 text-left">Date</th>
                   <th className="px-4 py-2 text-left">Account Name</th>
                   <th className="px-4 py-2 text-left">Account Type</th>
@@ -446,7 +473,6 @@ const Admingeneral = () => {
                   <th className="px-4 py-2 text-left">Balance</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
                   // 🔹 Show spinner while loading
@@ -538,7 +564,6 @@ const Admingeneral = () => {
                 )}
               </tbody>
             </table>
-
           </div>
 
           {selectedRecord && (
@@ -577,16 +602,6 @@ const Admingeneral = () => {
               </div>
             </div>
           )}
-
-          {/* Generate Report Button */}
-          <div className="flex justify-end mt-6">
-            <button
-              onClick={handlePrintReport}
-              className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
-            >
-              Generate Report
-            </button>
-          </div>
         </div>
       </main>
     </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, PlusCircle } from "lucide-react";
 
 const AdminSubsidiaryReceivable = () => {
   const location = useLocation();
@@ -14,8 +14,7 @@ const AdminSubsidiaryReceivable = () => {
   const [openDashboard, setOpenDashboard] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
-  const [loading, setLoading] = useState(true);
-
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -30,20 +29,23 @@ const AdminSubsidiaryReceivable = () => {
 
   // Fetch subsidiary ledger for Accounts Receivable
   useEffect(() => {
+    setLoading(true); // ✅ show spinner
     const fetchSubsidiary = async (account_id) => {
       try {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subsidiaryReceivable", {
+        const res = await axios.get("http://localhost:3000/auth/subsidiaryReceivable", {
           params: { account_id },
         });
         setSubsidiaryRecords(res.data);
       } catch (err) {
         console.error("Error fetching subsidiary records:", err);
+      } finally {
+        setLoading(false); // ✅ hide spinner after fetch finishes
       }
     };
 
     const fetchAccountReceivable = async () => {
       try {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/accountReceivable");
+        const res = await axios.get("http://localhost:3000/auth/accountReceivable");
         if (res.data.length > 0) {
           const { account_id } = res.data[0];
           fetchSubsidiary(account_id);
@@ -81,7 +83,8 @@ const AdminSubsidiaryReceivable = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -96,15 +99,22 @@ const AdminSubsidiaryReceivable = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -156,7 +166,12 @@ const AdminSubsidiaryReceivable = () => {
                   </Link>
                 </div>
               )}
-
+              <Link
+                to="/adminhmo"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -237,7 +252,7 @@ const AdminSubsidiaryReceivable = () => {
             onClick={() => navigate("/adminsubsidiaryadd")}
             className="flex items-center gap-2 bg-[#00458B] font-semibold text-white px-4 py-2 rounded-lg"
           >
-            + Add New Receivable
+            <PlusCircle size={18} /> Add New Receivable
           </button>
         </div>
 
@@ -245,30 +260,30 @@ const AdminSubsidiaryReceivable = () => {
         {/* Table */}
         <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
           {/* Search Bar */}
-          <div className="flex justify-between mb-4">
-            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
+            {/* Dropdown on the Left */}
+            <select
+              defaultValue="/adminsubsidiaryreceivable"
+              onChange={(e) => navigate(e.target.value)}
+              className="border border-[#00458B] rounded-lg px-3 py-2 text-sm text-[#00458B] font-medium p-2.5 focus:ring-2 focus:ring-[#00458B] focus:border-[#00458B] transition"
+            >
+              <option value="/adminsubsidiaryreceivable">Accounts Receivable</option>
+              <option value="/adminsubsidiarypayable">Accounts Payable</option>
+            </select>
+
+            {/* Search Bar on the Right */}
+            <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1.5 w-full sm:w-64 bg-white">
               <input
                 type="text"
                 placeholder="Search"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 outline-none text-sm text-gray-700"
+                className="flex-1 outline-none text-sm text-gray-700 placeholder-gray-400"
               />
-              <i className="fa fa-search text-[#00458B]"></i>
+              <i className="fa fa-search text-[#00458B] text-sm"></i>
             </div>
-
-            {/* Switch Dropdown */}
-            <select
-              defaultValue="/adminsubsidiaryreceivable"
-              onChange={(e) => navigate(e.target.value)}
-              className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg p-2.5"
-            >
-              <option value="/adminsubsidiaryreceivable">
-                Accounts Receivable
-              </option>
-              <option value="/adminsubsidiarypayable">Accounts Payable</option>
-            </select>
           </div>
+
 
           <div className="max-h-[500px] overflow-y-auto">
             <table className="w-full border-collapse border border-gray-200">
@@ -282,7 +297,6 @@ const AdminSubsidiaryReceivable = () => {
                   <th className="px-4 py-2 text-left">Balance</th>
                 </tr>
               </thead>
-
               <tbody>
                 {loading ? (
                   <tr>
@@ -350,7 +364,6 @@ const AdminSubsidiaryReceivable = () => {
                 )}
               </tbody>
 
-              {/* Tooltip */}
               {selectedRecord && (
                 <div
                   id="floatingTooltipBox"
@@ -366,7 +379,7 @@ const AdminSubsidiaryReceivable = () => {
                     <h3 className="text-lg font-semibold text-[#00458B] absolute left-1/2 transform -translate-x-1/2">
                       Invoice Details
                     </h3>
-                    <br />
+                    <br></br>
                     <button
                       onClick={() => setSelectedRecord(null)}
                       className="text-gray-500 hover:text-red-500"
@@ -374,59 +387,32 @@ const AdminSubsidiaryReceivable = () => {
                       ✕
                     </button>
                   </div>
-
                   <div className="text-sm text-gray-800">
-                    <p className="mt-2">
-                      <strong>Invoice No:</strong>
-                    </p>
-                    <p className="mt-1 ml-3 text-blue-800">{selectedRecord.Invoice_no}</p>
+                    <p className="mt-2"><strong>Invoice No:</strong></p>
+                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.Invoice_no}</p>
 
-                    <p className="mt-1">
-                      <strong>Date:</strong>
-                    </p>
+                    <p className="mt-1"><strong>Date:</strong></p>
                     <p className="mt-1 ml-3 text-blue-800">{selectedRecord.date}</p>
 
-                    <p className="mt-1">
-                      <strong>Patient Name:</strong>
-                    </p>
-                    <p className="mt-1 ml-3 text-blue-800">
-                      {selectedRecord.patient_name}
-                    </p>
+                    <p className="mt-1"><strong>Patient Name:</strong></p>
+                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.patient_name}</p>
 
-                    <p className="mt-1">
-                      <strong>Appointment Date:</strong>
-                    </p>
-                    <p className="mt-1 ml-3 text-blue-800">{selectedRecord.pref_date}</p>
+                    <p className="mt-1"><strong>Apointment Date:</strong></p>
+                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.pref_date}</p>
 
-                    <p className="mt-1">
-                      <strong>Service:</strong>
-                    </p>
-                    <p className="mt-1 ml-3 text-blue-800">
-                      {selectedRecord.procedure_type}
-                    </p>
+                    <p className="mt-1"><strong>Service:</strong></p>
+                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.procedure_type}</p>
 
-                    <p className="mt-1">
-                      <strong>Service Charge:</strong>
-                    </p>
-                    <p className="mt-1 ml-3 text-blue-800">
-                      {selectedRecord.total_service_charged}
-                    </p>
+                    <p className="mt-1"><strong>Service Charge:</strong></p>
+                    <p className="mt-1 ml-3 text-blue-800"> {selectedRecord.total_service_charged}</p>
 
-                    <p className="mt-1">
-                      <strong>Total Amount:</strong>
-                    </p>
-                    <p className="mt-1 ml-3 text-blue-800">
-                      ₱{" "}
-                      {(Number(selectedRecord.total_charged) || 0).toLocaleString(
-                        undefined,
-                        { minimumFractionDigits: 2, maximumFractionDigits: 2 }
-                      )}
-                    </p>
+                    <p className="mt-1"><strong> Total Amount:</strong></p>
+                    <p className="mt-1 ml-3 text-blue-800">  ₱ {(Number(selectedRecord.total_charged) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+
                   </div>
                 </div>
               )}
             </table>
-
           </div>
         </div>
       </main>

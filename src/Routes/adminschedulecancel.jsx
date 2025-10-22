@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
 
 const AdminScheduleCancel = () => {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ const AdminScheduleCancel = () => {
       }
 
       const response = await axios.post(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/processRefund/${appointId}`,
+        `http://localhost:3000/auth/processRefund/${appointId}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -69,7 +69,8 @@ const AdminScheduleCancel = () => {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -84,15 +85,22 @@ const AdminScheduleCancel = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              )}
-              {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              )}
-              {(role === "admin" || role === "receptionist" || role === "dentist") && ( 
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
-              )}
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Admin Dashboard
+              </Link>
+              <Link
+                to="/inventorydashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+              >
+                Inventory Dashboard
+              </Link>
+              <Link to="/receptionistdashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
+                Receptionist Dashboard
+              </Link>
             </div>
           )}
 
@@ -144,7 +152,9 @@ const AdminScheduleCancel = () => {
                   </Link>
                 </div>
               )}
-
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -240,7 +250,7 @@ const AdminScheduleCancel = () => {
             {/* Cancel Info */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Reason for Cancellation
+                Reason for Cancellation: <span style={{ color: "red" }}>*</span>
               </label>
               <select
                 value={reason}
@@ -254,7 +264,7 @@ const AdminScheduleCancel = () => {
               </select>
 
               <label className="block text-[#00458b] font-semibold mb-1">
-                Note
+                Note: <span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="text"
@@ -268,7 +278,7 @@ const AdminScheduleCancel = () => {
             {showRefund && (
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Refund Method
+                  Refund Method: <span style={{ color: "red" }}>*</span>
                 </label>
                 <select
                   value={refundMethod}
@@ -282,7 +292,7 @@ const AdminScheduleCancel = () => {
                 </select>
 
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Upload Proof of Refund
+                  Upload Proof of Refund: <span style={{ color: "red" }}>*</span>
                 </label>
                 <input
                   type="file"
