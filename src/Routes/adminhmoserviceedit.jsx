@@ -36,7 +36,7 @@ const AdminHMOServiceEdit = () => {
   useEffect(() => {
     const fetchHMO = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/hmo_service/${service_id}`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo_service/${service_id}`);
         setHMO(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
@@ -65,7 +65,7 @@ const handleUpdate = async () => {
 
     // Send as JSON
     const response = await axios.put(
-      `http://localhost:3000/auth/hmo_service/${service_id}`,
+      `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo_service/${service_id}`,
       {
         service: hmo.service,
         coverage: hmo.coverage,

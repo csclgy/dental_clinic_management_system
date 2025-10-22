@@ -71,7 +71,7 @@ const AdminHMO = () => {
   useEffect(() => {
     const fetchHMOs = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/hmo");
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo");
         setHmos(res.data);
       } catch (err) {
         console.error("Error fetching HMOs:", err);
@@ -95,7 +95,7 @@ const AdminHMO = () => {
         return;
       }
 
-      await axios.delete(`http://localhost:3000/auth/hmo/${confirmBox.hmoId}`, {
+      await axios.delete(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo/${confirmBox.hmoId}`, {
         headers: {
           Authorization: `Bearer ${token}`, // <- include 'Bearer '
         },
@@ -410,7 +410,7 @@ const AdminHMO = () => {
                                 <button
                                   onClick={() =>
                                     window.open(
-                                      `http://localhost:3000/uploads/hmo/${hmo.moa_letter}`,
+                                      `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/hmo/${hmo.moa_letter}`,
                                       "_blank"
                                     )
                                   }

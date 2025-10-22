@@ -40,7 +40,7 @@ const Adminconsultationview = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `http://localhost:3000/auth/displayconsultation/${appointId}`,
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultation/${appointId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -70,7 +70,7 @@ const Adminconsultationview = () => {
     const fetchDentists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3000/auth/dentists", {
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDentists(res.data);
@@ -607,7 +607,7 @@ const Adminconsultationview = () => {
                       <button
                         key={idx}
                         className="px-4 py-2 mt-1 mr-2 rounded-md bg-[#01D5C4] text-white font-semibold hover:bg-[#00b0a6]"
-                        onClick={() => window.open(`http://localhost:3000/uploads/appointments/${photo.up_url}`, "_blank")
+                        onClick={() => window.open(`https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${photo.up_url}`, "_blank")
                         }
                       >
                         View Image {idx + 1}
@@ -750,7 +750,7 @@ const Adminconsultationview = () => {
                     <button
                       onClick={() =>
                         window.open(
-                          `http://localhost:3000/uploads/appointments/${consultation.downpayment_proof}`,
+                          `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${consultation.downpayment_proof}`,
                           "_blank"
                         )
                       }
@@ -787,7 +787,7 @@ const Adminconsultationview = () => {
                       <button
                         onClick={() =>
                           window.open(
-                            `http://localhost:3000/uploads/appointments/${cancelInfo.refund_photo}`,
+                            `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${cancelInfo.refund_photo}`,
                             "_blank"
                           )
                         }

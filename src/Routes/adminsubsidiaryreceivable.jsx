@@ -32,7 +32,7 @@ const AdminSubsidiaryReceivable = () => {
     setLoading(true); // ✅ show spinner
     const fetchSubsidiary = async (account_id) => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/subsidiaryReceivable", {
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subsidiaryReceivable", {
           params: { account_id },
         });
         setSubsidiaryRecords(res.data);
@@ -45,7 +45,7 @@ const AdminSubsidiaryReceivable = () => {
 
     const fetchAccountReceivable = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/accountReceivable");
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/accountReceivable");
         if (res.data.length > 0) {
           const { account_id } = res.data[0];
           fetchSubsidiary(account_id);

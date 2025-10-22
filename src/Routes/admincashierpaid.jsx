@@ -54,7 +54,7 @@ const AdminCashierPaid = () => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch("http://localhost:3000/auth/displayconsultations2", {
+        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultations2", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
