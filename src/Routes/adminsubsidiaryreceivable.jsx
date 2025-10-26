@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, PlusCircle, Settings } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer, PlusCircle, Settings } from "lucide-react";
 
 const AdminSubsidiaryReceivable = () => {
   const location = useLocation();
@@ -15,6 +15,8 @@ const AdminSubsidiaryReceivable = () => {
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [loading, setLoading] = useState(false);
+  const [hmoList, setHmoList] = useState([]);
+  const [selectedHmo, setSelectedHmo] = useState("");
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -26,6 +28,168 @@ const AdminSubsidiaryReceivable = () => {
       }
     }
   }, [location]);
+
+   const handlePrintReport = () => {
+    const printWindow = window.open('', '_blank');
+    const currentDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Dental Clinic Management System</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 20px;
+              color: #333;
+            }
+            .header {
+              text-align: center;
+              margin-bottom: 30px;
+              border-bottom: 2px solid #00458B;
+              padding-bottom: 20px;
+            }
+            .header h1 {
+              color: #00458B;
+              margin: 0;
+            }
+            .report-info {
+              margin-bottom: 20px;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 20px;
+            }
+            th, td {
+              border: 1px solid #ddd;
+              padding: 12px;
+              text-align: center;
+            }
+            th {
+              background-color: #00458B;
+              color: white;
+              font-weight: bold;
+            }
+            tr:nth-child(even) {
+              background-color: #f9f9f9;
+            }
+            .footer {
+              margin-top: 30px;
+              text-align: center;
+              font-size: 12px;
+              color: #666;
+            }
+            .summary {
+              margin: 20px 0;
+              padding: 15px;
+              background-color: #f0f8ff;
+              border-left: 4px solid #00c3b8;
+            }
+             .totals {
+              margin-top: 15px;
+              text-align: right;
+              font-weight: bold;
+              font-size: 14px;
+            }
+            .totals span {
+              display: inline-block;
+              margin-left: 30px;
+            }  
+            @media print {
+              body { margin: 0; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1>Account Receivable Report</h1>
+            <p>Generated on: ${currentDate}</p>
+          </div>
+          
+           <div class="summary">
+          <strong>Report Summary:</strong><br>
+          Total Items: ${filteredRecords.length}<br>
+          Search Filter: ${searchTerm ? `"${searchTerm}"` : 'None'}<br>
+          HMO Filter: ${selectedHmo ? `"${selectedHmo}"` : 'None'}
+        </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Particulars</th>
+                <th>Invoice No</th>
+                <th>Debit</th>
+                <th>Credit</th>
+                <th>Balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredRecords.map(record => `
+                <tr>
+                  <td>${record.date}</td>
+                  <td>${record.particulars}</td>
+                  <td>${record.Invoice_no}</td>
+                  <td>₱ ${record.debit}</td>
+                  <td>₱ ${record.credit}</td>
+                  <td>${record.balance}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class="totals">
+            <span>Total Debit: ₱ ${Number(totalDebit).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span>
+            <span>Total Credit: ₱ ${Number(totalCredit).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span>
+          </div>
+          <div class="footer">
+            <p>This report was automatically generated for Arciaga-Juntilla TMJ Ortho Dental Clinic. </p>
+          </div>
+
+          <script>
+            window.addEventListener('afterprint', function() {
+              window.close();
+            });
+
+            window.addEventListener('beforeunload', function() {
+            });
+
+            setTimeout(function() {
+              if (!window.closed) {
+                window.close();
+              }
+            }, 10000);
+          </script>
+        </body>
+        </html>
+      `);
+
+    printWindow.document.close();
+    printWindow.focus();
+
+    setTimeout(() => {
+      printWindow.print();
+
+      setTimeout(() => {
+        if (!printWindow.closed) {
+          printWindow.addEventListener('focus', () => {
+            setTimeout(() => {
+              if (!printWindow.closed) {
+                printWindow.close();
+              }
+            }, 1000);
+          });
+        }
+      }, 500);
+    }, 250);
+  };
+
 
   // Fetch subsidiary ledger for Accounts Receivable
   useEffect(() => {
@@ -55,7 +219,17 @@ const AdminSubsidiaryReceivable = () => {
       }
     };
 
+   const fetchHMO = async () => {
+  try {
+    const res = await axios.get("http://localhost:3000/auth/hmo");
+    setHmoList(res.data); // ✅ store HMO data
+  } catch (err) {
+    console.error("Error fetching HMO:", err);
+  }
+    };
+
     fetchAccountReceivable();
+    fetchHMO();  
   }, []);
 
   useEffect(() => {
@@ -71,13 +245,23 @@ const AdminSubsidiaryReceivable = () => {
   }, []);
 
   // Filter records
-  const filteredRecords = subsidiaryRecords.filter((record) => {
-    if (!searchTerm) return true;
-    return (
-      record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.invoice_no.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  });
+    const filteredRecords = subsidiaryRecords.filter((record) => {
+      const matchesSearch =
+        !searchTerm ||
+        record.particulars?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.invoice_no?.toString().includes(searchTerm);
+
+      const matchesHmo =
+        !selectedHmo ||
+        record.particulars?.toLowerCase().includes(selectedHmo.toLowerCase());
+
+      return matchesSearch && matchesHmo;
+    });
+
+
+    const totalDebit = filteredRecords.reduce((sum, record) => sum + (Number(record.debit) || 0), 0);
+    const totalCredit = filteredRecords.reduce((sum, record) => sum + (Number(record.credit) || 0), 0);
+
 
   return (
     <div className="flex min-h-screen bg-gray-100">
@@ -246,12 +430,19 @@ const AdminSubsidiaryReceivable = () => {
           <h1 className="text-2xl font-bold text-[#00458B]">
             Subsidiary Ledger (Receivable)
           </h1>
-          <button
+          <div className="flex gap-2">
+            <button
+              className="bg-[#00458B] hover:bg-[#003366] text-white font-semibold px-6 py-2 rounded-lg flex items-center gap-2"
+              onClick={handlePrintReport}          >
+              <Printer size={18} /> Generate Report
+            </button>
+             <button
             onClick={() => navigate("/adminsubsidiaryadd")}
             className="flex items-center gap-2 bg-[#00458B] font-semibold text-white px-4 py-2 rounded-lg"
           >
             <PlusCircle size={18} /> Add New Receivable
           </button>
+          </div>
         </div>
 
 
@@ -260,6 +451,8 @@ const AdminSubsidiaryReceivable = () => {
           {/* Search Bar */}
           <div className="flex justify-between items-center mb-4 flex-wrap gap-3">
             {/* Dropdown on the Left */}
+            
+           <div className="flex gap-2">
             <select
               defaultValue="/adminsubsidiaryreceivable"
               onChange={(e) => navigate(e.target.value)}
@@ -268,7 +461,21 @@ const AdminSubsidiaryReceivable = () => {
               <option value="/adminsubsidiaryreceivable">Accounts Receivable</option>
               <option value="/adminsubsidiarypayable">Accounts Payable</option>
             </select>
+            <select
+            value={selectedHmo}
+            onChange={(e) => setSelectedHmo(e.target.value)}
+            className="border border-[#00458B] rounded-lg px-3 py-2"
+          >
+            <option value="">Select HMO</option>
+            {hmoList.map((hmo, index) => (
+              <option key={index} value={hmo.hmo_name}>
+                {hmo.hmo_name}
+              </option>
+            ))}
+          </select>
 
+
+          </div>
             {/* Search Bar on the Right */}
             <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1.5 w-full sm:w-64 bg-white">
               <input
@@ -361,6 +568,15 @@ const AdminSubsidiaryReceivable = () => {
                   </tr>
                 )}
               </tbody>
+             
+            <tfoot>
+            <tr className="bg-[#f8f9fa] font-semibold text-[#00458B]">
+              <td colSpan="3" className="text-right px-4 py-3">Total:</td>
+              <td className="px-4 py-3">₱ {totalDebit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td className="px-4 py-3">₱ {totalCredit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              <td colSpan="2"></td>
+            </tr>
+          </tfoot>
 
               {selectedRecord && (
                 <div

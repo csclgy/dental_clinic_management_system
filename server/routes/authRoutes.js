@@ -1831,7 +1831,7 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
           }
 
           const description = `${appointment.procedure_type} - ${appointment.p_fname} ${appointment.p_lname}`;
-          const comment = `Appointment #${appointId}`;
+          const comment = `Installment process for Appointment #${appointId}`;
 
           // Journal Entry — Debit: A/R, Credit: Service Income
           const [debitEntry] = await db.query(
@@ -1846,34 +1846,57 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
             [date, description, siAccount.account_id, '0', debit, comment, debit]
           );
 
-          //  General Ledger entries (positive flow)
+         // Function to get the latest balance for an account
+          const getCurrentBalance = async (accountId) => {
+            const [rows] = await db.query(
+              `SELECT balance FROM general_ledger 
+              WHERE account_id = ? 
+              ORDER BY entry_id DESC LIMIT 1`,
+              [accountId]
+            );
+            return rows.length > 0 ? parseFloat(rows[0].balance) : 0;
+          };
+
+          const arCurrentBalance = await getCurrentBalance(arAccount.account_id);
+          const siCurrentBalance = await getCurrentBalance(siAccount.account_id);
+
+          // Correct balance computation based on account type
+          const arNewBalance = arCurrentBalance + parseFloat(debit); // A/R increases with debit
+          const siNewBalance = siCurrentBalance + parseFloat(debit); // Revenue increases with credit
+
+          // Insert new General Ledger entry for Account Receivable (Debit)
           await db.query(
-            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
-             VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+            `INSERT INTO general_ledger 
+            (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+            VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
             [
               arAccount.account_id,
               debitEntry.insertId,
               date,
               debit,
-              debit,
+              arNewBalance, // updated running balance
               description,
               debit
             ]
           );
 
+          // Insert new General Ledger entry for Service Income (Credit)
           await db.query(
-            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount )
-             VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
+            `INSERT INTO general_ledger 
+            (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+            VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
             [
               siAccount.account_id,
               creditEntry.insertId,
               date,
               debit,
-              debit,
+              siNewBalance, // updated running balance
               description,
               debit
             ]
           );
+
+          console.log(`Journal & Ledger entries created for partial payment with updated balances.`);
 
 
           console.log(`Journal & Ledger entries created for partial payment.`);
@@ -3047,14 +3070,14 @@ router.put("/coa/:id", async (req, res) => {
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     const { id } = req.params;
-    const { account_name, account_type, status } = req.body;
+    const { account_name, account_type, status, description } = req.body;
 
     const db = await connectToDatabase();
 
     // ✅ 1️⃣ Update the Chart of Account record
     const [result] = await db.query(
-      "UPDATE chartofaccounts SET account_name = ?, account_type = ?, status = ? WHERE account_id = ?",
-      [account_name, account_type, status, id]
+      "UPDATE chartofaccounts SET account_name = ?, account_type = ?, status = ?, description = ? WHERE account_id = ?",
+      [account_name, account_type, status, description, id]
     );
 
     if (result.affectedRows === 0) {
@@ -3063,13 +3086,13 @@ router.put("/coa/:id", async (req, res) => {
 
     // ✅ 2️⃣ Insert into audit trail
     const action = "Update COA";
-    const description = `Updated COA: ${account_name} (${account_type})`;
+    const desc = `Updated COA: ${account_name} (${account_type})`;
     const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
 
     await db.query(
       `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
       VALUES (?, ?, ?, ?, ?)`,
-      [decoded.user_name, decoded.role, action, description, created_at]
+      [decoded.user_name, decoded.role, action, desc, created_at]
     );
 
     // ✅ 3️⃣ Return success response
@@ -3388,7 +3411,7 @@ router.post("/journal", async (req, res) => {
     console.log("🧾 Starting journal entry...");
     console.log("📦 Request body:", req.body);
 
-    // 1️⃣ Insert into journalentry (conditionally include subaccount_id)
+    //  Insert into journalentry (conditionally include subaccount_id)
     let journalQuery;
     let journalParams;
 
@@ -3421,9 +3444,9 @@ router.post("/journal", async (req, res) => {
 
     const [journalResult] = await db.query(journalQuery, journalParams);
     const entryId = journalResult.insertId;
-    console.log("✅ Journal entry inserted with ID:", entryId);
+    console.log("Journal entry inserted with ID:", entryId);
 
-    // 2️⃣ Get account type
+    // Get account type
     const [accountRows] = await db.query(
       "SELECT account_type, account_name FROM chartofaccounts WHERE account_id = ?",
       [account_id]
@@ -3438,7 +3461,7 @@ router.post("/journal", async (req, res) => {
     const accountName = accountRows[0].account_name;
     console.log("📘 Account type:", accountType, "| Account name:", accountName);
 
-    // 3️⃣ Get last balance for this account
+    // Get last balance for this account
     const [lastBalanceRows] = await db.query(
       "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
       [account_id]
@@ -3449,7 +3472,7 @@ router.post("/journal", async (req, res) => {
       : 0;
     console.log("💰 Last balance for", accountName, "=", lastBalance);
 
-    // 4️⃣ Compute new balance
+    //  Compute new balance
     let newBalance;
     if (accountType === "Asset" || accountType === "Expense") {
       newBalance = lastBalance + debitAmount - creditAmount;
@@ -3458,7 +3481,7 @@ router.post("/journal", async (req, res) => {
     }
     console.log("📊 Computed new balance:", newBalance);
 
-    // 5️⃣ Insert into general_ledger
+    //  Insert into general_ledger
     await db.query(
       "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
       [
@@ -3474,129 +3497,144 @@ router.post("/journal", async (req, res) => {
     );
     console.log("🧮 General ledger updated for", accountName);
 
-    // ✅ ➕ AUTO CASH ENTRY (only if Expense is debited)
-    if (accountType === "Expense" && debitAmount > 0 && comment !== "auto entry") {
-      console.log("💸 Auto cash credit triggered for Expense:", accountName);
+    //   AUTO CASH OR REVOLVING FUND ENTRY (only if Expense is debited)
+        if (accountType === "Expense" && debitAmount > 0 && comment !== "auto entry") {
+          console.log(" Auto cash/revolving credit triggered for Expense:", accountName);
 
-      const [cashRows] = await db.query(
-        "SELECT account_id FROM chartofaccounts WHERE account_name = 'Cash on Bank' LIMIT 1"
-      );
+          // Determine which account to credit based on amount
+          const creditAccountName = debitAmount <= 1000 ? "Revolving Fund" : "Cash on Bank";
 
-      if (cashRows.length > 0) {
-        const cashId = cashRows[0].account_id;
+          // Get the account_id of the chosen credit account
+          const [creditRows] = await db.query(
+            "SELECT account_id FROM chartofaccounts WHERE account_name = ? LIMIT 1",
+            [creditAccountName]
+          );
 
-        // Get latest Cash balance
-        const [cashBalanceRows] = await db.query(
-          "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
-          [cashId]
-        );
+          if (creditRows.length > 0) {
+            const creditId = creditRows[0].account_id;
 
-        let cashLastBalance = cashBalanceRows.length
-          ? parseFloat(cashBalanceRows[0].balance)
-          : 0;
-        const newCashBalance = cashLastBalance - debitAmount;
+            // Get latest balance for chosen credit account
+            const [creditBalanceRows] = await db.query(
+              "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
+              [creditId]
+            );
 
-        // Insert credit journal for Cash
-        const [cashJournal] = await db.query(
-          "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?)",
-          [
-            date,
-            `${accountName}: ${description}`,
-            cashId,
-            0,
-            debitAmount,
-            "auto entry",
-            debitAmount,
-          ]
-        );
+            let lastBalance = creditBalanceRows.length
+              ? parseFloat(creditBalanceRows[0].balance)
+              : 0;
+            const newBalance = lastBalance - debitAmount;
 
-        await db.query(
-          "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
-          [
-            cashJournal.insertId,
-            cashId,
-            `Auto Cash Credit for ${accountName}`,
-            0,
-            debitAmount,
-            newCashBalance,
-            date,
-            debitAmount,
-          ]
-        );
+            // Insert credit journal entry (auto)
+            const [creditJournal] = await db.query(
+              "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?)",
+              [
+                date,
+                `${accountName}: ${description}`,
+                creditId,
+                0,
+                debitAmount,
+                "auto entry",
+                debitAmount,
+              ]
+            );
 
-        console.log("✅ Auto cash credit entry added for", accountName);
-      } else {
-        console.warn("⚠️ Cash account not found — skipping auto credit");
-      }
-    }
+            // Reflect in General Ledger
+            await db.query(
+              "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
+              [
+                creditJournal.insertId,
+                creditId,
+                `Auto Credit (${creditAccountName}) for ${accountName}`,
+                0,
+                debitAmount,
+                newBalance,
+                date,
+                debitAmount,
+              ]
+            );
 
-    // 💳 AUTO TRANSFER BETWEEN CASH ACCOUNTS (works both ways)
-    if (
-      (accountName === "Cash on Hand" || accountName === "Cash on Bank") &&
-      creditAmount > 0 &&
-      comment !== "auto transfer"
-    ) {
-      console.log(`🏦 Auto transfer triggered: ${accountName} credited`);
+            console.log(` Auto ${creditAccountName} credit entry added for`, accountName);
+          } else {
+            console.warn(` ${creditAccountName} account not found — skipping auto credit`);
+          }
+        }
 
-      const transferFrom = accountName;
-      const transferTo =
-        accountName === "Cash on Bank" ? "Cash on Hand" : "Cash on Bank";
 
-      const [targetRows] = await db.query(
-        "SELECT account_id FROM chartofaccounts WHERE account_name = ? LIMIT 1",
-        [transferTo]
-      );
+          if (
+          (accountName === "Cash on Hand" || accountName === "Cash on Bank") &&
+          creditAmount > 0 &&
+          comment !== "auto transfer"
+        ) {
+          console.log(`🏦 Auto transfer triggered: ${accountName} credited`);
 
-      if (targetRows.length > 0) {
-        const targetId = targetRows[0].account_id;
+          const transferFrom = accountName;
+          let transferTo;
 
-        // Get latest balance of target account
-        const [targetBalanceRows] = await db.query(
-          "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
-          [targetId]
-        );
+          //  New condition: if Cash on Bank is credited, transfer to Revolving Fund
+          if (accountName === "Cash on Bank") {
+            transferTo = "Revolving Fund";
+          } else {
+            // existing logic: Cash on Hand credited → transfer to Cash on Bank
+            transferTo = "Cash on Bank";
+          }
 
-        let lastTargetBalance = targetBalanceRows.length
-          ? parseFloat(targetBalanceRows[0].balance)
-          : 0;
+          // Fetch target account ID
+          const [targetRows] = await db.query(
+            "SELECT account_id FROM chartofaccounts WHERE account_name = ? LIMIT 1",
+            [transferTo]
+          );
 
-        const newTargetBalance = lastTargetBalance + creditAmount;
+          if (targetRows.length > 0) {
+            const targetId = targetRows[0].account_id;
 
-        // Insert journal entry for receiving account
-        const [transferJournal] = await db.query(
-          "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?)",
-          [
-            date,
-            `Transfer from ${transferFrom}`,
-            targetId,
-            creditAmount,
-            0,
-            "auto transfer",
-            creditAmount,
-          ]
-        );
+            // Get latest balance for the target account
+            const [targetBalanceRows] = await db.query(
+              "SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY ledger_id DESC LIMIT 1",
+              [targetId]
+            );
 
-        await db.query(
-          "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
-          [
-            transferJournal.insertId,
-            targetId,
-            `Auto Debit for ${transferFrom} transfer`,
-            creditAmount,
-            0,
-            newTargetBalance,
-            date,
-            creditAmount,
-          ]
-        );
+            let lastTargetBalance = targetBalanceRows.length
+              ? parseFloat(targetBalanceRows[0].balance)
+              : 0;
 
-        console.log(`✅ Auto debit entry added for ${transferTo}`);
-      } else {
-        console.warn(
-          `⚠️ Target cash account (${transferTo}) not found — skipping auto transfer`
-        );
-      }
-    }
+            const newTargetBalance = lastTargetBalance + creditAmount;
+
+            // Insert journal entry for receiving account (Debit)
+            const [transferJournal] = await db.query(
+              "INSERT INTO journalentry (`date`, description, account_id, debit, credit, comment, total_amount) VALUES (?,?,?,?,?,?,?)",
+              [
+                date,
+                `Transfer from ${transferFrom}`,
+                targetId,
+                creditAmount,
+                0,
+                comment,
+                creditAmount,
+              ]
+            );
+
+            // Reflect in General Ledger
+            await db.query(
+              "INSERT INTO general_ledger (entry_id, account_id, description, debit, credit, balance, date, total_amount) VALUES (?,?,?,?,?,?,?,?)",
+              [
+                transferJournal.insertId,
+                targetId,
+                `Auto Debit for ${transferFrom} transfer`,
+                creditAmount,
+                0,
+                newTargetBalance,
+                date,
+                creditAmount,
+              ]
+            );
+
+            console.log(` Auto debit entry added for ${transferTo}`);
+          } else {
+            console.warn(
+              ` Target account (${transferTo}) not found — skipping auto transfer`
+            );
+          }
+        }
 
     // 6️⃣ Insert audit trail
     const action = "Add Journal Entry";
@@ -4204,7 +4242,7 @@ router.post("/subsidiaryReceivable", async (req, res) => {
 
     const user = appointmentRows[0];
     const description = `${procedure_type} - ${user.fname} ${user.lname}`;
-    const comment = `Appointment #${appoint_id}`;
+    const comment = `payment from Appointment #${appoint_id}`;
 
     const currentAmount = Number(amount);
     const totalCharged = Number(user.total_charged);
@@ -4364,7 +4402,7 @@ router.post("/subsidiaryReceivableHmo", async (req, res) => {
 
     const user = appointmentRows[0];
     const description = `${HmoName.hmo_name} : ${procedure_type} - ${user.fname} ${user.lname}`;
-    const comment = `Appointment #${appoint_id}`;
+    const comment = `payment from ${HmoName.hmo_name} Appointment #${appoint_id}`;
 
     const currentAmount = Number(amount);
     const totalCharged = Number(user.hmo_charge);

@@ -233,6 +233,8 @@ const Adminbillingedit = () => {
     if (!paymentMode) return showPopup("Mode of Payment is required", "error");
     if (!serviceCharge || Number(serviceCharge) <= 0)
       return showPopup("Main Service Charge must be greater than 0", "error");
+    if (!billingDate)
+      return showPopup("Billing date is required", "error");
     if (paymentStatus === "Partial" && !dueDate)
       return showPopup("Please enter due date", "error");
 
@@ -280,6 +282,7 @@ const Adminbillingedit = () => {
 
       showPopup("Billing saved successfully", "success");
       await fetchBillingData();
+      setTimeout(() => navigate(`/adminconsultationcomplete/${appointId}`, 3000));
     } catch (err) {
       console.error("Error saving billing:", err);
       alert("Failed to save billing");
