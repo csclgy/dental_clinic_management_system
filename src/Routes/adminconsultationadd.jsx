@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, AlertCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, AlertCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
 
 const AdminConsultationAdd = () => {
   const location = useLocation();
@@ -312,6 +312,9 @@ const AdminConsultationAdd = () => {
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
               </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+<Settings size={18} /> OR Range
+</Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"

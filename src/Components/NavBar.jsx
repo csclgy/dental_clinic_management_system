@@ -104,9 +104,22 @@ const Navbar = () => {
                       {role === "patient" && (
                         <Link to="/transmed" className="block px-4 py-2 hover:bg-gray-100">Transaction History</Link>
                       )}
-                      {(role === "admin" || role === "inventory" || role === "receptionist" || role === "dentist") && (
+                      {role === "admin" && (
                         <Link to="/admindashboard" className="block px-4 py-2 hover:bg-gray-100">Main Dashboard</Link>
                       )}
+
+                      {role === "inventory" && (
+                        <Link to="/inventorydashboard" className="block px-4 py-2 hover:bg-gray-100">Main Dashboard</Link>
+                      )}
+
+                      {role === "receptionist" && (
+                        <Link to="/receptionistdashboard" className="block px-4 py-2 hover:bg-gray-100">Main Dashboard</Link>
+                      )}
+
+                      {role === "dentist" && (
+                        <Link to="/dentistdashboard" className="block px-4 py-2 hover:bg-gray-100">Main Dashboard</Link>
+                      )}
+
                       <Link to="/notification" className="block px-4 py-2 hover:bg-gray-100">Notifications</Link>
                       <button
                         onClick={handleLogout}

@@ -253,7 +253,7 @@ const ProfileLogin = () => {
               {/* Username */}
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Username
+                  Username:
                 </label>
                 <input
                   type="text"
@@ -269,7 +269,7 @@ const ProfileLogin = () => {
               {/* Email */}
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Email
+                  Email:
                 </label>
                 <input
                   type="email"
@@ -282,7 +282,7 @@ const ProfileLogin = () => {
               {/* Contact Number */}
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Contact Number
+                  Contact Number: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="text"

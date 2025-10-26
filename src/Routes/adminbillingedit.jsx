@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, Package, AlertTriangle, PlusCircle, PhilippinePeso, IdCard } from "lucide-react";
+import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, Package, AlertTriangle, PlusCircle, PhilippinePeso, IdCard, Settings } from "lucide-react";
 import axios from "axios";   // ✅ make sure axios is installed
 
 const Adminbillingedit = () => {
@@ -215,94 +215,68 @@ const Adminbillingedit = () => {
   };
 
   const servicesTotal = extraServices.reduce((sum, s) => sum + Number(s.amount), 0);
-  const totalCharged = itemsTotal + servicesTotal;
+  const totalCharged = itemsTotal + servicesTotal + Number(serviceCharge || 0);
 
   const handleSaveBilling = async () => {
-    // ✅ Validation
-    if (!paymentOR.trim()) {
-      return showPopup("OR Number is required", "error");
+    // Generate OR number if empty
+    let orNum = paymentOR;
+    if (!orNum) {
+      orNum = await generateOrNumber(); // this sets paymentOR state as well
+      if (!orNum) return showPopup("OR Number is required", "error");
+
+      // wait for the next tick to ensure input re-render
+      setPaymentOR(orNum);
     }
-    if (!paymentStatus) {
-      return showPopup("Payment Status is required", "error");
-    }
-    if (!paymentMode) {
-      return showPopup("Mode of Payment is required", "error");
-    }
-    if (!serviceCharge || Number(serviceCharge) <= 0) {
+
+    // Validate other fields
+    if (!paymentStatus) return showPopup("Payment Status is required", "error");
+    if (!paymentMode) return showPopup("Mode of Payment is required", "error");
+    if (!serviceCharge || Number(serviceCharge) <= 0)
       return showPopup("Main Service Charge must be greater than 0", "error");
-    }
-    //NEW
-    if (paymentStatus === "Partial" && !dueDate) {
+    if (paymentStatus === "Partial" && !dueDate)
       return showPopup("Please enter due date", "error");
-    }
-
-
-    // ✅ Optional: additional validation for GCash proof or HMO number
-    if (paymentMode === "GCash" && !gcashProof) {
-      return showPopup("Please upload GCash proof", "error");
-    }
-    //NEW
-    if (paymentStatus === "Partial" && !dueDate) {
-      return showPopup("Please enter due date", "error");
-    }
 
     try {
       const token = localStorage.getItem("token");
 
+      // Check if OR is already used
+      const checkRes = await axios.get(`http://localhost:3000/auth/checkOR/${orNum}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (checkRes.data.exists && checkRes.data.appoint_id !== Number(appointId)) {
+        return showPopup(
+          `OR Number ${orNum} is already used for another appointment`,
+          "error"
+        );
+      }
+
       const formData = new FormData();
       formData.append("payment_method", paymentMode);
       formData.append("payment_status", paymentStatus);
-      formData.append("or_num", paymentOR);
-      try {
-        const token = localStorage.getItem("token");
-        const checkRes = await axios.get(
-          `http://localhost:3000/auth/checkOR/${paymentOR}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
-        if (checkRes.data.exists && checkRes.data.appoint_id !== Number(appointId)) {
-          return showPopup(
-            `OR Number ${paymentOR} is already used for another appointment`,
-            "error"
-          );
-        }
-      } catch (err) {
-        console.error("Error checking OR number:", err);
-        return showPopup("Failed to validate OR number", "error");
-      }
+      formData.append("or_num", orNum); // use local variable
       formData.append("total_service_charged", Number(serviceCharge));
 
+      // Optional fields
       if (billingDate) formData.append("billing_date", billingDate);
-
-      if (paymentMode === "GCash" && gcashProof) {
-        formData.append("gcash_proof", gcashProof);
-      }
-      if (paymentStatus === "Partial" && dueDate) {
-        formData.append("due_date", dueDate);
-      }
-
+      if (paymentMode === "GCash" && gcashProof) formData.append("gcash_proof", gcashProof);
+      if (paymentStatus === "Partial" && dueDate) formData.append("due_date", dueDate);
       if (paymentMode === "HMO") {
+        if (!hmoNumber) return showPopup("HMO Number is required", "error");
         formData.append("hmo_number", hmoNumber);
         formData.append("hmo_provider", hmoProvider);
         formData.append("coverage", hmoCoverage);
-        if (!hmoNumber) {
-          return showPopup("Hmo Number is required", "error");
-        }
       }
 
-      await axios.post(
-        `http://localhost:3000/auth/billing/${appointId}`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      await axios.post(`http://localhost:3000/auth/billing/${appointId}`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
 
+      // Update local state with the generated OR
+      setPaymentOR(orNum);
 
       showPopup("Billing saved successfully", "success");
       await fetchBillingData();
@@ -379,6 +353,19 @@ const Adminbillingedit = () => {
     }
   }, [location]);
 
+  const generateOrNumber = async () => {
+    try {
+      const res = await axios.post("http://localhost:3000/api/or-range/generate");
+      setPaymentOR(res.data.or_num);
+      return res.data.or_num; // return the OR number
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.error || "Failed to generate OR number");
+      return null;
+    }
+  };
+
+
   return (
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar (desktop) */}
@@ -399,24 +386,15 @@ const Adminbillingedit = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link
-                to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -471,6 +449,9 @@ const Adminbillingedit = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -695,17 +676,25 @@ const Adminbillingedit = () => {
           {/* Payment Info */}
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
-              <label className="block font-bold text-gray-700">OR Number: <span style={{color:"red"}}>*</span></label>
-              <input
-                type="text"
-                className="w-full border rounded px-3 py-2"
-                value={paymentOR}
-                onChange={(e) => setPaymentOR(e.target.value)}
-              />
+              <label className="block font-bold text-gray-700">
+                OR Number:
+              </label>
+
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="w-full border rounded px-3 py-2"
+                  value={paymentOR}
+                  onChange={(e) => setPaymentOR(e.target.value)}
+                  placeholder="OR will generate after completing this transaction..."
+                  readOnly
+                />
+              </div>
             </div>
 
+
             <div>
-              <label className="block font-bold text-gray-700">Payment Status: <span style={{color:"red"}}>*</span></label>
+              <label className="block font-bold text-gray-700">Payment Status: <span style={{ color: "red" }}>*</span></label>
               <select
                 className="border p-2 w-full rounded"
                 value={paymentStatus}
@@ -719,7 +708,7 @@ const Adminbillingedit = () => {
             </div>
 
             <div>
-              <label className="block font-bold text-gray-700">Mode of Payment: <span style={{color:"red"}}>*</span></label>
+              <label className="block font-bold text-gray-700">Mode of Payment: <span style={{ color: "red" }}>*</span></label>
               <select
                 className="border p-2 w-full rounded"
                 value={paymentMode}
@@ -734,7 +723,7 @@ const Adminbillingedit = () => {
             </div>
 
             <div>
-              <label className="block font-bold text-gray-700">Main Service Charge(₱) : <span style={{color:"red"}}>*</span></label>
+              <label className="block font-bold text-gray-700">Main Service Charge(₱) : <span style={{ color: "red" }}>*</span></label>
               <input
                 type="number"
                 className="w-full border rounded px-3 py-2"
@@ -747,7 +736,7 @@ const Adminbillingedit = () => {
             {/* ✅ Show upload input ONLY if paymentMode === "GCash" */}
             {paymentMode === "GCash" && (
               <div className="col-span-2">
-                <label className="block font-bold text-gray-700">Upload GCash Proof: <span style={{color:"red"}}>*</span></label>
+                <label className="block font-bold text-gray-700">Upload GCash Proof: <span style={{ color: "red" }}>*</span></label>
                 <input
                   type="file"
                   accept="image/*"
@@ -762,7 +751,7 @@ const Adminbillingedit = () => {
               <div className="col-span-2 mt-2">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block font-bold text-gray-700">HMO Provider: <span style={{color:"red"}}>*</span></label>
+                    <label className="block font-bold text-gray-700">HMO Provider: <span style={{ color: "red" }}>*</span></label>
                     <select
                       className="w-full border rounded px-3 py-2"
                       value={hmoProvider}
@@ -778,7 +767,7 @@ const Adminbillingedit = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-gray-700">HMO Number: <span style={{color:"red"}}>*</span></label>
+                    <label className="block font-bold text-gray-700">HMO Number: <span style={{ color: "red" }}>*</span></label>
                     <input
                       type="text"
                       className="w-full border rounded px-3 py-2"
@@ -789,7 +778,7 @@ const Adminbillingedit = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-gray-700">Service Coverage: <span style={{color:"red"}}>*</span></label>
+                    <label className="block font-bold text-gray-700">Service Coverage: <span style={{ color: "red" }}>*</span></label>
                     <select
                       className="w-full border rounded px-3 py-2"
                       value={hmoCoverage}
@@ -819,7 +808,7 @@ const Adminbillingedit = () => {
               />
             </div> */}
             <div>
-              <label className="block font-bold text-gray-700">Billing Date: <span style={{color:"red"}}>*</span></label>
+              <label className="block font-bold text-gray-700">Billing Date: <span style={{ color: "red" }}>*</span></label>
               <input
                 type="date"
                 className="w-full border rounded px-3 py-2"
@@ -916,58 +905,61 @@ const Adminbillingedit = () => {
                 }}
               >
                 <option value="">Select Item</option>
-                {inventory.map((inv) => (
-                  <option key={inv.inv_id} value={inv.inv_id}>
-                    {inv.inv_item_name} (₱{inv.inv_price_per_item}, Stock: {inv.inv_quantity})
-                  </option>
-                ))}
+                {inventory
+                  .filter((inv) => inv.inv_item_status?.toLowerCase() === "active") // ✅ Only active items
+                  .map((inv) => (
+                    <option key={inv.inv_id} value={inv.inv_id}>
+                      {inv.inv_item_name} (₱{inv.inv_price_per_item}, Stock: {inv.inv_quantity})
+                    </option>
+                  ))}
+
               </select>
             </div>
 
-<div className="flex flex-col">
-  <label className="mb-1 font-bold text-gray-700">
-    Item Quantity:
-  </label>
-  <div className="flex items-center border border-[#00458b] rounded-lg w-fit">
-    <button
-      type="button"
-      onClick={() => setNewQuantity(Math.max(1, Number(newQuantity) - 1))}
-      className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
-    >
-      −
-    </button>
+            <div className="flex flex-col">
+              <label className="mb-1 font-bold text-gray-700">
+                Item Quantity:
+              </label>
+              <div className="flex items-center border border-[#00458b] rounded-lg w-fit">
+                <button
+                  type="button"
+                  onClick={() => setNewQuantity(Math.max(1, Number(newQuantity) - 1))}
+                  className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+                >
+                  −
+                </button>
 
-    <input
-      type="text"
-      value={newQuantity}
-      onChange={(e) => {
-        const value = e.target.value;
+                <input
+                  type="text"
+                  value={newQuantity}
+                  onChange={(e) => {
+                    const value = e.target.value;
 
-        // Allow only digits (no negative or special characters)
-        if (/^\d*$/.test(value)) {
-          setNewQuantity(value === "" ? "" : Number(value));
-        }
-      }}
-      onBlur={() => {
-        // If empty or less than 1, reset to 1
-        if (newQuantity === "" || Number(newQuantity) < 1) {
-          setNewQuantity(1);
-        }
-      }}
-      className="w-16 text-center outline-none border-x border-[#00458b] py-2"
-      inputMode="numeric"
-      placeholder="Qty"
-    />
+                    // Allow only digits (no negative or special characters)
+                    if (/^\d*$/.test(value)) {
+                      setNewQuantity(value === "" ? "" : Number(value));
+                    }
+                  }}
+                  onBlur={() => {
+                    // If empty or less than 1, reset to 1
+                    if (newQuantity === "" || Number(newQuantity) < 1) {
+                      setNewQuantity(1);
+                    }
+                  }}
+                  className="w-16 text-center outline-none border-x border-[#00458b] py-2"
+                  inputMode="numeric"
+                  placeholder="Qty"
+                />
 
-    <button
-      type="button"
-      onClick={() => setNewQuantity(Number(newQuantity) + 1)}
-      className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
-    >
-      +
-    </button>
-  </div>
-</div>
+                <button
+                  type="button"
+                  onClick={() => setNewQuantity(Number(newQuantity) + 1)}
+                  className="px-4 py-2 text-[#00458b] font-bold text-lg hover:bg-[#00458b] hover:text-white transition"
+                >
+                  +
+                </button>
+              </div>
+            </div>
 
 
             <div className="flex flex-col justify-end">
@@ -1045,11 +1037,11 @@ const Adminbillingedit = () => {
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-2">
-            <button onClick={handleDone} className="bg-gray-500 text-white px-6 py-2 rounded-full">
-              Done
+            <button onClick={handleDone} className="bg-white text-[#00458B] border border-[#00458b] font-semibold px-6 py-2 rounded-lg">
+              Back
             </button>
 
-            <button onClick={handleSaveBilling} className="bg-[#00458B] text-white px-6 py-2 rounded-full">
+            <button onClick={handleSaveBilling} className="bg-[#00458B] text-white font-semibold px-6 py-2 rounded-lg">
               Save Billing
             </button>
           </div>

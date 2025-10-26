@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
 
 const AdminCoaAdd = () => {
   const location = useLocation();
@@ -106,22 +106,17 @@ const AdminCoaAdd = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -175,6 +170,9 @@ const AdminCoaAdd = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -284,7 +282,7 @@ const AdminCoaAdd = () => {
           <div className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account Name: <span style={{color:"red"}}>*</span>
+                Account Name: <span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="text"
@@ -296,7 +294,7 @@ const AdminCoaAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Account Type: <span style={{color:"red"}}>*</span>
+                Account Type: <span style={{ color: "red" }}>*</span>
               </label>
               <select
                 value={accountType}
@@ -327,7 +325,7 @@ const AdminCoaAdd = () => {
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
-                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
+                className="bg-white text-[#00458B] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
                 onClick={() => navigate("/admincoa")}
               >
                 Back to List
@@ -335,7 +333,7 @@ const AdminCoaAdd = () => {
 
               <button
                 type="button"
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+                className="bg-[#00458B] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
                 onClick={handleSave}
               >
                 Save

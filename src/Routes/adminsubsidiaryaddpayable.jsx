@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
 
 const AdminSubsidiaryPayableAdd = () => {
   const location = useLocation();
@@ -251,22 +251,17 @@ const AdminSubsidiaryPayableAdd = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -320,6 +315,9 @@ const AdminSubsidiaryPayableAdd = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -411,7 +409,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Date: <span style={{color:"red"}}>*</span>
+                  Date: <span style={{ color: "red" }}>*</span>
                 </label>
                 <input
                   type="date"
@@ -423,7 +421,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Invoice Number: <span style={{color:"red"}}>*</span>
+                  Invoice Number: <span style={{ color: "red" }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -439,7 +437,7 @@ const AdminSubsidiaryPayableAdd = () => {
             {/* Name + Suggestions */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Name: <span style={{color:"red"}}>*</span>
+                Name: <span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="text"
@@ -491,7 +489,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Amount: <span style={{color:"red"}}>*</span>
+                  Amount: <span style={{ color: "red" }}>*</span>
                 </label>
                 <input
                   type="number"
@@ -567,7 +565,7 @@ const AdminSubsidiaryPayableAdd = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Comments/Items: <span style={{color:"red"}}>*</span>
+                  Comments/Items: <span style={{ color: "red" }}>*</span>
                 </label>
                 <input
                   type="text"
@@ -580,7 +578,7 @@ const AdminSubsidiaryPayableAdd = () => {
               </div>
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Agreement: <span style={{color:"red"}}>*</span>
+                  Agreement: <span style={{ color: "red" }}>*</span>
                 </label>
                 <select
                   name="day_agreement"

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer } from "lucide-react";
+import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer, Settings } from "lucide-react";
 
 const Adminconsultationpaid = () => {
   const { appointId } = useParams();
@@ -451,22 +451,17 @@ const Adminconsultationpaid = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -520,6 +515,9 @@ const Adminconsultationpaid = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -677,8 +675,8 @@ const Adminconsultationpaid = () => {
                   <button
                     disabled={consultation.appointment_status !== "done"}
                     className={`flex items-center justify-center gap-2 px-6 py-2 rounded-lg font-semibold border w-full sm:w-auto transition ${consultation.appointment_status === "done"
-                        ? "bg-white text-[#00458B] border-[#00458b] hover:bg-gray-100 cursor-pointer"
-                        : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
+                      ? "bg-white text-[#00458B] border-[#00458b] hover:bg-gray-100 cursor-pointer"
+                      : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
                       }`}
                     onClick={() => {
                       if (consultation.appointment_status === "done") {

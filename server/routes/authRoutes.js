@@ -7,10 +7,6 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 import { authenticateToken } from "../middleware/authMiddleware.js";
-import bodyParser from "body-parser";
-import { decode } from 'punycode';
-import { create } from 'domain';
-import { act } from 'react';
 import AWS from "aws-sdk";
 
 dotenv.config();
@@ -443,7 +439,7 @@ router.get("/users/:id", async (req, res) => {
   try {
     const db = await connectToDatabase();
     const userId = req.params.id;
-    
+
     const [rows] = await db.query("SELECT * FROM users WHERE user_id = ?", [userId]);
     if (rows.length === 0) {
       return res.status(404).json({ message: "User not found" });
@@ -1079,11 +1075,6 @@ router.get('/displayconsultations2', async (req, res) => {
   if (!token) return res.status(401).json({ message: "No token provided" });
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ message: "Access denied" });
-    }
 
     const db = await connectToDatabase();
     const [rows] = await db.query(`
@@ -1111,12 +1102,6 @@ router.get('/displayconsultations3', async (req, res) => {
   if (!token) return res.status(401).json({ message: "No token provided" });
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
     const db = await connectToDatabase();
     const [rows] = await db.query(`
       SELECT appoint_id, procedure_type, pref_date, pref_time, payment_method,
@@ -1144,12 +1129,6 @@ router.get('/displayconsultations4', async (req, res) => {
   if (!token) return res.status(401).json({ message: "No token provided" });
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
     const db = await connectToDatabase();
     const [rows] = await db.query(`
      SELECT 
@@ -1401,202 +1380,194 @@ const storage = multer.diskStorage({
   }
 });
 
-// Add charged item/service AND/OR update appointment billing totals + payment info
-router.post(
-  "/billing/:appointId",
-  authenticateToken,
-  upload.single("gcash_proof"),
-  async (req, res) => {
-    let db;
-    try {
-      db = await connectToDatabase();
-      const { appointId } = req.params;
+router.post("/billing/:appointId", authenticateToken, upload.single("gcash_proof"), async (req, res) => {
+  let db;
+  try {
+    // 🔹 Get fresh connection and start transaction
+    db = await connectToDatabase();
+    await db.beginTransaction();
 
-      const {
-        inv_id,
-        ci_item_name,
-        ci_quantity,
-        ci_amount,
-        ci_type, // NEW: "item" or "service"
-        payment_method,   
-        or_num,   
-        payment_status,   
-        total_service_charged, 
-        hmo_number,
-        hmo_provider,
-        coverage,
-        billing_date,
-        due_date
-      } = req.body;
+    const { appointId } = req.params;
+    const {
+      inv_id,
+      ci_item_name,
+      ci_quantity,
+      ci_amount,
+      ci_type,
+      payment_method,
+      payment_status,
+      total_service_charged,
+      hmo_number,
+      hmo_provider,
+      coverage,
+      billing_date,
+      due_date
+    } = req.body;
+    const gcashProof = req.file ? req.file.filename : null;
+    let insertRes = null;
 
-      const gcashProof = req.file ? req.file.filename : null;
+    // 🔹 Insert charged item/service if provided
+    if (ci_item_name && ci_amount != null) {
+      const qty = Number(ci_quantity ?? 1);
+      const amt = Number(ci_amount);
 
-      // Start transaction
-      await db.query("START TRANSACTION");
-
-      let insertRes = null;
-
-      // 🔹 CASE 1: Insert charged record (item OR service)
-      if (ci_item_name && ci_amount != null) {
-        const qty = Number(ci_quantity ?? 1);
-        const amt = Number(ci_amount);
-
-        if (Number.isNaN(qty) || Number.isNaN(amt)) {
-          return res.status(400).json({ message: "Quantity and amount must be numbers" });
-        }
-
-        [insertRes] = await db.query(
-          `INSERT INTO chargeditem 
-            (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id, ci_status, ci_type)
-          VALUES (?, ?, ?, ?, ?, 'pending', ?)`,
-          [inv_id || null, ci_item_name, qty, amt, appointId, ci_type || (inv_id ? "item" : "service")]
-        );
+      if (Number.isNaN(qty) || Number.isNaN(amt)) {
+        await db.rollback();
+        return res.status(400).json({ message: "Quantity and amount must be numbers" });
       }
 
-      // 🔹 Always compute totals
-      const [sumRows] = await db.query(
-        `SELECT COALESCE(SUM(ci_quantity * ci_amount), 0) AS items_total
-         FROM chargeditem
-         WHERE appoint_id = ?`,
-        [appointId]
+      [insertRes] = await db.query(
+        `INSERT INTO chargeditem (inv_id, ci_item_name, ci_quantity, ci_amount, appoint_id, ci_status, ci_type)
+         VALUES (?, ?, ?, ?, ?, 'pending', ?)`,
+        [inv_id || null, ci_item_name, qty, amt, appointId, ci_type || (inv_id ? "item" : "service")]
       );
-      const itemsTotal = sumRows[0]?.items_total || 0;
-
-      // Get current service charge (unless new one is provided)
-      const [appRows] = await db.query(
-        `SELECT COALESCE(total_service_charged, 0) AS svc
-         FROM appointment
-         WHERE appoint_id = ?`,
-        [appointId]
-      );
-      const svc = total_service_charged != null ? Number(total_service_charged) : appRows[0]?.svc || 0;
-
-      // Compute total_charged
-      const total_charged = Number(itemsTotal) + Number(svc);
-
-      // 🔹 Update appointment table (now also saving gcash_proof if uploaded)
-      let updateQuery = `
-        UPDATE appointment 
-        SET total_charged = ?, total_service_charged = ?, appointment_status = 'incomplete'`;
-      const updateParams = [total_charged, svc];
-
-      if (payment_method != null) {
-        updateQuery += `, payment_method = ?`;
-        updateParams.push(payment_method);
-      }
-      if (payment_status != null) {
-        updateQuery += `, payment_status = ?`;
-        updateParams.push(payment_status);
-      }
-      if (gcashProof) {
-        updateQuery += `, downpayment_proof = ?`;
-        updateParams.push(gcashProof);
-      }
-      if (or_num != null) {
-        updateQuery += `, or_num = ?`;
-        updateParams.push(or_num);
-      }
-
-      // if (pwd_number != null) {
-      //   updateQuery += `, pwd_number = ?`;
-      //   updateParams.push(pwd_number);
-      // }
-      // if (hmo_number != null) {
-      //   updateQuery += `, hmo_number = ?`;
-      //   updateParams.push(hmo_number);
-      // }
-
-      if (billing_date != null) {
-        updateQuery += `, billing_date = ?`;
-        updateParams.push(billing_date);
-      }
-      if (due_date != null) {
-        updateQuery += `, due_date = ?`;
-        updateParams.push(due_date);
-      }
-
-       if (hmo_number != null) {
-        updateQuery += `, hmo_number = ?`;
-        updateParams.push(hmo_number);
-      }
-        if (hmo_provider != null) {
-          // hmo_provider is actually the hmo_id from the frontend
-          const [hmoRows] = await db.query(
-            "SELECT hmo_name FROM hmo WHERE hmo_id = ?",
-            [hmo_provider]
-          );
-
-          if (hmoRows.length > 0) {
-            const hmoName = hmoRows[0].hmo_name;
-            updateQuery += `, hmo_name = ?`;
-            updateParams.push(hmoName);
-              console.log("HMO rows:", hmoRows);
-          }
-        }
-        if (coverage != null) {
-        updateQuery += `,coverage = ?`;
-        updateParams.push(coverage);
-      }
-      updateQuery += ` WHERE appoint_id = ?`;
-      updateParams.push(appointId);
-
-      await db.query(updateQuery, updateParams);
-
-      // Commit transaction
-      await db.query("COMMIT");
-
-      // Fetch updated appointment
-      const [updatedAppRows] = await db.query(
-        `SELECT payment_method, payment_status, total_service_charged, total_charged, 
-                appointment_status, downpayment_proof, billing_date, due_date,hmo_number,hmo_name, coverage
-        FROM appointment
-        WHERE appoint_id = ?`,
-        [appointId]
-      );
-
-      // ✅ Insert into Audit Trail
-      const action = insertRes ? "Add Charge & Update Billing" : "Update Billing";
-      const description = insertRes
-        ? `Added a new ${ci_type || "item/service"} "${ci_item_name}" (Qty: ${ci_quantity || 1}, Amount: ₱${ci_amount || 0}) and updated billing for appointment ID: ${appointId}.`
-        : `Updated billing details for appointment ID: ${appointId}. Method: ${payment_method || "N/A"}, Status: ${payment_status || "N/A"}, Total Charged: ₱${total_charged}.`;
-      const created_at = new Date();
-
-      await db.query(
-        "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
-        [req.user.user_name, req.user.role, action, description, created_at]
-      );
-
-
-      res.status(insertRes ? 201 : 200).json({
-        message: insertRes ? "Charge added + billing updated" : "Billing updated",
-        ci_id: insertRes?.insertId ?? null,
-        appoint_id: appointId,
-        items_total: itemsTotal,
-        total_service_charged: updatedAppRows[0]?.total_service_charged ?? svc,
-        total_charged: updatedAppRows[0]?.total_charged ?? total_charged,
-        payment_method: updatedAppRows[0]?.payment_method ?? null,
-        payment_status: updatedAppRows[0]?.payment_status ?? null,
-        downpayment_proof: updatedAppRows[0]?.downpayment_proof ?? null,
-        appointment_status: updatedAppRows[0]?.appointment_status ?? "done",
-        pwd_number: updatedAppRows[0]?.pwd_number ?? null,
-        hmo_number: updatedAppRows[0]?.hmo_number ?? null,
-        hmo_name: updatedAppRows[0]?.hmo_name?? null,
-        coverage: updatedAppRows[0]?.coverage?? null,
-        billing_date: updatedAppRows[0]?.billing_date ?? null,
-        due_date: updatedAppRows[0]?.due_date ?? due_date ?? null
-      });
-
-    } catch (err) {
-      try {
-        if (db) await db.query("ROLLBACK");
-      } catch (rbErr) {
-        console.error("Rollback error:", rbErr);
-      }
-      console.error("Billing POST error:", err);
-      res.status(500).json({ message: "Internal server error" });
     }
+
+    // 🔹 Calculate totals
+    const [sumRows] = await db.query(
+      `SELECT COALESCE(SUM(ci_quantity * ci_amount), 0) AS items_total
+       FROM chargeditem
+       WHERE appoint_id = ?`,
+      [appointId]
+    );
+    const itemsTotal = sumRows[0]?.items_total || 0;
+
+    // 🔹 Lock appointment row
+    const [appRows] = await db.query(
+      `SELECT total_service_charged, or_num
+       FROM appointment
+       WHERE appoint_id = ? FOR UPDATE`,
+      [appointId]
+    );
+
+    const svc = total_service_charged != null ? Number(total_service_charged) : appRows[0]?.total_service_charged || 0;
+    const total_charged = Number(itemsTotal) + Number(svc);
+
+    let newOr = appRows[0]?.or_num;
+
+    // 🔹 Assign OR number if not already assigned (atomic increment approach)
+    if (!newOr) {
+      // Lock active OR range row
+      const [rangeRows] = await db.query(
+        "SELECT * FROM ORRangeSetup WHERE is_active = TRUE LIMIT 1 FOR UPDATE"
+      );
+      const range = rangeRows[0];
+      if (!range) {
+        await db.rollback();
+        return res.status(400).json({ message: "No active OR range found" });
+      }
+
+      // Atomically increment current_or and read the new value in the same transaction
+      // MySQL (8.0+) supports RETURNING, but if your version doesn't, we do UPDATE then SELECT.
+      // Update to increment current_or by 1
+      await db.query("UPDATE ORRangeSetup SET current_or = current_or + 1 WHERE id = ?", [range.id]);
+
+      // Now select the new current_or (still within the same transaction)
+      const [updatedRows] = await db.query("SELECT current_or FROM ORRangeSetup WHERE id = ? FOR UPDATE", [range.id]);
+      const assignedOr = updatedRows[0].current_or;
+
+      // sanity check bounds
+      if (assignedOr > range.end_or) {
+        await db.rollback();
+        return res.status(400).json({ message: "All OR numbers are already used!" });
+      }
+
+      // final double-check: ensure no appointment already has this OR
+      const [exists] = await db.query("SELECT 1 FROM appointment WHERE or_num = ? LIMIT 1", [assignedOr]);
+      if (exists.length > 0) {
+        // If this happens (very unlikely with the FOR UPDATE + atomic increment), try a quick retry:
+        // decrement current_or back and retry once or just increment to next available.
+        // Simpler approach: increment again and take that value (still under transaction)
+        await db.query("UPDATE ORRangeSetup SET current_or = current_or + 1 WHERE id = ?", [range.id]);
+        const [retryRows] = await db.query("SELECT current_or FROM ORRangeSetup WHERE id = ? FOR UPDATE", [range.id]);
+        const retryOr = retryRows[0].current_or;
+        if (retryOr > range.end_or) {
+          await db.rollback();
+          return res.status(400).json({ message: "All OR numbers are already used!" });
+        }
+        newOr = retryOr;
+      } else {
+        newOr = assignedOr;
+      }
+    }
+
+    // 🔹 Update appointment with OR number and billing info
+    const updateFields = [
+      "total_charged = ?",
+      "total_service_charged = ?",
+      "appointment_status = 'incomplete'",
+      "or_num = ?"
+    ];
+    const updateParams = [total_charged, svc, newOr];
+
+    if (payment_method != null) { updateFields.push("payment_method = ?"); updateParams.push(payment_method); }
+    if (payment_status != null) { updateFields.push("payment_status = ?"); updateParams.push(payment_status); }
+    if (gcashProof) { updateFields.push("downpayment_proof = ?"); updateParams.push(gcashProof); }
+    if (billing_date != null) { updateFields.push("billing_date = ?"); updateParams.push(billing_date); }
+    if (due_date != null) { updateFields.push("due_date = ?"); updateParams.push(due_date); }
+    if (hmo_number != null) { updateFields.push("hmo_number = ?"); updateParams.push(hmo_number); }
+    if (hmo_provider != null) {
+      const [hmoRows] = await db.query("SELECT hmo_name FROM hmo WHERE hmo_id = ?", [hmo_provider]);
+      if (hmoRows.length > 0) { updateFields.push("hmo_name = ?"); updateParams.push(hmoRows[0].hmo_name); }
+    }
+    if (coverage != null) { updateFields.push("coverage = ?"); updateParams.push(coverage); }
+
+    updateParams.push(appointId);
+
+    await db.query(
+      `UPDATE appointment SET ${updateFields.join(", ")} WHERE appoint_id = ?`,
+      updateParams
+    );
+
+    // 🔹 Insert audit trail
+    const action = insertRes ? "Add Charge & Update Billing" : "Update Billing";
+    const description = insertRes
+      ? `Added ${ci_type || "item/service"} "${ci_item_name}" (Qty: ${ci_quantity || 1}, Amount: ₱${ci_amount || 0}) for appointment ID ${appointId}`
+      : `Updated billing for appointment ID ${appointId}, Total Charged: ₱${total_charged}, Payment: ${payment_method || "N/A"}, Status: ${payment_status || "N/A"}`;
+
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [req.user.user_name, req.user.role, action, description, new Date()]
+    );
+
+    await db.commit();
+
+    // 🔹 Return updated billing
+    const [updatedAppRows] = await db.query(
+      `SELECT payment_method, payment_status, total_service_charged, total_charged, 
+              appointment_status, downpayment_proof, billing_date, due_date, hmo_number, hmo_name, coverage, or_num
+       FROM appointment
+       WHERE appoint_id = ?`,
+      [appointId]
+    );
+
+    res.status(insertRes ? 201 : 200).json({
+      message: insertRes ? "Charge added + billing updated" : "Billing updated",
+      ci_id: insertRes?.insertId ?? null,
+      appoint_id: appointId,
+      items_total: itemsTotal,
+      total_service_charged: updatedAppRows[0]?.total_service_charged ?? svc,
+      total_charged: updatedAppRows[0]?.total_charged ?? total_charged,
+      payment_method: updatedAppRows[0]?.payment_method ?? null,
+      payment_status: updatedAppRows[0]?.payment_status ?? null,
+      downpayment_proof: updatedAppRows[0]?.downpayment_proof ?? null,
+      appointment_status: updatedAppRows[0]?.appointment_status ?? "done",
+      hmo_number: updatedAppRows[0]?.hmo_number ?? null,
+      hmo_name: updatedAppRows[0]?.hmo_name ?? null,
+      coverage: updatedAppRows[0]?.coverage ?? null,
+      billing_date: updatedAppRows[0]?.billing_date ?? null,
+      due_date: updatedAppRows[0]?.due_date ?? due_date ?? null,
+      or_num: updatedAppRows[0]?.or_num ?? newOr
+    });
+
+  } catch (err) {
+    if (db) await db.rollback();
+    console.error("Billing POST error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  } finally {
+    if (db) await db.end();
   }
-);
+});
 
 // UPDATE PATIENT INFO (with audit trail)
 router.put("/updatepatientinfo/:id", async (req, res) => {
@@ -1943,9 +1914,9 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
 
     res.json({
       message: `Consultation marked as ${appointment_status}. ${appointment.payment_status &&
-          appointment.payment_status.toLowerCase() === "partial"
-          ? "Partial payment recorded in Journal & Ledger."
-          : ""
+        appointment.payment_status.toLowerCase() === "partial"
+        ? "Partial payment recorded in Journal & Ledger."
+        : ""
         }`,
     });
   } catch (error) {
@@ -1990,7 +1961,7 @@ router.get("/consultationpayments/:appointId", async (req, res) => {
 //Complete payment
 // ✅ Complete Payment Route (with fixed HMO computation and no previous balance logic)
 //Complete payment
-router.post("/complete/:appoint_id", async (req, res) => { 
+router.post("/complete/:appoint_id", async (req, res) => {
   const { appoint_id } = req.params;
   const connection = await connectToDatabase();
 
@@ -2144,7 +2115,7 @@ router.post("/complete/:appoint_id", async (req, res) => {
           }
 
           const particulars = `${hmo_name}: ${procedure_type} - ${p_fname} ${p_lname}`;
-          const entryDate = date; 
+          const entryDate = date;
 
           // Insert into sub_receivable (no previous balance)
           const [insSub] = await connection.query(
@@ -2383,7 +2354,7 @@ router.post("/processRefund/:appointId", upload.single("refund_photo"), async (r
       [user_name, role, action, description, created_at]
     );
 
-    res.json({ message: "Refund processed and appointment cancelled." });
+    res.json({ message: "Appointment cancelled." });
   } catch (error) {
     console.error("Refund process error:", error);
     res.status(500).json({ message: "Failed to process refund" });
@@ -2462,6 +2433,24 @@ router.post('/additem', async (req, res) => {
         ]
       );
     }
+
+    // --- Notify the staff who added the item ---
+    await db.query(
+      `INSERT INTO notifications (
+        user_id, 
+        ntf_subject, 
+        ntf_description, 
+        ntf_created_at, 
+        ntf_expires_at, 
+        category
+      )
+      VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
+      [
+        decoded.user_id,
+        "Item Submitted for Approval",
+        `You have successfully added "${inv_item_name}". It is now waiting for admin approval.`,
+      ]
+    );
 
     // Insert into audit trail
     const action = "Add New Inventory Item";
@@ -2587,12 +2576,6 @@ router.get("/displayitem/:id", async (req, res) => {
   if (!token) return res.status(401).json({ message: "No token provided" });
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    if (decoded.role !== "admin") {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
     const itemId = req.params.id;
     const db = await connectToDatabase();
     const [rows] = await db.query(
@@ -4000,7 +3983,7 @@ router.post("/subsidiary1", async (req, res) => {
     const db = await connectToDatabase();
     const {
       date,
-      name,         
+      name,
       invoice_no,
       debit,
       credit,
@@ -4020,26 +4003,26 @@ router.post("/subsidiary1", async (req, res) => {
     }
 
     if (parseFloat(credit) > 0) {
-  const [existingInvoice] = await db.query(
-    `SELECT 1 FROM sub_payable WHERE invoice_no = ? LIMIT 1`,
-    [invoice_no]
-  );
-  if (existingInvoice.length > 0) {
-    return res.status(400).json({
-      error: "Invoice number already exists.",
-    });
-  }
-}
-//NEW LINE
-let supplier_id = 0;
+      const [existingInvoice] = await db.query(
+        `SELECT 1 FROM sub_payable WHERE invoice_no = ? LIMIT 1`,
+        [invoice_no]
+      );
+      if (existingInvoice.length > 0) {
+        return res.status(400).json({
+          error: "Invoice number already exists.",
+        });
+      }
+    }
+    //NEW LINE
+    let supplier_id = 0;
     // 🔸 Get supplier_id from supplier table
     const [userRows] = await db.query(
       `SELECT supplier_id FROM supplier WHERE supplier_name = ? LIMIT 1`,
       [name]
     );
     if (userRows.length > 0) {
-  supplier_id = userRows[0].supplier_id;
-}
+      supplier_id = userRows[0].supplier_id;
+    }
 
     // 🔸 Get expense name (chart of accounts)
     const [expenseRows] = await db.query(
@@ -4362,11 +4345,11 @@ router.post("/subsidiaryReceivableHmo", async (req, res) => {
 
     if (appointmentRows.length === 0) {
       throw new Error("Appointment or user not found");
-      
+
     }
 
-      //Get hmo name
-     const [HmoRows] = await connection.query(
+    //Get hmo name
+    const [HmoRows] = await connection.query(
       `SELECT hmo_name
        FROM appointment 
        WHERE appoint_id = ?`,
@@ -4389,15 +4372,15 @@ router.post("/subsidiaryReceivableHmo", async (req, res) => {
 
     //get total_amount
     const [existingPayment] = await connection.query(
-  `SELECT total_amount FROM sub_receivable WHERE invoice_no = ?`,
-  [invoice_no]
-);
+      `SELECT total_amount FROM sub_receivable WHERE invoice_no = ?`,
+      [invoice_no]
+    );
 
-if (existingPayment.length === 0) {
-  throw new Error(`No existing total_amount found for invoice_no: ${invoice_no}`);
-}
+    if (existingPayment.length === 0) {
+      throw new Error(`No existing total_amount found for invoice_no: ${invoice_no}`);
+    }
 
-const total_amount = Number(existingPayment[0].total_amount);
+    const total_amount = Number(existingPayment[0].total_amount);
     // Get previous payments (credit total)
     const [prevPayments] = await connection.query(
       `SELECT SUM(credit) AS totalPaid FROM sub_receivable WHERE appoint_id = ?`,
@@ -4654,7 +4637,7 @@ router.get("/appointments/all", async (req, res) => {
 
 //NEW (MAIN HMO)
 router.get("/HMO", async (req, res) => {
-   const db = await connectToDatabase();
+  const db = await connectToDatabase();
   try {
     const [rows] = await db.query(
       "SELECT * FROM hmo  "
@@ -4681,7 +4664,7 @@ const uploadHMO = multer({ storage: hmoStorage });
 
 // Use uploadHMO here
 router.post("/hmo", uploadHMO.single("moa_letter"), async (req, res) => {
-    const token = req.headers.authorization?.split(" ")[1];
+  const token = req.headers.authorization?.split(" ")[1];
   if (!token) return res.status(401).json({ error: "No token provided" });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
@@ -4694,13 +4677,13 @@ router.post("/hmo", uploadHMO.single("moa_letter"), async (req, res) => {
 
     const moaPath = req.file.filename;
 
-      const [existing] = await db.query(
+    const [existing] = await db.query(
       "SELECT * FROM hmo WHERE hmo_name = ? ",
       [hmo_name]
     );
 
     if (existing.length > 0) {
-        return res.status(409).json({ message: "HMO already exists" });
+      return res.status(409).json({ message: "HMO already exists" });
     }
 
     await db.query(
@@ -4742,7 +4725,7 @@ router.post("/hmoservice/:hmo_id", async (req, res) => {
   const { hmo_id } = req.params;
   const { service, status, coverage } = req.body;
 
-  if (!service || ! coverage) {
+  if (!service || !coverage) {
     return res.status(400).json({ error: "service name and coverage is required" });
   }
 
@@ -4757,7 +4740,7 @@ router.post("/hmoservice/:hmo_id", async (req, res) => {
     );
 
     if (existing.length > 0) {
-        return res.status(409).json({ message: "HMO service already exists" });
+      return res.status(409).json({ message: "HMO service already exists" });
     }
 
     //  Insert new service
@@ -4964,7 +4947,7 @@ router.get("/hmo/:hmoId/services", async (req, res) => {
 // NEW (SERVICES UNDER A HMO)
 router.get("/hmo_services/:hmo_id", async (req, res) => {
   const { hmo_id } = req.params;
-   const db = await connectToDatabase();
+  const db = await connectToDatabase();
   try {
     const [rows] = await db.query(
       "SELECT * FROM hmo_service WHERE hmo_id = ?",
@@ -4992,7 +4975,7 @@ router.get("/hmo_service/:service_id", async (req, res) => {
       return res.status(404).json({ message: "Service not found" });
     }
 
-    res.json(rows[0]); 
+    res.json(rows[0]);
   } catch (err) {
     console.error("Error fetching HMO services:", err);
     res.status(500).json({ message: "Failed to fetch HMO services" });
@@ -5052,7 +5035,7 @@ router.post("/hmoservice/:hmo_id", async (req, res) => {
   const { hmo_id } = req.params;
   const { service, status, coverage } = req.body;
 
-  if (!service || ! coverage) {
+  if (!service || !coverage) {
     return res.status(400).json({ error: "service name and coverage is required" });
   }
 
@@ -5067,7 +5050,7 @@ router.post("/hmoservice/:hmo_id", async (req, res) => {
     );
 
     if (existing.length > 0) {
-        return res.status(409).json({ message: "HMO service already exists" });
+      return res.status(409).json({ message: "HMO service already exists" });
     }
 
     //  Insert new service
@@ -5389,14 +5372,6 @@ router.post("/followup/:appointId", async (req, res) => {
       return res.status(404).json({ message: "Appointment or patient not found" });
 
     const user_id = rows[0].user_id;
-    let phoneNumber = rows[0].contact_no;
-
-    // Convert local number (0919xxxxxxx) → E.164 (+63919xxxxxxx)
-    if (phoneNumber.startsWith("0")) {
-      phoneNumber = "+63" + phoneNumber.substring(1);
-    } else if (!phoneNumber.startsWith("+")) {
-      phoneNumber = "+" + phoneNumber;
-    }
 
     // Insert notification into database
     await db.query(
@@ -5406,19 +5381,7 @@ router.post("/followup/:appointId", async (req, res) => {
       [user_id, "Appointment Follow-up", message]
     );
 
-    // Send SMS via AWS SNS
-    try {
-      const result = await sns.publish({
-        Message: `Dental Clinic Follow-up: ${message}`,
-        PhoneNumber: phoneNumber,
-      }).promise();
-
-      console.log("✅ SMS sent successfully:", result);
-    } catch (smsError) {
-      console.error("❌ Failed to send SMS:", smsError);
-    }
-
-    res.json({ message: "Follow-up notification and SMS sent successfully!" });
+    res.json({ message: "Follow-up notification sent successfully!" });
   } catch (err) {
     console.error("Follow-up error:", err);
     res.status(500).json({ message: "Failed to send follow-up notification" });

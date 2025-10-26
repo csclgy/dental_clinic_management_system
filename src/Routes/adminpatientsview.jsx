@@ -13,7 +13,8 @@ import {
   ChevronDown,
   ChevronUp,
   PhilippinePeso,
-  IdCard
+  IdCard,
+  Settings
 } from "lucide-react";
 
 const AdminPatientsView = () => {
@@ -314,22 +315,17 @@ const AdminPatientsView = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -383,6 +379,9 @@ const AdminPatientsView = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -463,22 +462,25 @@ const AdminPatientsView = () => {
           {/* Patient Info */}
           <div className="bg-white p-6 rounded-lg shadow-lg border border-teal-400">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-[#00458B]">
-                Patient Information
-              </h2>
-              <button
-                className="bg-[#00458B] text-white px-4 py-2 rounded-lg font-semibold"
-                onClick={() => navigate(`/adminpatientsedit/${patient?.user_id}`)}
-              >
-                Edit Profile
-              </button>
+              <h2 className="text-xl font-bold text-[#00458B]">Patient Information</h2>
+
+              {/* Button group */}
+              <div className="flex gap-3">
+                <button
+                  className="flex items-center gap-2 bg-[#00c3b8] hover:bg-[#00a89d] text-white px-5 py-2 rounded-lg font-semibold transition"
+                  onClick={handlePrintReport}
+                >
+                  <i className="fa fa-file-pdf-o"></i> Generate Report
+                </button>
+                <button
+                  className="flex items-center gap-2 bg-[#00458B] hover:bg-[#003870] text-white px-5 py-2 rounded-lg font-semibold transition"
+                  onClick={() => navigate(`/adminpatientsedit/${patient?.user_id}`)}
+                >
+                  <i className="fa fa-edit"></i> Edit Profile
+                </button>
+              </div>
             </div>
-            <p className="text-2xl font-semibold text-[#00c3b8]">
-              {patient.fname} {patient.mname} {patient.lname}
-            </p>
-            <p className="text-[#00458B]">
-              {patient.gender} | {patient.age} | {patient.date_birth}
-            </p>
+
 
             <br></br>
             <hr></hr>
@@ -625,12 +627,6 @@ const AdminPatientsView = () => {
 
           {/* Report Button */}
           <div className="flex justify-end">
-            <button
-              className="bg-[#00c3b8] text-white px-6 py-2 font-bold rounded-lg"
-              onClick={handlePrintReport}
-            >
-              Generate Report
-            </button>
           </div>
         </main>
       </div>

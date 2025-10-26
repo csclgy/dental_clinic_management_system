@@ -4,7 +4,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AppointmentProvider } from "./context/AppointmentContext";
 import './index.css';
 import './App.css';
-import Navbar from "./components/Navbar";
+import NavBar from "./Components/NavBar";
 import Home from "./Routes/home";
 import Login from "./Routes/login";
 import Register from "./Routes/register";
@@ -45,7 +45,7 @@ import Notification from "./Routes/notification";
 import Registergcash from "./Routes/registergcash";
 import Adminschedule from "./Routes/adminschedule";
 import { RegisterProvider } from "./context/RegisterContext";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "./Components/ProtectedRoute";
 import AdminScheduleCancel from "./Routes/adminschedulecancel";
 import Adminconsultationcomplete from "./Routes/adminconsultationcomplete";
 import Cancelappointment from "./Routes/cancelappointment";
@@ -84,11 +84,12 @@ import AdminConsultationHmoPay from "./Routes/adminconsultationhmopay.jsx";
 import AdminHMOServiceAdd from "./Routes/adminhmoserviceadd.jsx";
 import AdminHMOEdit from "./Routes/adminhmoedit.jsx";
 import AdminHMOServiceEdit from "./Routes/adminhmoserviceedit.jsx";
+import OrRangeSetup from "./Routes/OrRangeSetup.jsx";
 
 function App() {
   return (
     <div className="min-h-screen flex flex-col bg-white-50">
-      <Navbar />
+      <NavBar />
       <RegisterProvider>
         <AppointmentProvider>
           <Routes>
@@ -706,6 +707,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <ReceptionistDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/OrRangeSetup"
+              element={
+                <ProtectedRoute>
+                  <OrRangeSetup />
                 </ProtectedRoute>
               }
             />

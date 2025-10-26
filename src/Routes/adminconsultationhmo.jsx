@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings, Printer } from "lucide-react";
 
 const AdminConsultationHmo = () => {
   const { appointId } = useParams();
@@ -350,22 +350,17 @@ const AdminConsultationHmo = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -419,6 +414,9 @@ const AdminConsultationHmo = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -518,9 +516,25 @@ const AdminConsultationHmo = () => {
           <div
             className="p-10 rounded-lg shadow-lg border border-[#01D5C4] bg-white"
           >
-            <h1 className="text-2xl font-bold text-[#00458B] mb-4">
-              Patient Information
-            </h1>
+            <div className="col-sm-12">
+              <div className="flex items-center justify-between">
+                <h1 className="font-bold text-2xl" style={{ color: "#00458B" }}>
+                  Patient's Information
+                </h1>
+                <button
+                  disabled={consultation.appointment_status !== "done"}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md font-semibold border transition ${consultation.appointment_status === "done"
+                    ? "bg-[#00458B] text-white border-[#00458B] hover:bg-[#003870]"
+                    : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
+                    }`}
+                  onClick={handlePrintReport}
+                >
+                  <Printer size={18} /> Print
+                </button>
+              </div>
+
+            </div>
+            <br></br>
             <hr />
             <div className="mt-4 text-[#00458B]">
               <p className="font-bold text-xl text-[#00c3b8]">
@@ -797,20 +811,7 @@ const AdminConsultationHmo = () => {
               {/* Buttons */}
               <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-end">
                 <button
-                  disabled={consultation.appointment_status !== "done"}
-                  className={`px-6 py-2 rounded-lg font-semibold border w-full sm:w-auto ${consultation.appointment_status === "done"
-                    ? "bg-[#00458B] text-white border border-[#00458B] hover:bg-gray-100 cursor-pointer"
-                    : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
-                    }`}
-                  onClick={handlePrintReport}
-                >
-                  Print
-                </button>
-
-
-
-                <button
-                  className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full sm:w-auto"
+                  className="bg-white text-[#00458B] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
                   onClick={() => navigate("/admincashierhmo")}
                 >
                   Back to List
