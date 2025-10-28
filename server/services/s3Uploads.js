@@ -20,8 +20,8 @@ const createUploader = (folder) =>
     storage: multerS3({
       s3,
       bucket: process.env.AWS_BUCKET_NAME,
-      acl: "public-read", // ✅ Make file publicly accessible
-      contentType: multerS3.AUTO_CONTENT_TYPE, // ✅ Correct MIME type
+      // ❌ Removed `acl: "public-read"`
+      contentType: multerS3.AUTO_CONTENT_TYPE, // ✅ Keeps correct MIME type
       key: (req, file, cb) => {
         const sanitizedFileName = file.originalname.replace(/\s+/g, "_");
         const fileName = `${Date.now()}-${sanitizedFileName}`;
