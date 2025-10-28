@@ -13,12 +13,12 @@ export const createOrRange = async (req, res) => {
     }
 
     // Deactivate any previously active range
-    await db.query("UPDATE ORRangeSetup SET is_active = FALSE WHERE is_active = TRUE");
+    await db.query("UPDATE orrangesetup SET is_active = FALSE WHERE is_active = TRUE");
 
     // Insert new range, current_or starts at start_or - 1
     const initialCurrentOr = start_or - 1 >= 0 ? start_or - 1 : start_or;
     await db.query(
-      "INSERT INTO ORRangeSetup (start_or, end_or, current_or, is_active) VALUES (?, ?, ?, TRUE)",
+      "INSERT INTO orrangesetup (start_or, end_or, current_or, is_active) VALUES (?, ?, ?, TRUE)",
       [start_or, end_or, initialCurrentOr]
     );
 
@@ -39,7 +39,7 @@ export const getActiveOrRange = async (req, res) => {
 
     const [rows] = await db.query(`
       SELECT id, start_or, end_or, current_or, created_at
-      FROM ORRangeSetup
+      FROM orrangesetup
       WHERE is_active = 1
       LIMIT 1
     `);
@@ -63,7 +63,7 @@ export const generateNextOr = async (req, res) => {
     db = await connectToDatabase();
 
     const [rangeRows] = await db.query(
-      "SELECT * FROM ORRangeSetup WHERE is_active = TRUE LIMIT 1"
+      "SELECT * FROM orrangesetup WHERE is_active = TRUE LIMIT 1"
     );
     const range = rangeRows[0];
 
@@ -103,7 +103,7 @@ export const assignOrToAppointment = async (req, res) => {
 
     // Lock active OR range
     const [rangeRows] = await db.query(
-      "SELECT * FROM ORRangeSetup WHERE is_active = TRUE LIMIT 1 FOR UPDATE"
+      "SELECT * FROM orrangesetup WHERE is_active = TRUE LIMIT 1 FOR UPDATE"
     );
     const range = rangeRows[0];
 
@@ -114,7 +114,7 @@ export const assignOrToAppointment = async (req, res) => {
 
     // Find all ORs already used
     const [usedOrRows] = await db.query(
-      "SELECT or_num FROM appointment WHERE or_num BETWEEN ? AND ? ORDER BY or_num ASC",
+      "SELECT or_num FROM appointments WHERE or_num BETWEEN ? AND ? ORDER BY or_num ASC",
       [range.start_or, range.end_or]
     );
     const usedSet = new Set(usedOrRows.map(r => r.or_num));
@@ -134,10 +134,10 @@ export const assignOrToAppointment = async (req, res) => {
     }
 
     // Update current_or in OR range
-    await db.query("UPDATE ORRangeSetup SET current_or = ? WHERE id = ?", [nextOr, range.id]);
+    await db.query("UPDATE orrangesetup SET current_or = ? WHERE id = ?", [nextOr, range.id]);
 
     // Assign OR to appointment
-    await db.query("UPDATE appointment SET or_num = ? WHERE appoint_id = ?", [nextOr, appoint_id]);
+    await db.query("UPDATE appointments SET or_num = ? WHERE appoint_id = ?", [nextOr, appoint_id]);
 
     await db.commit();
     res.json({ message: "OR assigned successfully", or_num: nextOr });
