@@ -199,6 +199,12 @@ const OrRangeSetup = () => {
           <Link to="/admincashier" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
             <PhilippinePeso size={18} /> Cashier
           </Link>
+                        <Link
+                to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-eye"></i> Audit Trail
+              </Link>
         </nav>
       </aside>
 
