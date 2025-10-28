@@ -4994,6 +4994,10 @@ const EditHMOstorage = multer.diskStorage({
 const HMOupload = multer({ storage: EditHMOstorage });
 
 router.put("/hmo/:hmo_id", HMOupload.single("moa_letter"), async (req, res) => {
+  console.log("📦 HMO Upload Debug:", {
+      body: req.body,
+      file: req.file,
+    });
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
   if (!token) return res.status(401).json({ message: "No token provided" });

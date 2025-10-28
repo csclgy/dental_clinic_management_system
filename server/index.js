@@ -32,6 +32,7 @@ app.use(
 
 // ✅ Then parse JSON
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // ✅ Serve static files
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
