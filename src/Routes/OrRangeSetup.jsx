@@ -16,8 +16,8 @@ import {
 
 const API_BASE =
   import.meta.env.MODE === "development"
-    ? "http://localhost:3000/api/or-range"
-    : "https://dental-clinic-management-system-backend-jlz9.onrender.com/api/or-range";
+    ? "http://localhost:3000"
+    : "https://dental-clinic-management-system-backend-jlz9.onrender.com";
 
 const OrRangeSetup = () => {
   const navigate = useNavigate();
@@ -48,11 +48,11 @@ const OrRangeSetup = () => {
 
   const fetchOrRanges = async () => {
     try {
-      const allRes = await axios.get(`${API_BASE}`);
+      const allRes = await axios.get(`${API_BASE}/api/or-range`);
       console.log("✅ All OR Ranges Response:", allRes.data);
       setOrRanges(allRes.data);
 
-      const activeRes = await axios.get(`${API_BASE}/active`);
+      const activeRes = await axios.get(`${API_BASE}/api/or-range/active`);
       console.log("✅ Active OR Range Response:", activeRes.data);
       setActiveRange(activeRes.data);
     } catch (err) {
