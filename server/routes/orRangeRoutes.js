@@ -28,7 +28,7 @@ router.get("/", async (req, res) => {
           ELSE 'Inactive'
         END AS status,
         created_at
-      FROM ORRangeSetup
+      FROM orrangesetup
       ORDER BY id DESC
     `);
 
@@ -50,10 +50,10 @@ router.put("/:id/activate", async (req, res) => {
     db = await connectToDatabase();
 
     // Deactivate all ranges first
-    await db.query("UPDATE ORRangeSetup SET is_active = 0");
+    await db.query("UPDATE orrangesetup SET is_active = 0");
 
     // Activate selected one
-    await db.query("UPDATE ORRangeSetup SET is_active = 1 WHERE id = ?", [id]);
+    await db.query("UPDATE orrangesetup SET is_active = 1 WHERE id = ?", [id]);
 
     res.json({ message: "Range activated successfully!" });
   } catch (err) {
@@ -72,7 +72,7 @@ router.put("/:id/deactivate", async (req, res) => {
   try {
     db = await connectToDatabase();
 
-    await db.query("UPDATE ORRangeSetup SET is_active = 0 WHERE id = ?", [id]);
+    await db.query("UPDATE orrangesetup SET is_active = 0 WHERE id = ?", [id]);
 
     res.json({ message: "Range deactivated successfully!" });
   } catch (err) {
