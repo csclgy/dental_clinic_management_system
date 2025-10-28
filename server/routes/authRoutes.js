@@ -1502,7 +1502,7 @@ router.post("/billing/:appointId", authenticateToken, uploadBilling.single("gcas
     if (!newOr) {
       // Lock active OR range row
       const [rangeRows] = await db.query(
-        "SELECT * FROM ORRangeSetup WHERE is_active = TRUE LIMIT 1 FOR UPDATE"
+        "SELECT * FROM orrangesetup WHERE is_active = TRUE LIMIT 1 FOR UPDATE"
       );
       const range = rangeRows[0];
       if (!range) {
@@ -1513,10 +1513,10 @@ router.post("/billing/:appointId", authenticateToken, uploadBilling.single("gcas
       // Atomically increment current_or and read the new value in the same transaction
       // MySQL (8.0+) supports RETURNING, but if your version doesn't, we do UPDATE then SELECT.
       // Update to increment current_or by 1
-      await db.query("UPDATE ORRangeSetup SET current_or = current_or + 1 WHERE id = ?", [range.id]);
+      await db.query("UPDATE orrangesetup SET current_or = current_or + 1 WHERE id = ?", [range.id]);
 
       // Now select the new current_or (still within the same transaction)
-      const [updatedRows] = await db.query("SELECT current_or FROM ORRangeSetup WHERE id = ? FOR UPDATE", [range.id]);
+      const [updatedRows] = await db.query("SELECT current_or FROM orrangesetup WHERE id = ? FOR UPDATE", [range.id]);
       const assignedOr = updatedRows[0].current_or;
 
       // sanity check bounds
@@ -1531,8 +1531,8 @@ router.post("/billing/:appointId", authenticateToken, uploadBilling.single("gcas
         // If this happens (very unlikely with the FOR UPDATE + atomic increment), try a quick retry:
         // decrement current_or back and retry once or just increment to next available.
         // Simpler approach: increment again and take that value (still under transaction)
-        await db.query("UPDATE ORRangeSetup SET current_or = current_or + 1 WHERE id = ?", [range.id]);
-        const [retryRows] = await db.query("SELECT current_or FROM ORRangeSetup WHERE id = ? FOR UPDATE", [range.id]);
+        await db.query("UPDATE orrangesetup SET current_or = current_or + 1 WHERE id = ?", [range.id]);
+        const [retryRows] = await db.query("SELECT current_or FROM orrangesetup WHERE id = ? FOR UPDATE", [range.id]);
         const retryOr = retryRows[0].current_or;
         if (retryOr > range.end_or) {
           await db.rollback();
