@@ -10,6 +10,7 @@ import { authenticateToken } from "../middleware/authMiddleware.js";
 import AWS from "aws-sdk";
 import { sendEmail } from "../services/emailService.js";
 import { uploadRefund, uploadAppointment, uploadHMO, uploadBilling } from "../services/s3Uploads.js";
+import fs from "fs";
 
 dotenv.config({ path: './.env' }); // explicit path
 
