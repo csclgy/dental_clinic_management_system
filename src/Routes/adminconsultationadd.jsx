@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, AlertCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, AlertCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
 
 const AdminConsultationAdd = () => {
   const location = useLocation();
@@ -49,7 +49,7 @@ const AdminConsultationAdd = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/all");
+      const response = await axios.get("http://localhost:3000/auth/appointments/all");
       const appointments = response.data;
 
       // Filter for active appointments for selected dentist
@@ -185,7 +185,7 @@ const AdminConsultationAdd = () => {
       };
 
       const token = localStorage.getItem("token");
-      await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/createconsultation", payload, {
+      await axios.post("http://localhost:3000/auth/createconsultation", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -219,7 +219,7 @@ const AdminConsultationAdd = () => {
     const fetchDentists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists", {
+        const res = await axios.get("http://localhost:3000/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDentists(res.data);
@@ -312,6 +312,9 @@ const AdminConsultationAdd = () => {
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
               </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+<Settings size={18} /> OR Range
+</Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"

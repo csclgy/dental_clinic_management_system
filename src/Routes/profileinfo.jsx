@@ -35,7 +35,7 @@ const ProfileInfo = () => {
       }
 
       try {
-        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/me", {
+        const res = await fetch("http://localhost:3000/auth/me", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -91,7 +91,7 @@ const ProfileInfo = () => {
     }
 
     try {
-      const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/updateinfo", {
+      const res = await fetch("http://localhost:3000/auth/updateinfo", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -206,16 +206,16 @@ const ProfileInfo = () => {
                 <Input label="First Name" value={user.fname} />
                 <Input label="Last Name" value={user.lname} />
                 <Input label="Gender" value={user.gender} />
-                <Input label="Religion" value={user.religion} />
+                <Input label="Religion:" value={user.religion} />
                 <Input
-                  label="Home Address"
+                  label="Home Address:"
                   value={user.home_address}
                   onChange={(e) =>
                     setUser({ ...user, home_address: e.target.value })
                   }
                 />
                 <Input
-                  label="Province"
+                  label="Province:"
                   value={user.province}
                   onChange={(e) =>
                     setUser({ ...user, province: e.target.value })
@@ -230,12 +230,12 @@ const ProfileInfo = () => {
                 <Input label="Age" value={user.age} readOnly />
                 <Input label="Nationality" value={user.nationality} readOnly />
                 <Input
-                  label="City"
+                  label="City:"
                   value={user.city}
                   onChange={(e) => setUser({ ...user, city: e.target.value })}
                 />
                 <Input
-                  label="Occupation"
+                  label="Occupation:"
                   value={user.occupation}
                   onChange={(e) =>
                     setUser({ ...user, occupation: e.target.value })

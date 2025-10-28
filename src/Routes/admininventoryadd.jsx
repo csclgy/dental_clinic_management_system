@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, Package, PlusCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, Package, PlusCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
 
 const AdminInventoryAdd = () => {
   const navigate = useNavigate();
@@ -44,7 +44,7 @@ const AdminInventoryAdd = () => {
   useEffect(() => {
     const fetchSuppliers = async () => {
       try {
-        const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/suppliers");
+        const response = await axios.get("http://localhost:3000/auth/suppliers");
         setSuppliers(response.data);
       } catch (error) {
         console.error("Error fetching suppliers:", error);
@@ -58,7 +58,7 @@ const AdminInventoryAdd = () => {
 
     try {
       const response = await axios.post(
-        "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/additem",
+        "http://localhost:3000/auth/additem",
         registerData,
         {
           headers: {
@@ -111,22 +111,17 @@ const AdminInventoryAdd = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -180,6 +175,9 @@ const AdminInventoryAdd = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -271,7 +269,7 @@ const AdminInventoryAdd = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Item Type: <span style={{color:"red"}}>*</span>
+                Item Type: <span style={{ color: "red" }}>*</span>
               </label>
               <select
                 value={registerData.inv_item_type || ""}
@@ -286,7 +284,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Item Name: <span style={{color:"red"}}>*</span>
+                Item Name: <span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="text"
@@ -298,7 +296,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Price Per Item (₱): <span style={{color:"red"}}>*</span>
+                Price Per Item (₱): <span style={{ color: "red" }}>*</span>
               </label>
               <input
                 type="number"
@@ -312,7 +310,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Quantity: <span style={{color:"red"}}>*</span>
+                Quantity: <span style={{ color: "red" }}>*</span>
               </label>
               <div className="flex items-center border border-[#00458b] rounded-lg w-fit">
                 <button
@@ -367,7 +365,7 @@ const AdminInventoryAdd = () => {
               <>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Amount of mL: <span style={{color:"red"}}>*</span>
+                    Amount of mL: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="number"
@@ -379,7 +377,7 @@ const AdminInventoryAdd = () => {
 
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
-                    Expiration Date: <span style={{color:"red"}}>*</span>
+                    Expiration Date: <span style={{ color: "red" }}>*</span>
                   </label>
                   <input
                     type="date"
@@ -395,7 +393,7 @@ const AdminInventoryAdd = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Supplier: <span style={{color:"red"}}>*</span>
+                Supplier: <span style={{ color: "red" }}>*</span>
               </label>
               <select
                 value={registerData.supplier_id}
@@ -414,7 +412,7 @@ const AdminInventoryAdd = () => {
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
-                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
+                className="bg-white text-[#00458B] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
                 onClick={() => navigate("/admininventory")}
               >
                 Back to List
@@ -422,7 +420,7 @@ const AdminInventoryAdd = () => {
 
               <button
                 type="submit"
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+                className="bg-[#00458B] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
               >
                 Save
               </button>

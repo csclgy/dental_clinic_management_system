@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
 
 const AdminHMOEdit = () => {
   const location = useLocation();
@@ -36,7 +36,7 @@ const AdminHMOEdit = () => {
   useEffect(() => {
     const fetchHMO = async () => {
       try {
-        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo1/${hmo_id}`);
+        const res = await axios.get(`http://localhost:3000/auth/hmo1/${hmo_id}`);
         setHMO(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
@@ -48,51 +48,51 @@ const AdminHMOEdit = () => {
 
 
   const handleChange = (e) => {
-  const { name, value, files } = e.target;
-  if (name === "moa_letter") {
-    setFile(files[0]); 
-  } else {
-    setHMO({ ...hmo, [name]: value });
-  }
-};
+    const { name, value, files } = e.target;
+    if (name === "moa_letter") {
+      setFile(files[0]);
+    } else {
+      setHMO({ ...hmo, [name]: value });
+    }
+  };
 
 
- const handleUpdate = async () => {
-  if (!hmo.hmo_name.trim()) {
-    showPopup("HMO Name is required.", "error");
-    return;
-  }
-
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      showPopup("No token found. Please login again.", "error");
+  const handleUpdate = async () => {
+    if (!hmo.hmo_name.trim()) {
+      showPopup("HMO Name is required.", "error");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("hmo_name", hmo.hmo_name);
-    formData.append("status", hmo.status);
-    if (file) formData.append("moa_letter", file);
-
-    const response = await axios.put(
-      `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo/${hmo_id}`,
-      formData,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showPopup("No token found. Please login again.", "error");
+        return;
       }
-    );
 
-    showPopup(response.data.message || "HMO updated successfully!", "success");
-    setTimeout(() => navigate("/adminhmo"), 1500);
-  } catch (err) {
-    console.error("Error updating HMO:", err);
-    showPopup(err.response?.data?.message || "Failed to update HMO.", "error");
-  }
-};
+      const formData = new FormData();
+      formData.append("hmo_name", hmo.hmo_name);
+      formData.append("status", hmo.status);
+      if (file) formData.append("moa_letter", file);
+
+      const response = await axios.put(
+        `http://localhost:3000/auth/hmo/${hmo_id}`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      showPopup(response.data.message || "HMO updated successfully!", "success");
+      setTimeout(() => navigate("/adminhmo"), 1500);
+    } catch (err) {
+      console.error("Error updating HMO:", err);
+      showPopup(err.response?.data?.message || "Failed to update HMO.", "error");
+    }
+  };
 
   // ✅ Scroll to element if provided
   useEffect(() => {
@@ -137,22 +137,17 @@ const AdminHMOEdit = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -206,6 +201,9 @@ const AdminHMOEdit = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -312,38 +310,38 @@ const AdminHMOEdit = () => {
               </select>
             </div>
 
-             <div>
-            <label className="block text-[#00458b] font-semibold mb-1">
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
                 MOA Letter: <span style={{ color: "red" }}>*</span>
-            </label>
+              </label>
 
-            {/* Show current file info */}
-            {hmo.moa_letter && (
+              {/* Show current file info */}
+              {hmo.moa_letter && (
                 <p className="text-sm text-gray-600 mb-1">
-                Current file:{" "}
-                <a
-                    href={`https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/hmo/${hmo.moa_letter}`}
+                  Current file:{" "}
+                  <a
+                    href={`http://localhost:3000/uploads/hmo/${hmo.moa_letter}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#00458b] underline"
-                >
+                  >
                     {hmo.moa_letter}
-                </a>
+                  </a>
                 </p>
-            )}
+              )}
 
-            <input
+              <input
                 type="file"
                 name="moa_letter"
                 onChange={handleChange}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-            />
+              />
             </div>
 
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
-                className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
+                className="bg-white text-[#00458B] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
                 onClick={() => navigate("/adminhmo")}
               >
                 Back to List
@@ -351,7 +349,7 @@ const AdminHMOEdit = () => {
 
               <button
                 type="button"
-                className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
+                className="bg-[#00458B] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
                 onClick={handleUpdate}
               >
                 Update
@@ -364,4 +362,4 @@ const AdminHMOEdit = () => {
   );
 };
 
-export default AdminHMOEdit ;
+export default AdminHMOEdit;

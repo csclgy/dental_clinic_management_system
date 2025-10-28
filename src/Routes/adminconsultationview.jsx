@@ -9,7 +9,9 @@ import {
   ChevronDown,
   ChevronUp,
   PhilippinePeso,
-  IdCard
+  IdCard,
+  Settings,
+  Printer
 } from "lucide-react";
 
 const Adminconsultationview = () => {
@@ -40,7 +42,7 @@ const Adminconsultationview = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultation/${appointId}`,
+          `http://localhost:3000/auth/displayconsultation/${appointId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -70,7 +72,7 @@ const Adminconsultationview = () => {
     const fetchDentists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists", {
+        const res = await axios.get("http://localhost:3000/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDentists(res.data);
@@ -409,22 +411,17 @@ const Adminconsultationview = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -478,6 +475,9 @@ const Adminconsultationview = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -545,8 +545,27 @@ const Adminconsultationview = () => {
           <div className="col-sm-12 p-10 rounded-lg shadow-lg" style={{ border: "solid", borderColor: "#01D5C4" }}>
             <div className="col-sm-12">
               <div className="row">
-                <div className="col-sm-9">
-                  <h1 className="text-2xl font-bold" style={{ color: "#00458B" }}>Patients Information</h1>
+                <div className="col-sm-12">
+                  <div className="flex items-center justify-between">
+                    <h1 className="font-bold text-2xl" style={{ color: "#00458B" }}>
+                      Patient's Information
+                    </h1>
+                    <button
+                      disabled={consultation.appointment_status !== "done"}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-md font-semibold border transition ${consultation.appointment_status === "done"
+                        ? "bg-[#00458B] text-white border-[#00458B] hover:bg-[#003870]"
+                        : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
+                        }`}
+                      onClick={() => {
+                        if (consultation.appointment_status === "done") {
+                          handlePrintReport();
+                        }
+                      }}
+                    >
+                      <Printer size={18} />  Print
+                    </button>
+                  </div>
+
                 </div>
               </div>
             </div>
@@ -607,8 +626,7 @@ const Adminconsultationview = () => {
                       <button
                         key={idx}
                         className="px-4 py-2 mt-1 mr-2 rounded-md bg-[#01D5C4] text-white font-semibold hover:bg-[#00b0a6]"
-                        onClick={() => window.open(`https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${photo.up_url}`, "_blank")
-                        }
+                        onClick={() => window.open(photo.up_url, "_blank")}
                       >
                         View Image {idx + 1}
                       </button>
@@ -616,6 +634,7 @@ const Adminconsultationview = () => {
                   ) : (
                     <p className="text-gray-500">No image uploaded</p>
                   )}
+
                 </div>
                 <br></br>
                 <br></br>
@@ -674,23 +693,26 @@ const Adminconsultationview = () => {
                 <p className="font-bold text-xl">Billing Information</p>
                 <br />
 
-                {consultation.appointment_status !== "incomplete" && consultation.appointment_status !== "done" && consultation.appointment_status !== "cancelled" ? (
-                  <button
-                    className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
-                    onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
-                  >
-                    Edit Billing
-                  </button>
-                ) : (
-                  <div
-                    className="p-4 rounded-lg shadow-md"
-                    style={{
-                      border: "solid",
-                      borderColor: "#01D5C4",
-                      maxHeight: "350px",   // 🔹 fixed height
-                      overflowY: "auto",    // 🔹 enables vertical scrolling
-                    }}
-                  >
+               {consultation.appointment_status !== "incomplete" &&
+ consultation.appointment_status !== "done" &&
+ consultation.appointment_status !== "cancelled" &&
+ role !== "dentist" ? (
+  <button
+    className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
+    onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
+  >
+    Edit Billing
+  </button>
+) : (
+  <div
+    className="p-4 rounded-lg shadow-md"
+    style={{
+      border: "solid",
+      borderColor: "#01D5C4",
+      maxHeight: "350px",
+      overflowY: "auto",
+    }}
+  >
                     <div className="col-sm-12 mb-2">
                       <p className="font-bold text-xl mb-2">Payment Details</p>
                       <div className="row">
@@ -750,7 +772,7 @@ const Adminconsultationview = () => {
                     <button
                       onClick={() =>
                         window.open(
-                          `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${consultation.downpayment_proof}`,
+                          `http://localhost:3000/uploads/appointments/${consultation.downpayment_proof}`,
                           "_blank"
                         )
                       }
@@ -787,7 +809,7 @@ const Adminconsultationview = () => {
                       <button
                         onClick={() =>
                           window.open(
-                            `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${cancelInfo.refund_photo}`,
+                            `http://localhost:3000/uploads/appointments/${cancelInfo.refund_photo}`,
                             "_blank"
                           )
                         }
@@ -813,20 +835,7 @@ const Adminconsultationview = () => {
                 <div className="col-sm-3">
                   <div className="row">
                     <div className="col-sm-12">
-                      <button
-                        disabled={consultation.appointment_status !== "done"}
-                        className={`px-6 py-2 rounded-lg font-semibold w-full mb-4 border ${consultation.appointment_status === "done"
-                          ? "bg-white text-[#00c3b8] border-[#00458b] hover:bg-gray-100 cursor-pointer"
-                          : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
-                          }`}
-                        onClick={() => {
-                          if (consultation.appointment_status === "done") {
-                            handlePrintReport();
-                          }
-                        }}
-                      >
-                        Print
-                      </button>
+
                     </div>
                   </div>
                 </div>

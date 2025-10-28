@@ -14,7 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   PhilippinePeso,
-  IdCard
+  IdCard,
+  Settings
 } from "lucide-react";
 
 const AdminHMOService = () => {
@@ -72,15 +73,15 @@ const AdminHMOService = () => {
         setTimeout(() => {
           element.scrollIntoView({ behavior: "smooth" });
         }, 100);
-      } 
+      }
     }
   }, [location]);
 
   useEffect(() => {
 
-      const fetchHMO = async () => {
+    const fetchHMO = async () => {
       try {
-        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo1/${hmo_id}`);
+        const res = await axios.get(`http://localhost:3000/auth/hmo1/${hmo_id}`);
         setHMO(res.data);
         setLoading(false);
       } catch (err) {
@@ -91,7 +92,7 @@ const AdminHMOService = () => {
 
     const fetchServices = async () => {
       try {
-        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo_services/${hmo_id}`);
+        const res = await axios.get(`http://localhost:3000/auth/hmo_services/${hmo_id}`);
         setServices(res.data);
         setLoading(false);
       } catch (err) {
@@ -108,38 +109,38 @@ const AdminHMOService = () => {
   //   hmo.hmo_name.toLowerCase().includes(searchTerm.toLowerCase())
   // );
 
- const handleDelete = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      showPopup("No token found. Please login again.", "error");
-      return;
-    }
-
-    // PUT request to change status to inactive
-    await axios.put(
-      `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo_service_status/${confirmBox.hmoId}`,
-      { status: "Inactive" },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+  const handleDelete = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showPopup("No token found. Please login again.", "error");
+        return;
       }
-    );
 
-    setConfirmBox({ show: false, hmoId: null, hmoName: "" });
+      // PUT request to change status to inactive
+      await axios.put(
+        `http://localhost:3000/auth/hmo_service_status/${confirmBox.hmoId}`,
+        { status: "Inactive" },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-    showPopup("Service deactivated successfully.", "success");
+      setConfirmBox({ show: false, hmoId: null, hmoName: "" });
 
-    setTimeout(() => {
-      window.location.reload();
-    }, 1200);
-  } catch (err) {
-    console.error("Error deactivating service:", err);
-    showPopup("Failed to deactivate service.", "error");
-  }
-};
+      showPopup("Service deactivated successfully.", "success");
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1200);
+    } catch (err) {
+      console.error("Error deactivating service:", err);
+      showPopup("Failed to deactivate service.", "error");
+    }
+  };
 
 
   return (
@@ -205,22 +206,17 @@ const AdminHMOService = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -274,6 +270,9 @@ const AdminHMOService = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -377,12 +376,12 @@ const AdminHMOService = () => {
 
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-[#00458B]">
-            HMO Management 
+            HMO Management
           </h2>
 
           <div className="flex gap-3">
             <Link
-             to= {`/adminhmoserviceadd/${hmo.hmo_id}`}
+              to={`/adminhmoserviceadd/${hmo.hmo_id}`}
               className="flex items-center gap-2 bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
             >
               <PlusCircle size={18} /> Add Service
@@ -396,8 +395,8 @@ const AdminHMOService = () => {
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
             {/* Search Bar */}
             <div className="flex justify-between mb-4">
-               <h1 className="text-2xl font-bold text-[#00458B]">
-                {hmo?.hmo_name }
+              <h1 className="text-2xl font-bold text-[#00458B]">
+                {hmo?.hmo_name}
               </h1>
               <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
                 <input
@@ -408,7 +407,7 @@ const AdminHMOService = () => {
                   className="flex-1 outline-none text-sm text-gray-700"
                 />
                 <i className="fa fa-search text-[#00458B]"></i>
-              </div> 
+              </div>
             </div>
             <div className="overflow-x-auto">
               <div className="max-h-[500px] overflow-y-auto">
@@ -455,8 +454,8 @@ const AdminHMOService = () => {
                                   }
                                 }}
                                 className={`px-4 py-2 rounded-lg ${isInactive
-                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-red-500 text-white hover:bg-red-600"
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-red-500 text-white hover:bg-red-600"
                                   }`}
                               >
                                 Deactivate
@@ -477,13 +476,13 @@ const AdminHMOService = () => {
                 </table>
               </div>
             </div>
-            <div className="mt-6">
-                        <Link to="/adminhmo">
-                          <button className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg">
-                            Back to List
-                          </button>
-                        </Link>
-                      </div>
+            <div className="flex justify-end gap-4 mt-6">
+              <Link to="/adminhmo">
+                <button className="bg-white text-[#00458B] font-semibold border border-[#00458b] px-6 py-2 rounded-lg">
+                  Back to List
+                </button>
+              </Link>
+            </div>
           </div>
         )}
       </main>

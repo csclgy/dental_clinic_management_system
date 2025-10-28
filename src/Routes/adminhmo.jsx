@@ -13,7 +13,8 @@ import {
   ChevronDown,
   ChevronUp,
   PhilippinePeso,
-  IdCard
+  IdCard,
+  Settings
 } from "lucide-react";
 
 const AdminHMO = () => {
@@ -71,7 +72,7 @@ const AdminHMO = () => {
   useEffect(() => {
     const fetchHMOs = async () => {
       try {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo");
+        const res = await axios.get("http://localhost:3000/auth/hmo");
         setHmos(res.data);
       } catch (err) {
         console.error("Error fetching HMOs:", err);
@@ -95,13 +96,13 @@ const AdminHMO = () => {
         return;
       }
 
-      await axios.delete(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo/${confirmBox.hmoId}`, {
+      await axios.delete(`http://localhost:3000/auth/hmo/${confirmBox.hmoId}`, {
         headers: {
           Authorization: `Bearer ${token}`, // <- include 'Bearer '
         },
       });
 
-    
+
       setConfirmBox({ show: false, hmoIdId: null, hmoName: "" });
       window.location.reload();
       showPopup("HMO changed to inactive successfully.", "success");
@@ -175,22 +176,17 @@ const AdminHMO = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -244,6 +240,9 @@ const AdminHMO = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -409,15 +408,13 @@ const AdminHMO = () => {
                               {hmo.moa_letter ? (
                                 <button
                                   onClick={() =>
-                                    window.open(
-                                      `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/hmo/${hmo.moa_letter}`,
-                                      "_blank"
-                                    )
+                                    window.open(hmo.moa_letter, "_blank")
                                   }
                                   className="px-4 py-2 rounded-lg bg-[white] border border-[#00458B] font-medium text-[#008CBA]"
                                 >
                                   View MOA
                                 </button>
+
                               ) : (
                                 "No File"
                               )}
@@ -447,8 +444,8 @@ const AdminHMO = () => {
                                   }
                                 }}
                                 className={`px-4 py-2 rounded-lg ${isInactive
-                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-red-500 text-white hover:bg-red-600"
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-red-500 text-white hover:bg-red-600"
                                   }`}
                               >
                                 Deactivate

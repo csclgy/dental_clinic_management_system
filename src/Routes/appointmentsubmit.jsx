@@ -55,7 +55,7 @@ const AppointmentSubmit = () => {
         formData.append("downpayment_proof", appointmentData.downpayment_proof);
       }
 
-      await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments", formData, {
+      await axios.post("http://localhost:3000/auth/appointments", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -63,7 +63,7 @@ const AppointmentSubmit = () => {
       });
 
       // ✅ Success popup
-      showPopup("Appointment submitted successfully!", "success");
+      showPopup("Appointment submitted successfully! A confirmation email has been sent.", "success");
 
       // Reset data
       Object.keys(appointmentData).forEach((key) => {

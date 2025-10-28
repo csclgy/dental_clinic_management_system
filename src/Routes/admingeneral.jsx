@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer, Settings } from "lucide-react";
 
 const Admingeneral = () => {
   const location = useLocation();
@@ -48,7 +48,7 @@ const Admingeneral = () => {
       setLoading(true); // ✅ show spinner
 
       try {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/general");
+        const res = await axios.get("http://localhost:3000/auth/general");
         setRecords(res.data);
       } catch (err) {
         console.error("Error fetching general ledger:", err);
@@ -62,7 +62,7 @@ const Admingeneral = () => {
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa");
+        const res = await axios.get("http://localhost:3000/auth/coa");
         setAccounts(res.data);
       } catch (err) {
         console.error("Error fetching accounts:", err);
@@ -228,12 +228,12 @@ const Admingeneral = () => {
   const filterRecord = async (account_id) => {
     try {
       if (!account_id) {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/general");
+        const res = await axios.get("http://localhost:3000/auth/general");
         setRecords(res.data);
         return;
       }
 
-      const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/general_ledger1", {
+      const res = await axios.get("http://localhost:3000/auth/general_ledger1", {
         params: { account_id },
       });
       setRecords(res.data);
@@ -262,22 +262,17 @@ const Admingeneral = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -331,6 +326,9 @@ const Admingeneral = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"

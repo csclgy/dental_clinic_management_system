@@ -1,14 +1,16 @@
 import React, { useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
   const [user_name, setUserName] = useState("");
   const [user_password, setUserPassword] = useState("");
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     setError(""); // clear old error
     try {
-      const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/login", {
+      const res = await fetch("http://localhost:3000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_name, user_password }),
@@ -84,13 +86,24 @@ const Login = () => {
           <label className="block text-[#00458b] font-semibold mb-1">
             Password
           </label>
-          <input
-            type="password"
-            value={user_password}
-            onChange={(e) => setUserPassword(e.target.value)}
-            className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-          />
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"} // toggle type
+              value={user_password}
+              onChange={(e) => setUserPassword(e.target.value)}
+              className="w-full border border-[#00458b] rounded-full px-4 py-2 pr-10 outline-none"
+              placeholder="Enter password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute inset-y-0 right-3 flex items-center text-gray-600 focus:outline-none"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
         </div>
+
 
         {/* Error Message */}
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}

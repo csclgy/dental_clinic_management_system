@@ -14,7 +14,8 @@ import {
   ChevronDown,
   ChevronUp,
   PhilippinePeso,
-  IdCard
+  IdCard,
+  Settings
 } from "lucide-react";
 
 const Adminconsultationcomplete = () => {
@@ -105,7 +106,7 @@ const Adminconsultationcomplete = () => {
     const fetchConsultation = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultation/${appointId}`, {
+        const res = await fetch(`http://localhost:3000/auth/displayconsultation/${appointId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -154,7 +155,7 @@ const Adminconsultationcomplete = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/completeconsultation/${appointId}`, {
+      const res = await fetch(`http://localhost:3000/auth/completeconsultation/${appointId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -183,7 +184,7 @@ const Adminconsultationcomplete = () => {
     const fetchDentists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists", {
+        const res = await axios.get("http://localhost:3000/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDentists(res.data);
@@ -208,7 +209,7 @@ const Adminconsultationcomplete = () => {
           {/* Dashboard Dropdown */}
           <button
             onClick={() => setOpenDashboard(!openDashboard)}
-            className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
               <BarChart3 size={18} /> Dashboard
@@ -218,22 +219,17 @@ const Adminconsultationcomplete = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -287,6 +283,9 @@ const Adminconsultationcomplete = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -417,7 +416,7 @@ const Adminconsultationcomplete = () => {
                 <p className="font-bold">Date of Visit:</p><p>{consultation.pref_date} | {consultation.pref_time}</p>
                 <br />
                 {/* Dentist Selection */}
-                <p className="font-bold">Attending Dentist:</p>
+                <p className="font-bold">Attending Dentist: <span style={{ color: "red" }}>*</span></p>
                 <select
                   value={assignedDentist}
                   onChange={(e) => setAssignedDentist(e.target.value)}
@@ -440,7 +439,7 @@ const Adminconsultationcomplete = () => {
                 <br />
 
                 {/* Diagnosis */}
-                <p className="font-bold">Diagnosis:</p>
+                <p className="font-bold">Diagnosis: <span style={{ color: "red" }}>*</span></p>
                 <input
                   type="text"
                   value={diagnosis}
@@ -596,7 +595,7 @@ const Adminconsultationcomplete = () => {
                   </div>
                   <div className="col-sm-6">
                     <button
-                      className="bg-[#00458B] text-[white] font-semibold border border-[#00458b] px-6 py-2 rounded-full w-full"
+                      className="bg-[#00458B] text-[white] font-semibold border border-[#00458b] px-6 py-2 rounded-lg w-full"
                       onClick={handleComplete}
                     >
                       Complete

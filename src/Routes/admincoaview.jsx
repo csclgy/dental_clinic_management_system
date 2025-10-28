@@ -12,7 +12,8 @@ import {
   ChevronDown,
   ChevronUp,
   PhilippinePeso,
-  IdCard
+  IdCard,
+  Settings
 } from "lucide-react";
 
 const AdminCoaView = () => {
@@ -52,7 +53,7 @@ const AdminCoaView = () => {
     const fetchAccount = async () => {
       try {
         const token = localStorage.getItem("token"); // get your saved JWT token
-        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/${id}`);
+        const res = await axios.get(`http://localhost:3000/auth/coa/${id}`);
         setAccount(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
@@ -63,7 +64,7 @@ const AdminCoaView = () => {
     const fetchSubAccounts = async () => {
       try {
         const res = await axios.get(
-          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/${id}/subaccounts`
+          `http://localhost:3000/auth/coa/${id}/subaccounts`
         );
         setSubAccounts(res.data);
       } catch (err) {
@@ -84,7 +85,7 @@ const AdminCoaView = () => {
       const token = localStorage.getItem("token");
 
       await axios.put(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/sub/${subId}`,
+        `http://localhost:3000/auth/coa/sub/${subId}`,
         {}, // PUT requires a body
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -174,22 +175,17 @@ const AdminCoaView = () => {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link
-                to="/admindashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Admin Dashboard
-              </Link>
-              <Link
-                to="/inventorydashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-              >
-                Inventory Dashboard
-              </Link>
-              <Link to="/receptionistdashboard"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
-                Receptionist Dashboard
-              </Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                  Dashboard</Link>
+              )}
             </div>
           )}
 
@@ -243,6 +239,9 @@ const AdminCoaView = () => {
               )}
               <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
               </Link>
               <Link
                 to="/adminusers"
@@ -413,9 +412,9 @@ const AdminCoaView = () => {
           </div>
 
           {/* Back button */}
-          <div className="mt-6">
+          <div className="flex justify-end gap-4 mt-6">
             <Link to="/admincoa">
-              <button className="bg-white text-[#00c3b8] font-semibold border border-[#00458b] px-6 py-2 rounded-lg">
+              <button className="bg-white text-[#00458B] font-semibold border border-[#00458b] px-6 py-2 rounded-lg">
                 Back to List
               </button>
             </Link>

@@ -49,7 +49,7 @@ const AdminSubsidiaryAdd = () => {
 
     const fetchAccountReceivable = async () => {
       try {
-        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/accountReceivable`);
+        const res = await axios.get(`http://localhost:3000/auth/accountReceivable`);
         if (res.data.length > 0) {
           const { account_id, account_name } = res.data[0];
           setFormData((prev) => ({
@@ -75,7 +75,7 @@ const AdminSubsidiaryAdd = () => {
 
     try {
       const res = await axios.get(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/search?name=${query}`
+        `http://localhost:3000/auth/patients/search?name=${query}`
       );
       setNameSuggestions(res.data);
     } catch (err) {
@@ -103,7 +103,7 @@ const AdminSubsidiaryAdd = () => {
     const balance = debit - credit;
 
     try {
-      await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subsidiary", {
+      await axios.post("http://localhost:3000/auth/subsidiary", {
         date: formData.date,
         name: formData.description,
         invoice_no: formData.invoice_no,

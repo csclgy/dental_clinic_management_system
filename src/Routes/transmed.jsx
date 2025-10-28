@@ -27,7 +27,7 @@ const TransMed = () => {
     const fetchRecords = async () => {
       try {
         const token = localStorage.getItem("token"); // or however you store it
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/my-upcoming", {
+        const res = await axios.get("http://localhost:3000/auth/my-upcoming", {
           headers: {
             Authorization: `Bearer ${token}`, // 👈 send token
           },

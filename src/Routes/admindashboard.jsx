@@ -10,7 +10,8 @@ import {
   ChevronUp,
   Menu,
   IdCard,
-  Printer
+  Printer,
+  Settings
 } from "lucide-react";
 import {
   PieChart,
@@ -43,6 +44,7 @@ function AdminDashboard() {
   const [totalDebit, setTotalDebit] = useState(0);
   const [totalCredit, setTotalCredit] = useState(0);
   const [netBalance, setNetBalance] = useState(0);
+  const role = localStorage.getItem("role");
 
 
   const COLORS = ["#01D5C4", "#00458B", "#A3A3A3"];
@@ -50,19 +52,19 @@ function AdminDashboard() {
 
   // Fetch backend data
   useEffect(() => {
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/count")
+    axios.get("http://localhost:3000/auth/appointments/count")
       .then(res => setAppointmentsCount(res.data))
       .catch(err => console.error("Error fetching appointments:", err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/count")
+    axios.get("http://localhost:3000/auth/patients/count")
       .then(res => setPatientsCount(res.data))
       .catch(err => console.error("Error fetching patients:", err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/demographics")
+    axios.get("http://localhost:3000/auth/patients/demographics")
       .then(res => setPatientDemographics(res.data))
       .catch(err => console.error("Error fetching demographics:", err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/revenue")
+    axios.get("http://localhost:3000/auth/revenue")
       .then(res => {
         setRevenueData(res.data);
         setFilteredRevenue(res.data);
@@ -71,7 +73,7 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/trial")
+    axios.get("http://localhost:3000/auth/trial")
       .then(res => {
         const { data, totalDebit, totalCredit } = res.data;
         setLedgerData(data);
@@ -206,55 +208,263 @@ function AdminDashboard() {
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admindashboard" className="bg-white text-[#00458B] hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
-              <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
-              <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
+              {role === "admin" && (
+                <Link to="/admindashboard" className="bg-white text-[#00458B] hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+              )}
+              {(role === "admin" || role === "inventory") && (
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
+              )}
+              {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
+              )}
             </div>
           )}
 
-          {/* Ledger Dropdown */}
-          <button
-            onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-            className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-          >
-            <span className="flex items-center gap-2">
-              <i className="fa fa-book"></i> Ledger
-            </span>
-            {isLedgerOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
+          {/* Ledger dropdown */}
+          {role === "admin" && (
+            <>
+              {/* Ledger Dropdown */}
+              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <span className="flex items-center gap-2">
+                  <i className="fa fa-book"></i> Ledger
+                </span>
+                {isLedgerOpen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
+              </button>
 
-          {isLedgerOpen && (
-            <div className="ml-6 flex flex-col gap-1 text-sm">
-              <Link to="/admincoa" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Chart of Accounts</Link>
-              <Link to="/adminjournal" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Journal Entries</Link>
-              <Link to="/adminsubsidiaryreceivable" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Subsidiary</Link>
-              <Link to="/admingeneral" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">General Ledger</Link>
-              <Link to="/admintrial" className="p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Trial Balance</Link>
-            </div>
+              {isLedgerOpen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link
+                    to="/admincoa"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Chart of Accounts
+                  </Link>
+                  <Link
+                    to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Journal Entries
+                  </Link>
+                  <Link
+                    to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Subsidiary
+                  </Link>
+                  <Link
+                    to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    General Ledger
+                  </Link>
+                  <Link
+                    to="/admintrial"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                  >
+                    Trial Balance
+                  </Link>
+                </div>
+              )}
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
+              </Link>
+              <Link
+                to="/adminusers"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Users size={18} /> Users
+              </Link>
+            </>
           )}
-          <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-            <IdCard size={18} /> HMO
-          </Link>
-          <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-            <Users size={18} /> Users
-          </Link>
-          <Link to="/admininventory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-            <i className="fa fa-archive"></i> Inventory
-          </Link>
-          <Link to="/adminpatients" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-            <i className="fa fa-user-plus"></i> Patients
-          </Link>
-          <Link to="/adminschedule" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-            <Calendar size={18} /> Schedules
-          </Link>
-          <Link to="/admincashier" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-            <PhilippinePeso size={18} /> Cashier
-          </Link>
-          <Link to="/adminaudit" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-            <i className="fa fa-eye"></i> Audit Trail
-          </Link>
+
+          {(role === "admin" || role === "inventory") && (
+            <>
+              <Link
+                to="/admininventory"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-archive"></i> Inventory
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "dentist" || role === "receptionist") && (
+            <>
+              <Link
+                to="/adminpatients"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-user-plus"></i> Patients
+              </Link>
+              <Link
+                to="/adminschedule"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <Calendar size={18} /> Schedules
+              </Link>
+            </>
+          )}
+
+          {(role === "admin" || role === "receptionist") && (
+            <>
+              <Link
+                to="/admincashier"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <PhilippinePeso size={18} /> Cashier
+              </Link>
+            </>
+          )}
+
+          {role === "admin" && (
+            <>
+              <Link
+                to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <i className="fa fa-eye"></i> Audit Trail
+              </Link>
+            </>
+          )}
         </nav>
       </aside>
+
+      {/* Sidebar (mobile) */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
+          <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50 overflow-y-auto">
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="self-end mb-6"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
+            <nav className="flex flex-col gap-2">
+              <Link
+                to="/admindashboard"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <BarChart3 size={18} /> Dashboard
+              </Link>
+
+              {/* Ledger dropdown */}
+              {role === "admin" && (
+                <>
+                  <button
+                    onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+                    className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                  >
+                    <span className="flex items-center gap-2">
+                      <i className="fa fa-book"></i> Ledger
+                    </span>
+                    <i className={`fa fa-chevron-${isLedgerOpen ? "up" : "down"}`} />
+                  </button>
+
+                  {isLedgerOpen && (
+                    <div className="ml-6 flex flex-col gap-1 text-sm">
+                      <Link
+                        to="/admincoa"
+                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                      >
+                        Chart of Accounts
+                      </Link>
+                      <Link
+                        to="/adminjournal"
+                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                      >
+                        Journal Entries
+                      </Link>
+                      <Link
+                        to="/adminsubsidiaryreceivable"
+                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                      >
+                        Subsidiary
+                      </Link>
+                      <Link
+                        to="/admingeneral"
+                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                      >
+                        General Ledger
+                      </Link>
+                      <Link
+                        to="/admintrial"
+                        className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
+                      >
+                        Trial Balance
+                      </Link>
+                    </div>
+                  )}
+
+                  <Link
+                    to="/adminusers"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                  >
+                    <Users size={18} /> Users
+                  </Link>
+                </>
+              )}
+
+              {(role === "admin" || role === "inventory") && (
+                <>
+                  <Link
+                    to="/admininventory"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                  >
+                    <i className="fa fa-archive"></i> Inventory
+                  </Link>
+                </>
+              )}
+
+              {(role === "admin" || role === "dentist" || role === "receptionist") && (
+                <>
+                  <Link
+                    to="/adminpatients"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                  >
+                    <i className="fa fa-user-plus"></i> Patients
+                  </Link>
+                  <Link
+                    to="/adminschedule"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                  >
+                    <Calendar size={18} /> Schedules
+                  </Link>
+                </>
+              )}
+
+              {(role === "admin" || role === "receptionist") && (
+                <>
+                  <Link
+                    to="/admincashier"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                  >
+                    <Calendar size={18} /> Cashier
+                  </Link>
+                </>
+              )}
+
+              {role === "admin" && (
+                <>
+                  <Link
+                    to="/adminaudit"
+                    className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                  >
+                    <i className="fa fa-eye"></i> Audit Trail
+                  </Link>
+                </>
+              )}
+            </nav>
+          </aside>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
