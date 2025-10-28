@@ -30,9 +30,6 @@ app.use(
   })
 );
 
-// ✅ Handle preflight requests
-app.options("*", cors());
-
 // ✅ Then parse JSON
 app.use(express.json());
 
