@@ -480,7 +480,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
           <p>Thank you for choosing <strong>Arciaga-Juntilla TMJ Ortho Dental Clinic</strong>!</p>
 
           <div style="margin-top: 30px; text-align: center;">
-            <a href="http://localhost:5173/" 
+            <a href="https://dental-clinic-management-system-frontend-wipu.onrender.com/" 
               style="background-color: #01D5C4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
               View Your Appointment
             </a>
@@ -1842,7 +1842,7 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
       <p><strong>Status:</strong> ${appointment_status}</p>
 
       <div style="margin-top: 30px; text-align: center;">
-        <a href="http://localhost:5173/" 
+        <a href="https://dental-clinic-management-system-frontend-wipu.onrender.com/" 
           style="background-color: #01D5C4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
           View Your Appointment
         </a>
@@ -2259,7 +2259,7 @@ router.post(
       <p>If you’d like to reschedule, please log in to your account or contact our clinic directly.</p>
 
       <div style="margin-top: 30px; text-align: center;">
-        <a href="http://localhost:5173/" 
+        <a href="https://dental-clinic-management-system-frontend-wipu.onrender.com/" 
           style="background-color: #01D5C4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
           View Your Appointment
         </a>
@@ -2439,7 +2439,7 @@ router.post("/processRefund/:appointId", uploadRefund.single("refund_photo"), as
       <p>If you wish to reschedule, please log in to your account or contact the clinic directly.</p>
 
       <div style="margin-top: 30px; text-align: center;">
-        <a href="http://localhost:5173/" 
+        <a href="https://dental-clinic-management-system-frontend-wipu.onrender.com/" 
           style="background-color: #01D5C4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
           View Your Appointment
         </a>
@@ -5598,7 +5598,7 @@ router.post("/followup/:appointId", async (req, res) => {
             <p>Please make sure to check your appointment details or contact the clinic if needed.</p>
 
             <div style="margin-top: 30px; text-align: center;">
-              <a href="http://localhost:5173/" 
+              <a href="https://dental-clinic-management-system-frontend-wipu.onrender.com/" 
                 style="background-color: #01D5C4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
                 View Your Appointment
               </a>
