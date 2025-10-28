@@ -85,7 +85,7 @@ const AdminUsersAddPatient = () => {
         }
       );
       showPopup(response.data.message || "Patient added successfully!", "success");
-      setTimeout(() => navigate("/adminusers"), 1500);
+      setTimeout(() => navigate("/adminpatients"), 1500);
     } catch (error) {
       if (error.response) {
         showPopup(error.response.data.message || "Something went wrong", "error");

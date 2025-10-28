@@ -14,6 +14,17 @@ const AdminConsultationPartialPayment = () => {
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
 
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
+  const [fade, setFade] = useState(false);
+
+  const showPopup = (message, type) => {
+    setPopup({ show: true, message, type });
+    setFade(true);
+    setTimeout(() => setFade(false), 2500);
+    setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
+  };
+
+
   const [formData, setFormData] = useState({
     date: "",
     name: "",
@@ -80,9 +91,10 @@ const AdminConsultationPartialPayment = () => {
     e.preventDefault();
 
     if (!formData.date || !formData.name || !formData.account || !formData.amount) {
-      alert("Please fill in all required fields.");
+      showPopup("Please fill in all required fields.", "error");
       return;
     }
+
 
     const debit = formData.type === "debit" ? Number(formData.amount) : 0;
     const credit = formData.type === "credit" ? Number(formData.amount) : 0;
@@ -97,11 +109,13 @@ const AdminConsultationPartialPayment = () => {
         appoint_id: formData.appoint_id,
         procedure_type: formData.procedure_type,
       });
-      alert("Subsidiary entry saved successfully!");
-      navigate("/adminsubsidiaryreceivable");
+      showPopup("Payment successful! Payment recorded in accounts receivable", "success");
+      setTimeout(() => navigate("/admincashier"), 1500);
+
     } catch (err) {
       console.error("Error saving entry:", err.response?.data || err.message);
-      alert(err.response?.data?.message || "Something went wrong");
+      showPopup(err.response?.data?.message || "Something went wrong", "error");
+
     }
   };
 
@@ -268,6 +282,16 @@ const AdminConsultationPartialPayment = () => {
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
             Add Payment
           </h1>
+
+          {popup.show && (
+            <div
+              className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"} ${popup.type === "success" ? "bg-green-500" : "bg-red-500"}`}
+              style={{ zIndex: 9999 }}
+            >
+              {popup.message}
+            </div>
+          )}
+
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

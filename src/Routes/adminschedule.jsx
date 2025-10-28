@@ -409,68 +409,80 @@ const AdminSchedule = () => {
                         <td className="px-4 py-2">{record.appointment_status}</td>
 
                         {/* Buttons */}
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <button
-                            onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
-                            className="bg-[#008CBA] text-white px-4 py-2 rounded-lg"
-                          >
-                            View
-                          </button>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <button
-                            onClick={() => navigate(`/adminschedulecancel/${record.appoint_id}`)}
-                            disabled={
-                              !(
-                                record.appointment_status === "incomplete" ||
-                                record.appointment_status === "pending" ||
-                                record.appointment_status === "cancel with refund request"
-                              )
-                            }
-                            className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" ||
-                              record.appointment_status === "pending" ||
-                              record.appointment_status === "cancel with refund request"
-                              ? "bg-gray-200 hover:bg-gray-300 text-black"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                              }`}
-                          >
-                            Cancel
-                          </button>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <button
-                            disabled={
-                              !(
-                                record.appointment_status === "incomplete" ||
-                                record.appointment_status === "pending"
-                              )
-                            }
-                            onClick={() =>
-                              handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)
-                            }
-                            className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" ||
-                              record.appointment_status === "pending"
-                              ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                              }`}
-                          >
-                            + Follow Up
-                          </button>
-                        </td>
-                        <td className="px-2 py-3 whitespace-nowrap">
-                          <button
-                            onClick={() =>
-                              navigate(`/adminconsultationcomplete/${record.appoint_id}`)
-                            }
-                            disabled={record.appointment_status !== "incomplete"}
-                            className={`px-4 py-2 rounded-lg transition font-semibold ${record.appointment_status === "incomplete"
-                              ? "bg-green-600 hover:bg-green-700 text-white"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                              }`}
-                          >
-                            Complete
-                          </button>
-                        </td>
+{/* Buttons */}
+<td className="px-2 py-3 whitespace-nowrap">
+  <button
+    onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
+    className="bg-[#008CBA] text-white px-4 py-2 rounded-lg"
+  >
+    View
+  </button>
+</td>
+
+{role !== "dentist" && (
+  <>
+    <td className="px-2 py-3 whitespace-nowrap">
+      <button
+        onClick={() => navigate(`/adminschedulecancel/${record.appoint_id}`)}
+        disabled={
+          !(
+            record.appointment_status === "incomplete" ||
+            record.appointment_status === "pending" ||
+            record.appointment_status === "cancel with refund request"
+          )
+        }
+        className={`px-4 py-2 rounded-lg ${
+          record.appointment_status === "incomplete" ||
+          record.appointment_status === "pending" ||
+          record.appointment_status === "cancel with refund request"
+            ? "bg-gray-200 hover:bg-gray-300 text-black"
+            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+        }`}
+      >
+        Cancel
+      </button>
+    </td>
+
+    <td className="px-2 py-3 whitespace-nowrap">
+      <button
+        disabled={
+          !(
+            record.appointment_status === "incomplete" ||
+            record.appointment_status === "pending"
+          )
+        }
+        onClick={() =>
+          handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)
+        }
+        className={`px-4 py-2 rounded-lg ${
+          record.appointment_status === "incomplete" ||
+          record.appointment_status === "pending"
+            ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
+            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+        }`}
+      >
+        + Follow Up
+      </button>
+    </td>
+
+    <td className="px-2 py-3 whitespace-nowrap">
+      <button
+        onClick={() =>
+          navigate(`/adminconsultationcomplete/${record.appoint_id}`)
+        }
+        disabled={record.appointment_status !== "incomplete"}
+        className={`px-4 py-2 rounded-lg transition font-semibold ${
+          record.appointment_status === "incomplete"
+            ? "bg-green-600 hover:bg-green-700 text-white"
+            : "bg-gray-300 text-gray-500 cursor-not-allowed"
+        }`}
+      >
+        Complete
+      </button>
+    </td>
+  </>
+)}
+
                       </tr>
                     ))
                   ) : (

@@ -112,7 +112,7 @@ const Navbar = () => {
                         <Link to="/inventorydashboard" className="block px-4 py-2 hover:bg-gray-100">Main Dashboard</Link>
                       )}
 
-                      {(role === "admin" || role === "receptionist" || role === "dentist") && (
+                      {(role === "receptionist" || role === "dentist") && (
                         <Link to="/receptionistdashboard" className="block px-4 py-2 hover:bg-gray-100">Main Dashboard</Link>
                       )}
                       <Link to="/notification" className="block px-4 py-2 hover:bg-gray-100">Notifications</Link>

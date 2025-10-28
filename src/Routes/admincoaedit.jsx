@@ -18,6 +18,7 @@ const AdminCoaEdit = () => {
     account_name: "",
     account_type: "Asset",
     status: "Active",
+    description: 'Enter Account Description',
   });
 
   // ✅ Popup state and fade animation (copied from AdminCoaAdd)
@@ -53,6 +54,10 @@ const AdminCoaEdit = () => {
   const handleUpdate = async () => {
     if (!account.account_name.trim()) {
       showPopup("Account Name is required.", "error");
+      return;
+    }
+ if (!account.description.trim()) {
+      showPopup("Account description is required.", "error");
       return;
     }
 
@@ -315,6 +320,19 @@ const AdminCoaEdit = () => {
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Account Description
+              </label>
+              <input
+                type="text"
+                name="description"
+                value={account.description}
+                onChange={handleChange}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              />
             </div>
 
             <div className="flex justify-end gap-4 mt-6">

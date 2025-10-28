@@ -26,6 +26,19 @@ const AdminPatientsEdit = () => {
     user_status: "",
   });
 
+  const calculateAge = (dob) => {
+    if (!dob) return "";
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--; // not yet had birthday this year
+    }
+    return age;
+  };
+
+
   // ✅ Popup state and fade animation
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
   const [fade, setFade] = useState(false);
@@ -362,7 +375,15 @@ const AdminPatientsEdit = () => {
               <input
                 type="date"
                 value={patient.date_birth}
-                onChange={(e) => setPatient({ ...patient, date_birth: e.target.value })}
+                onChange={(e) => {
+                  const dob = e.target.value;
+                  setPatient({
+                    ...patient,
+                    date_birth: dob,
+                    age: calculateAge(dob)
+                  });
+                }}
+
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
                 max={new Date().toISOString().split("T")[0]} // only allow past dates
               />
@@ -373,6 +394,7 @@ const AdminPatientsEdit = () => {
                 type="text"
                 value={patient.age}
                 onChange={(e) => setPatient({ ...patient, age: e.target.value })}
+                readOnly
                 className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none" />
             </div>
           </div>

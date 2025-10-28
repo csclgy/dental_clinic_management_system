@@ -575,48 +575,56 @@ const AdminPatientsView = () => {
                             View
                           </button>
                         </td>
-                        <td className="px-2 py-2">
-                          <button
-                            onClick={() => navigate(`/adminschedulecancel/${c.appoint_id}`)}
-                            disabled={
-                              !(
-                                c.appointment_status === "incomplete" ||
-                                c.appointment_status === "pending"
-                              )
-                            }
-                            className={`px-3 py-1 rounded-lg ${c.appointment_status === "incomplete" ||
-                              c.appointment_status === "pending"
-                              ? "bg-gray-200 hover:bg-gray-300"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                              }`}
-                          >
-                            Cancel
-                          </button>
-                        </td>
-                        <td className="px-2 py-2">
-                          <button
-                            disabled={!(c.appointment_status === "incomplete" || c.appointment_status === "pending")}
-                            onClick={() => handleFollowUp(c.appoint_id, patient.fname, patient.lname)}
-                            className={`px-4 py-2 rounded-lg ${c.appointment_status === "incomplete" || c.appointment_status === "pending"
-                              ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                              }`}
-                          >
-                            + Follow Up
-                          </button>
-                        </td>
-                        <td className="px-2 py-2">
-                          <button
-                            disabled={c.appointment_status !== "incomplete"}
-                            onClick={() => navigate(`/adminconsultationcomplete/${c.appoint_id}`)}
-                            className={`px-3 py-1 rounded-lg ${c.appointment_status === "incomplete"
-                              ? "bg-green-600 hover:bg-green-700 text-white"
-                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                              }`}
-                          >
-                            Complete
-                          </button>
-                        </td>
+                        {role !== "dentist" && (
+                          <>
+                            <td className="px-2 py-2">
+                              <button
+                                onClick={() => navigate(`/adminschedulecancel/${c.appoint_id}`)}
+                                disabled={
+                                  !(
+                                    c.appointment_status === "incomplete" ||
+                                    c.appointment_status === "pending"
+                                  )
+                                }
+                                className={`px-3 py-1 rounded-lg ${c.appointment_status === "incomplete" ||
+                                    c.appointment_status === "pending"
+                                    ? "bg-gray-200 hover:bg-gray-300"
+                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  }`}
+                              >
+                                Cancel
+                              </button>
+                            </td>
+                            <td className="px-2 py-2">
+                              <button
+                                disabled={
+                                  !(c.appointment_status === "incomplete" || c.appointment_status === "pending")
+                                }
+                                onClick={() => handleFollowUp(c.appoint_id, patient.fname, patient.lname)}
+                                className={`px-4 py-2 rounded-lg ${c.appointment_status === "incomplete" ||
+                                    c.appointment_status === "pending"
+                                    ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
+                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  }`}
+                              >
+                                + Follow Up
+                              </button>
+                            </td>
+                            <td className="px-2 py-2">
+                              <button
+                                disabled={c.appointment_status !== "incomplete"}
+                                onClick={() => navigate(`/adminconsultationcomplete/${c.appoint_id}`)}
+                                className={`px-3 py-1 rounded-lg ${c.appointment_status === "incomplete"
+                                    ? "bg-green-600 hover:bg-green-700 text-white"
+                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  }`}
+                              >
+                                Complete
+                              </button>
+                            </td>
+                          </>
+                        )}
+
                       </tr>
                     ))}
                   </tbody>

@@ -233,6 +233,8 @@ const Adminbillingedit = () => {
     if (!paymentMode) return showPopup("Mode of Payment is required", "error");
     if (!serviceCharge || Number(serviceCharge) <= 0)
       return showPopup("Main Service Charge must be greater than 0", "error");
+    if (!billingDate)
+      return showPopup("Billing date is required", "error");
     if (paymentStatus === "Partial" && !dueDate)
       return showPopup("Please enter due date", "error");
 
@@ -280,6 +282,7 @@ const Adminbillingedit = () => {
 
       showPopup("Billing saved successfully", "success");
       await fetchBillingData();
+      setTimeout(() => navigate(`/adminconsultationcomplete/${appointId}`, 3000));
     } catch (err) {
       console.error("Error saving billing:", err);
       alert("Failed to save billing");
@@ -693,19 +696,24 @@ const Adminbillingedit = () => {
             </div>
 
 
-            <div>
-              <label className="block font-bold text-gray-700">Payment Status: <span style={{ color: "red" }}>*</span></label>
-              <select
-                className="border p-2 w-full rounded"
-                value={paymentStatus}
-                onChange={(e) => setPaymentStatus(e.target.value)}
-                required
-              >
-                <option value="">--Select--</option>
-                <option value="Unpaid">Unpaid</option>
-                <option value="Partial">Partial</option>
-              </select>
-            </div>
+<div>
+  <label className="block font-bold text-gray-700">
+    Payment Status: <span style={{ color: "red" }}>*</span>
+  </label>
+  <select
+    className="border p-2 w-full rounded"
+    value={paymentStatus}
+    onChange={(e) => setPaymentStatus(e.target.value)}
+    required
+  >
+    <option value="">--Select--</option>
+    <option value="Unpaid">Unpaid</option>
+    <option value="Partial" disabled={paymentMode === "HMO"}>
+      Partial
+    </option>
+  </select>
+</div>
+
 
             <div>
               <label className="block font-bold text-gray-700">Mode of Payment: <span style={{ color: "red" }}>*</span></label>
@@ -832,8 +840,6 @@ const Adminbillingedit = () => {
             )}
 
           </div>
-
-
 
           {/* Service Selection */}
           <hr></hr>

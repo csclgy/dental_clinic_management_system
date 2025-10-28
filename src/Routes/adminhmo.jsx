@@ -408,15 +408,13 @@ const AdminHMO = () => {
                               {hmo.moa_letter ? (
                                 <button
                                   onClick={() =>
-                                    window.open(
-                                      `http://localhost:3000/uploads/hmo/${hmo.moa_letter}`,
-                                      "_blank"
-                                    )
+                                    window.open(hmo.moa_letter, "_blank")
                                   }
                                   className="px-4 py-2 rounded-lg bg-[white] border border-[#00458B] font-medium text-[#008CBA]"
                                 >
                                   View MOA
                                 </button>
+
                               ) : (
                                 "No File"
                               )}

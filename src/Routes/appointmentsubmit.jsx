@@ -63,7 +63,7 @@ const AppointmentSubmit = () => {
       });
 
       // ✅ Success popup
-      showPopup("Appointment submitted successfully!", "success");
+      showPopup("Appointment submitted successfully! A confirmation email has been sent.", "success");
 
       // Reset data
       Object.keys(appointmentData).forEach((key) => {

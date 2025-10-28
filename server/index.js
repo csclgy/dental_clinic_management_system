@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import authRouter from './routes/authRoutes.js';
 import path from "path";
 import orRangeRoutes from "./routes/orRangeRoutes.js";
+import "./services/appointmentReminder.js";
 
 dotenv.config();
 const app = express();

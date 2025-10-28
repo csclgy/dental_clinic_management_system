@@ -430,8 +430,8 @@ const transviewmed = () => {
                 title="Print Medical Record"
                 disabled={!consultation || consultation.appointment_status !== "done"}
                 className={`flex items-center gap-2 px-4 py-2 rounded-md font-semibold border transition ${consultation && consultation.appointment_status === "done"
-                    ? "bg-[#00458B] text-white border-[#00458B] hover:bg-[#003870]"
-                    : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
+                  ? "bg-[#00458B] text-white border-[#00458B] hover:bg-[#003870]"
+                  : "bg-gray-300 text-gray-500 border-gray-400 cursor-not-allowed"
                   }`}
               >
                 <Printer size={18} /> Print
@@ -498,8 +498,7 @@ const transviewmed = () => {
                                 <button
                                   key={idx}
                                   className="px-4 py-2 mt-1 mr-2 rounded-md bg-[#01D5C4] text-white font-semibold hover:bg-[#00b0a6]"
-                                  onClick={() => window.open(`http://localhost:3000/uploads/appointments/${photo.up_url}`, "_blank")
-                                  }
+                                  onClick={() => window.open(photo.up_url, "_blank")}
                                 >
                                   View Image {idx + 1}
                                 </button>
@@ -507,6 +506,7 @@ const transviewmed = () => {
                             ) : (
                               <p className="text-gray-500">No image uploaded</p>
                             )}
+
                           </div>
                           <br></br>
                           <br></br>

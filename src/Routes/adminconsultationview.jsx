@@ -626,8 +626,7 @@ const Adminconsultationview = () => {
                       <button
                         key={idx}
                         className="px-4 py-2 mt-1 mr-2 rounded-md bg-[#01D5C4] text-white font-semibold hover:bg-[#00b0a6]"
-                        onClick={() => window.open(`http://localhost:3000/uploads/appointments/${photo.up_url}`, "_blank")
-                        }
+                        onClick={() => window.open(photo.up_url, "_blank")}
                       >
                         View Image {idx + 1}
                       </button>
@@ -635,6 +634,7 @@ const Adminconsultationview = () => {
                   ) : (
                     <p className="text-gray-500">No image uploaded</p>
                   )}
+
                 </div>
                 <br></br>
                 <br></br>
@@ -693,23 +693,26 @@ const Adminconsultationview = () => {
                 <p className="font-bold text-xl">Billing Information</p>
                 <br />
 
-                {consultation.appointment_status !== "incomplete" && consultation.appointment_status !== "done" && consultation.appointment_status !== "cancelled" ? (
-                  <button
-                    className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
-                    onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
-                  >
-                    Edit Billing
-                  </button>
-                ) : (
-                  <div
-                    className="p-4 rounded-lg shadow-md"
-                    style={{
-                      border: "solid",
-                      borderColor: "#01D5C4",
-                      maxHeight: "350px",   // 🔹 fixed height
-                      overflowY: "auto",    // 🔹 enables vertical scrolling
-                    }}
-                  >
+               {consultation.appointment_status !== "incomplete" &&
+ consultation.appointment_status !== "done" &&
+ consultation.appointment_status !== "cancelled" &&
+ role !== "dentist" ? (
+  <button
+    className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg"
+    onClick={() => navigate(`/adminbillingedit/${consultation.appoint_id}`)}
+  >
+    Edit Billing
+  </button>
+) : (
+  <div
+    className="p-4 rounded-lg shadow-md"
+    style={{
+      border: "solid",
+      borderColor: "#01D5C4",
+      maxHeight: "350px",
+      overflowY: "auto",
+    }}
+  >
                     <div className="col-sm-12 mb-2">
                       <p className="font-bold text-xl mb-2">Payment Details</p>
                       <div className="row">
