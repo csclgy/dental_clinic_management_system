@@ -5212,50 +5212,26 @@ router.get("/hmo_service/:service_id", async (req, res) => {
 
 
 // NEW HMO MAIN
-router.put(
-  "/hmo/:hmo_id",
-  authenticateToken,
-  uploadHMO.single("moa_letter"),
-  async (req, res) => {
-    try {
-      const { hmo_id } = req.params;
-      const { hmo_name, status } = req.body;
-      const db = await connectToDatabase();
+router.get("/hmo1/:hmo_id", async (req, res) => {
+  try {
+    const { hmo_id } = req.params;
+    const db = await connectToDatabase();
 
-      // ✅ Check if HMO exists
-      const [existing] = await db.query(
-        "SELECT * FROM hmo WHERE hmo_id = ?",
-        [hmo_id]
-      );
-      if (existing.length === 0) {
-        return res.status(404).json({ message: "HMO not found" });
-      }
+    const [result] = await db.query(
+      "SELECT * FROM hmo WHERE hmo_id = ?",
+      [hmo_id]
+    );
 
-      // ✅ If new file uploaded, get its S3 URL
-      let fileUrl = existing[0].moa_letter;
-      if (req.file) {
-        fileUrl = req.file.location; // multer-s3 gives the public S3 URL
-      }
-
-      // ✅ Update HMO record
-      await db.query(
-        `UPDATE hmo
-         SET hmo_name = ?, moa_letter = ?, status = ?
-         WHERE hmo_id = ?`,
-        [hmo_name, fileUrl, status, hmo_id]
-      );
-
-      res.json({
-        message: "HMO updated successfully!",
-        updated: { hmo_name, moa_letter: fileUrl, status },
-      });
-    } catch (err) {
-      console.error("Error updating HMO:", err);
-      res.status(500).json({ message: "Internal server error" });
+    if (result.length === 0) {
+      return res.status(404).json({ message: "HMO not found" });
     }
-  }
-);
 
+    res.json(result[0]);
+  } catch (err) {
+    console.error("Fetch COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
 //NEW (ADD NEW SERVICE HMO)
 router.post("/hmoservice/:hmo_id", async (req, res) => {
   const token = req.headers.authorization?.split(" ")[1];
