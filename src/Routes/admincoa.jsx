@@ -74,7 +74,7 @@ const AdminCoa = () => {
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/coa");
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa");
         setAccounts(res.data);
       } catch (err) {
         console.error("Error fetching accounts:", err);
@@ -102,7 +102,7 @@ const AdminCoa = () => {
         return;
       }
 
-      await axios.delete(`http://localhost:3000/auth/coa/${confirmBox.accountId}`, {
+      await axios.delete(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/${confirmBox.accountId}`, {
         headers: {
           Authorization: `Bearer ${token}`, // <- include 'Bearer '
         },

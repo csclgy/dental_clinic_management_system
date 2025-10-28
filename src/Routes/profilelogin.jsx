@@ -30,7 +30,7 @@ const ProfileLogin = () => {
       }
 
       try {
-        const res = await fetch("http://localhost:3000/auth/me", {
+        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/me", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -84,7 +84,7 @@ const ProfileLogin = () => {
     }
 
     try {
-      const res = await fetch("http://localhost:3000/auth/update", {
+      const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/update", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

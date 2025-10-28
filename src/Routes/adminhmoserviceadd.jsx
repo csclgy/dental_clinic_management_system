@@ -56,7 +56,7 @@ const AdminHMOServiceAdd = () => {
 
 
       const res = await axios.post(
-        `http://localhost:3000/auth/hmoservice/${hmo_id}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmoservice/${hmo_id}`,
         {
           service: service.trim(),
           status: status,
@@ -90,7 +90,7 @@ const AdminHMOServiceAdd = () => {
 
     const fetchHMO = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/hmo1/${hmo_id}`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo1/${hmo_id}`);
         setHMO(res.data);
       } catch (err) {
         console.error("Error fetching HMO:", err);

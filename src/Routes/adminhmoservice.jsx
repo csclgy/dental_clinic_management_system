@@ -81,7 +81,7 @@ const AdminHMOService = () => {
 
     const fetchHMO = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/hmo1/${hmo_id}`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo1/${hmo_id}`);
         setHMO(res.data);
         setLoading(false);
       } catch (err) {
@@ -92,7 +92,7 @@ const AdminHMOService = () => {
 
     const fetchServices = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/hmo_services/${hmo_id}`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo_services/${hmo_id}`);
         setServices(res.data);
         setLoading(false);
       } catch (err) {
@@ -119,7 +119,7 @@ const AdminHMOService = () => {
 
       // PUT request to change status to inactive
       await axios.put(
-        `http://localhost:3000/auth/hmo_service_status/${confirmBox.hmoId}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo_service_status/${confirmBox.hmoId}`,
         { status: "Inactive" },
         {
           headers: {

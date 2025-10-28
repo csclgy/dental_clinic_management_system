@@ -52,19 +52,19 @@ function AdminDashboard() {
 
   // Fetch backend data
   useEffect(() => {
-    axios.get("http://localhost:3000/auth/appointments/count")
+    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/count")
       .then(res => setAppointmentsCount(res.data))
       .catch(err => console.error("Error fetching appointments:", err));
 
-    axios.get("http://localhost:3000/auth/patients/count")
+    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/count")
       .then(res => setPatientsCount(res.data))
       .catch(err => console.error("Error fetching patients:", err));
 
-    axios.get("http://localhost:3000/auth/patients/demographics")
+    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/demographics")
       .then(res => setPatientDemographics(res.data))
       .catch(err => console.error("Error fetching demographics:", err));
 
-    axios.get("http://localhost:3000/auth/revenue")
+    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/revenue")
       .then(res => {
         setRevenueData(res.data);
         setFilteredRevenue(res.data);
@@ -73,7 +73,7 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    axios.get("http://localhost:3000/auth/trial")
+    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/trial")
       .then(res => {
         const { data, totalDebit, totalCredit } = res.data;
         setLedgerData(data);

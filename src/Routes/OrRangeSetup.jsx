@@ -17,7 +17,7 @@ import {
 const API_BASE =
   import.meta.env.MODE === "development"
     ? "http://localhost:3000/api/or-range"
-    : "https://your-render-backend.onrender.com/api/or-range";
+    : "https://dental-clinic-management-system-backend-jlz9.onrender.com/api/or-range";
 
 const OrRangeSetup = () => {
   const navigate = useNavigate();

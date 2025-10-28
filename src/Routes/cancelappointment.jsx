@@ -56,7 +56,7 @@ const CancelAppointment = () => {
       };
 
       const response = await axios.post(
-        `http://localhost:3000/auth/cancelappointment/${appointId}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/cancelappointment/${appointId}`,
         body,
         {
           headers: { "Content-Type": "application/json" },
@@ -80,7 +80,7 @@ const CancelAppointment = () => {
     const fetchRecords = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3000/auth/my-upcoming", {
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/my-upcoming", {
           headers: {
             Authorization: `Bearer ${token}`,
           },

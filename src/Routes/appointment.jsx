@@ -88,7 +88,7 @@ const Appointment = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/auth/appointments/all");
+      const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/all");
       const appointments = response.data;
 
       // Filter for active appointments (not cancelled or done)
@@ -405,7 +405,7 @@ const Appointment = () => {
               onClick={async () => {
                 try {
                   const userId = localStorage.getItem("userId");
-                  const response = await axios.get(`http://localhost:3000/auth/users/${userId}`);
+                  const response = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/users/${userId}`);
                   const user = response.data;
 
                   console.log("User data:", user);

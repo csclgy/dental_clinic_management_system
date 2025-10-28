@@ -22,7 +22,7 @@ const AdminPatients = () => {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token found");
 
-        const res = await fetch("http://localhost:3000/auth/displaypatients", {
+        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displaypatients", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Failed to fetch patients");

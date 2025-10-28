@@ -56,7 +56,7 @@ const AdminHMOAdd = () => {
       formData.append("status", status);
       formData.append("moa_letter", moaFile);
 
-      const res = await axios.post("http://localhost:3000/auth/hmo", formData, {
+      const res = await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",

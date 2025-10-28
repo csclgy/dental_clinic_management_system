@@ -44,7 +44,7 @@ const AdminCoaViewEdit = () => {
   useEffect(() => {
     const fetchSubAccounts = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/subacc/${id}`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subacc/${id}`);
         setAccount(res.data);
       } catch (err) {
         console.error("Error fetching subaccounts:", err);
@@ -66,7 +66,7 @@ const AdminCoaViewEdit = () => {
       const token = localStorage.getItem("token"); // get your saved JWT token
 
       const response = await axios.put(
-        `http://localhost:3000/auth/sub/${id}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/sub/${id}`,
         {
           account_name: sub.account_name,
           account_status: sub.account_status, // include this

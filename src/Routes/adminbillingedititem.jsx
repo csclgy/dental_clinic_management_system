@@ -52,7 +52,7 @@ const AdminBillingEditItem = () => {   // ✅ uppercase
     e.preventDefault();
     try {
       await axios.put(
-        `http://localhost:3000/auth/updatebilling/${ci_id}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/updatebilling/${ci_id}`,
         {
           inv_id: selectedInvId,
           ci_item_name: itemName,
