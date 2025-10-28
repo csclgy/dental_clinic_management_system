@@ -14,42 +14,24 @@ AWS.config.update({
 
 const s3 = new AWS.S3();
 
-export const uploadRefund = multer({
-  storage: multerS3({
-    s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    key: (req, file, cb) => {
-      cb(null, `refunds/${Date.now()}-${file.originalname}`);
-    },
-  }),
-});
+// ✅ Helper function to create an uploader for any folder
+const createUploader = (folder) =>
+  multer({
+    storage: multerS3({
+      s3,
+      bucket: process.env.AWS_BUCKET_NAME,
+      acl: "public-read", // ✅ Make file publicly accessible
+      contentType: multerS3.AUTO_CONTENT_TYPE, // ✅ Correct MIME type
+      key: (req, file, cb) => {
+        const sanitizedFileName = file.originalname.replace(/\s+/g, "_");
+        const fileName = `${Date.now()}-${sanitizedFileName}`;
+        cb(null, `${folder}/${fileName}`);
+      },
+    }),
+  });
 
-export const uploadAppointment = multer({
-  storage: multerS3({
-    s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    key: (req, file, cb) => {
-      cb(null, `appointments/${Date.now()}-${file.originalname}`);
-    },
-  }),
-});
-
-export const uploadHMO = multer({
-  storage: multerS3({
-    s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    key: (req, file, cb) => {
-      cb(null, `hmo/${Date.now()}-${file.originalname}`);
-    },
-  }),
-});
-
-export const uploadBilling = multer({
-  storage: multerS3({
-    s3,
-    bucket: process.env.AWS_BUCKET_NAME,
-    key: (req, file, cb) => {
-      cb(null, `billing/${Date.now()}-${file.originalname}`);
-    },
-  }),
-});
+// ✅ Exports
+export const uploadRefund = createUploader("refunds");
+export const uploadAppointment = createUploader("appointments");
+export const uploadHMO = createUploader("hmo");
+export const uploadBilling = createUploader("billing");
