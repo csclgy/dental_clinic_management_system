@@ -114,7 +114,7 @@ export const assignOrToAppointment = async (req, res) => {
 
     // Find all ORs already used
     const [usedOrRows] = await db.query(
-      "SELECT or_num FROM appointments WHERE or_num BETWEEN ? AND ? ORDER BY or_num ASC",
+      "SELECT or_num FROM appointment WHERE or_num BETWEEN ? AND ? ORDER BY or_num ASC",
       [range.start_or, range.end_or]
     );
     const usedSet = new Set(usedOrRows.map(r => r.or_num));
@@ -137,7 +137,7 @@ export const assignOrToAppointment = async (req, res) => {
     await db.query("UPDATE orrangesetup SET current_or = ? WHERE id = ?", [nextOr, range.id]);
 
     // Assign OR to appointment
-    await db.query("UPDATE appointments SET or_num = ? WHERE appoint_id = ?", [nextOr, appoint_id]);
+    await db.query("UPDATE appointment SET or_num = ? WHERE appoint_id = ?", [nextOr, appoint_id]);
 
     await db.commit();
     res.json({ message: "OR assigned successfully", or_num: nextOr });
