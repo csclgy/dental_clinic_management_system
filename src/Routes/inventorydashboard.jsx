@@ -364,8 +364,8 @@ function InventoryDashboard() {
                     <tr className="bg-gray-100 text-[#00458B]">
                       <th className="px-4 py-2 text-center">Item Name</th>
                       <th className="px-4 py-2 text-center">Quantity</th>
-                      <th className="px-4 py-2 text-center">Item Type</th>
                       <th className="px-4 py-2 text-center">Status</th>
+                      <th className="px-4 py-2 text-center">Item Type</th>
                       <th className="px-4 py-2 text-center">Expiration Date</th>
                     </tr>
                   </thead>
