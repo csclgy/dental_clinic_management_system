@@ -1918,17 +1918,18 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
           const arNewBalance = arCurrentBalance + debit; // A/R debit increases
           const siNewBalance = siCurrentBalance + debit; // Revenue credit increases
 
-          await db.query(
-            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
-             VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
-            [arAccount.account_id, debitEntry.insertId, date, debit, arNewBalance, particulars, debit]
-          );
+await db.query(
+  `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  [arAccount.account_id, debitEntry.insertId, date, debit, 0, arNewBalance, particulars, debit]
+);
 
-          await db.query(
-            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
-             VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
-            [siAccount.account_id, creditEntry.insertId, date, debit, siNewBalance, particulars, debit]
-          );
+await db.query(
+  `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+  [siAccount.account_id, creditEntry.insertId, date, 0, debit, siNewBalance, particulars, debit]
+);
+
 
           console.log(`✅ Partial payment accounting done for appointment ID ${appointId}`);
         }
