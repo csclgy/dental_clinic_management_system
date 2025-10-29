@@ -1794,7 +1794,7 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
         [appointId]
       );
 
-      // --- Notify receptionists ---
+      // --- Notifications to patient + receptionists ---
       const [receptionistRows] = await db.query(
         `SELECT user_id FROM users WHERE role = 'receptionist'`
       );
@@ -1807,8 +1807,8 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
         const isPatient = recipient.user_id === appointment.user_id;
         await db.query(
           `INSERT INTO notifications (
-      user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category
-    ) VALUES (?, ?, ?, ?, ?, ?)`,
+            user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category
+          ) VALUES (?, ?, ?, ?, ?, ?)`,
           [
             recipient.user_id,
             "Appointment Completed",
@@ -1822,38 +1822,31 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
         );
       }
 
-
-
-      // --- Send styled email to patient ---
+      // --- Email to patient ---
       const patientSubject = "Your Dental Appointment is Completed!";
       const patientBody = `
 <div style="font-family: Arial, sans-serif; background-color: #f8f9fa; padding: 20px;">
   <div style="max-width: 600px; margin: auto; background: #ffffff; border-radius: 10px; border: 2px solid #01D5C4; overflow: hidden;">
-    
     <div style="background-color: #00458B; padding: 20px; text-align: center;">
       <h1 style="color: #ffffff; margin: 0;">Arciaga-Juntilla TMJ Ortho Dental Clinic</h1>
       <p style="color: #cce3f5; margin: 5px 0 0;">Appointment Completed</p>
     </div>
-
     <div style="padding: 25px; color: #333;">
       <p>Dear <strong>${appointment.fname} ${appointment.lname}</strong>,</p>
       <p>Your appointment for <strong>${appointment.procedure_type}</strong> has been <strong>successfully completed</strong>.</p>
       <p><strong>Attending Dentist:</strong> ${attending_dentist || "Unassigned"}</p>
       <p><strong>Diagnosis:</strong> ${p_diagnosis || "Not provided"}</p>
       <p><strong>Status:</strong> ${appointment_status}</p>
-
       <div style="margin-top: 30px; text-align: center;">
         <a href="https://dental-clinic-management-system-frontend-wipu.onrender.com/" 
           style="background-color: #01D5C4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
           View Your Appointment
         </a>
       </div>
-
       <div style="margin-top: 20px; color: #00458B;">
         <strong>Thank you,</strong><br>Arciaga-Juntilla TMJ Ortho Dental Clinic
       </div>
     </div>
-
     <div style="background-color: #f0f8ff; padding: 15px; text-align: center; font-size: 12px; color: #555;">
       <p>© ${new Date().getFullYear()} Arciaga-Juntilla TMJ Ortho Dental Clinic</p>
       <p>This is an automated message. Please do not reply directly to this email.</p>
@@ -1861,29 +1854,110 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
   </div>
 </div>
 `;
-
       await sendEmail(appointment.email, patientSubject, patientBody);
       console.log(`✅ Email sent to patient: ${appointment.email}`);
+
+      // --- Partial Payment / Accounting ---
+      if (appointment.payment_status && appointment.payment_status.toLowerCase() === "partial") {
+        const [existingSub] = await db.query(
+          `SELECT * FROM sub_receivable WHERE appoint_id = ?`,
+          [appointId]
+        );
+
+        if (existingSub.length === 0) {
+          const particulars = `${appointment.procedure_type} - ${appointment.fname} ${appointment.lname}`;
+          const date = appointment.billing_date || new Date();
+          const invoiceNo = appointment.or_num || "N/A";
+          const debit = appointment.total_charged || 0;
+          const balance = debit;
+
+          // Insert Sub Receivable
+          await db.query(
+            `INSERT INTO sub_receivable (date, particulars, invoice_no, debit, credit, balance, appoint_id, user_id, total_amount)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+            [date, particulars, invoiceNo, debit, balance, appointId, appointment.user_id, debit]
+          );
+
+          // Chart of Accounts
+          const [accounts] = await db.query(`
+            SELECT account_id, account_name FROM chartofaccounts
+            WHERE account_name IN ('Account Receivable', 'Service Income')
+          `);
+          const arAccount = accounts.find(a => a.account_name.trim().toLowerCase() === "account receivable");
+          const siAccount = accounts.find(a => a.account_name.trim().toLowerCase() === "service income");
+
+          if (!arAccount || !siAccount) throw new Error("Missing 'Account Receivable' or 'Service Income'.");
+
+          const comment = `Installment process for Appointment #${appointId}`;
+
+          // Journal Entries
+          const [debitEntry] = await db.query(
+            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
+             VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
+            [date, particulars, arAccount.account_id, '0', debit, comment, debit]
+          );
+
+          const [creditEntry] = await db.query(
+            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+            [date, particulars, siAccount.account_id, '0', debit, comment, debit]
+          );
+
+          // General Ledger
+          const getCurrentBalance = async (accountId) => {
+            const [rows] = await db.query(
+              `SELECT balance FROM general_ledger 
+               WHERE account_id = ? ORDER BY entry_id DESC LIMIT 1`,
+              [accountId]
+            );
+            return rows.length > 0 ? parseFloat(rows[0].balance) : 0;
+          };
+          const arCurrentBalance = await getCurrentBalance(arAccount.account_id);
+          const siCurrentBalance = await getCurrentBalance(siAccount.account_id);
+
+          const arNewBalance = arCurrentBalance + debit; // A/R debit increases
+          const siNewBalance = siCurrentBalance + debit; // Revenue credit increases
+
+          await db.query(
+            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+            [arAccount.account_id, debitEntry.insertId, date, debit, arNewBalance, particulars, debit]
+          );
+
+          await db.query(
+            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+             VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
+            [siAccount.account_id, creditEntry.insertId, date, debit, siNewBalance, particulars, debit]
+          );
+
+          console.log(`✅ Partial payment accounting done for appointment ID ${appointId}`);
+        }
+      }
+
+      // --- Insert Selected Teeth ---
+      if (Array.isArray(selected_teeth) && selected_teeth.length > 0) {
+        const insertQuery = `INSERT INTO selectedteeth (appoint_id, st_number, st_name) VALUES (?, ?, ?)`;
+        for (const tooth of selected_teeth) {
+          await db.query(insertQuery, [appointId, tooth.st_number, tooth.st_name]);
+        }
+      }
     }
 
-    // Insert Audit Trail
-    const actionType =
-      appointment_status === "done"
-        ? "Complete Consultation"
-        : "Incomplete Consultation";
-    const description =
-      appointment_status === "done"
-        ? `Appointment ID ${appointId} marked as DONE by ${userRole} (Diagnosis: ${p_diagnosis || "N/A"}).`
-        : `Appointment ID ${appointId} marked as INCOMPLETE by ${userRole}.`;
+    // 3) Insert Audit Trail
+    const actionType = appointment_status === "done" ? "Complete Consultation" : "Incomplete Consultation";
+    const description = appointment_status === "done"
+      ? `Appointment ID ${appointId} marked as DONE by ${userRole} (Diagnosis: ${p_diagnosis || "N/A"}).`
+      : `Appointment ID ${appointId} marked as INCOMPLETE by ${userRole}.`;
     const created_at = new Date();
 
     await db.query(
-      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) 
+       VALUES (?, ?, ?, ?, ?)`,
       [userName, userRole, actionType, description, created_at]
     );
 
     res.json({
-      message: `Consultation marked as ${appointment_status}. Email notification has been sent to the patient.`
+      message: `Consultation marked as ${appointment_status}. Notifications sent and accounting processed if partial payment.`
     });
   } catch (error) {
     console.error("Error updating appointment:", error);
