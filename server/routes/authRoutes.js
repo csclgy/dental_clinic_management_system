@@ -1857,104 +1857,82 @@ router.put("/completeconsultation/:appointId", authenticateToken, async (req, re
       await sendEmail(appointment.email, patientSubject, patientBody);
       console.log(`✅ Email sent to patient: ${appointment.email}`);
 
-// --- Partial Payment / Accounting ---
-if (
-  appointment.payment_status &&
-  appointment.payment_status.toLowerCase() === "partial"
-) {
-  // Check if there’s already a sub_receivable for this appointment
-  const [existingSub] = await db.query(
-    `SELECT * FROM sub_receivable WHERE appoint_id = ?`,
-    [appointId]
-  );
+      // --- Partial Payment / Accounting ---
+      if (appointment.payment_status && appointment.payment_status.toLowerCase() === "partial") {
+        const [existingSub] = await db.query(
+          `SELECT * FROM sub_receivable WHERE appoint_id = ?`,
+          [appointId]
+        );
 
-  if (existingSub.length === 0) {
-    const particulars = `${appointment.procedure_type} - ${appointment.fname} ${appointment.lname}`;
-    const date = appointment.billing_date || new Date();
-    const invoiceNo = appointment.or_num || "N/A";
+        if (existingSub.length === 0) {
+          const particulars = `${appointment.procedure_type} - ${appointment.fname} ${appointment.lname}`;
+          const date = appointment.billing_date || new Date();
+          const invoiceNo = appointment.or_num || "N/A";
+          const debit = appointment.total_charged || 0;
+          const balance = debit;
 
-    // Use actual payment amount, fallback to total charged
-    const paymentAmount = Number(req.body.payment_amount || appointment.total_charged || 0);
+          // Insert Sub Receivable
+          await db.query(
+            `INSERT INTO sub_receivable (date, particulars, invoice_no, debit, credit, balance, appoint_id, user_id, total_amount)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`,
+            [date, particulars, invoiceNo, debit, balance, appointId, appointment.user_id, debit]
+          );
 
-    // --- Sub Receivable ---
-    // Get previous balance for this appointment
-    const [lastSubRows] = await db.query(
-      `SELECT balance FROM sub_receivable WHERE appoint_id = ? ORDER BY sub_id DESC LIMIT 1`,
-      [appointId]
-    );
-    const lastBalance = lastSubRows.length > 0 ? parseFloat(lastSubRows[0].balance) : appointment.total_charged || 0;
-    const newBalance = lastBalance - paymentAmount;
+          // Chart of Accounts
+          const [accounts] = await db.query(`
+            SELECT account_id, account_name FROM chartofaccounts
+            WHERE account_name IN ('Account Receivable', 'Service Income')
+          `);
+          const arAccount = accounts.find(a => a.account_name.trim().toLowerCase() === "account receivable");
+          const siAccount = accounts.find(a => a.account_name.trim().toLowerCase() === "service income");
 
-    await db.query(
-      `INSERT INTO sub_receivable 
-       (date, particulars, invoice_no, debit, credit, balance, appoint_id, user_id, total_amount)
-       VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?)`,
-      [date, particulars, invoiceNo, paymentAmount, newBalance, appointId, appointment.user_id, appointment.total_charged]
-    );
+          if (!arAccount || !siAccount) throw new Error("Missing 'Account Receivable' or 'Service Income'.");
 
-    // --- Chart of Accounts ---
-    const [accounts] = await db.query(`
-      SELECT account_id, account_name FROM chartofaccounts
-      WHERE account_name IN ('Account Receivable', 'Service Income')
-    `);
-    const arAccount = accounts.find(a => a.account_name.trim().toLowerCase() === "account receivable");
-    const siAccount = accounts.find(a => a.account_name.trim().toLowerCase() === "service income");
+          const comment = `Installment process for Appointment #${appointId}`;
 
-    if (!arAccount || !siAccount) throw new Error("Missing 'Account Receivable' or 'Service Income'.");
+          // Journal Entries
+          const [debitEntry] = await db.query(
+            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
+             VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
+            [date, particulars, arAccount.account_id, '0', debit, comment, debit]
+          );
 
-    const comment = `Partial payment process for Appointment #${appointId}`;
+          const [creditEntry] = await db.query(
+            `INSERT INTO journalentry (date, description, account_id, id, debit, credit, comment, total_amount)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+            [date, particulars, siAccount.account_id, '0', debit, comment, debit]
+          );
 
-    // --- Journal Entries ---
-    const [debitEntry] = await db.query(
-      `INSERT INTO journalentry 
-       (date, description, account_id, id, debit, credit, comment, total_amount)
-       VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
-      [date, particulars, arAccount.account_id, '0', paymentAmount, comment, appointment.total_charged]
-    );
+          // General Ledger
+          const getCurrentBalance = async (accountId) => {
+            const [rows] = await db.query(
+              `SELECT balance FROM general_ledger 
+               WHERE account_id = ? ORDER BY entry_id DESC LIMIT 1`,
+              [accountId]
+            );
+            return rows.length > 0 ? parseFloat(rows[0].balance) : 0;
+          };
+          const arCurrentBalance = await getCurrentBalance(arAccount.account_id);
+          const siCurrentBalance = await getCurrentBalance(siAccount.account_id);
 
-    const [creditEntry] = await db.query(
-      `INSERT INTO journalentry 
-       (date, description, account_id, id, debit, credit, comment, total_amount)
-       VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
-      [date, particulars, siAccount.account_id, '0', paymentAmount, comment, appointment.total_charged]
-    );
+          const arNewBalance = arCurrentBalance + debit; // A/R debit increases
+          const siNewBalance = siCurrentBalance + debit; // Revenue credit increases
 
-    // --- General Ledger ---
-    const getCurrentBalance = async (accountId) => {
-      const [rows] = await db.query(
-        `SELECT balance FROM general_ledger WHERE account_id = ? ORDER BY entry_id DESC LIMIT 1`,
-        [accountId]
-      );
-      return rows.length > 0 && rows[0].balance !== null
-        ? parseFloat(rows[0].balance)
-        : 0;
-    };
+          await db.query(
+            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+             VALUES (?, ?, ?, ?, 0, ?, ?, ?)`,
+            [arAccount.account_id, debitEntry.insertId, date, debit, arNewBalance, particulars, debit]
+          );
 
-    const arCurrentBalance = await getCurrentBalance(arAccount.account_id);
-    const siCurrentBalance = await getCurrentBalance(siAccount.account_id);
+          await db.query(
+            `INSERT INTO general_ledger (account_id, entry_id, date, debit, credit, balance, description, total_amount)
+             VALUES (?, ?, ?, 0, ?, ?, ?, ?)`,
+            [siAccount.account_id, creditEntry.insertId, date, debit, siNewBalance, particulars, debit]
+          );
 
-    const arNewBalance = arCurrentBalance + paymentAmount;
-    const siNewBalance = siCurrentBalance + paymentAmount;
-
-    // Insert into General Ledger
-    await db.query(
-      `INSERT INTO general_ledger 
-       (account_id, entry_id, date, debit, credit, balance, description, total_amount)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [arAccount.account_id, debitEntry.insertId, date, paymentAmount, 0, arNewBalance, particulars, appointment.total_charged]
-    );
-
-    await db.query(
-      `INSERT INTO general_ledger 
-       (account_id, entry_id, date, debit, credit, balance, description, total_amount)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [siAccount.account_id, creditEntry.insertId, date, 0, paymentAmount, siNewBalance, particulars, appointment.total_charged]
-    );
-
-    console.log(`✅ Partial payment accounting done for appointment ID ${appointId}`);
-  }
-}
-
+          console.log(`✅ Partial payment accounting done for appointment ID ${appointId}`);
+        }
+      }
 
       // --- Insert Selected Teeth ---
       if (Array.isArray(selected_teeth) && selected_teeth.length > 0) {
