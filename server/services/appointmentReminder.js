@@ -34,7 +34,7 @@ cron.schedule("0 8 * * *", async () => {
     // 🩵 1️⃣ SAME-DAY REMINDERS (appointments today)
     const [todayAppointments] = await pool.query(
       `SELECT p_email, p_fname, p_lname, pref_date, pref_time, procedure_type 
-       FROM appointments 
+       FROM appointment
        WHERE DATE(pref_date) = ? AND appointment_status = 'pending'`,
       [todayStr]
     );
@@ -60,7 +60,7 @@ cron.schedule("0 8 * * *", async () => {
     // 💙 2️⃣ DAY-BEFORE REMINDERS (appointments tomorrow)
     const [tomorrowAppointments] = await pool.query(
       `SELECT p_email, p_fname, p_lname, pref_date, pref_time, procedure_type 
-       FROM appointments 
+       FROM appointment
        WHERE DATE(pref_date) = ? AND appointment_status = 'pending'`,
       [tomorrowStr]
     );
