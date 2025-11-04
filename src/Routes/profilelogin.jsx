@@ -269,7 +269,7 @@ const ProfileLogin = () => {
               {/* Email */}
               <div>
                 <label className="block text-[#00458b] font-semibold mb-1">
-                  Email:
+                  Email: <span style={{color:"red"}}>*</span>
                 </label>
                 <input
                   type="email"
