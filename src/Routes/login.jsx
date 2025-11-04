@@ -34,11 +34,11 @@ const Login = () => {
         if (data.user.role === "admin") {
           window.location.href = "/admindashboard";
         } else if (data.user.role === "dentist") {
-          window.location.href = "/adminpatients";
+          window.location.href = "/receptionistdashboard";
         } else if (data.user.role === "inventory") {
-          window.location.href = "/admininventory";
+          window.location.href = "/inventorydashboard";
         } else if (data.user.role === "receptionist") {
-          window.location.href = "/adminschedule";
+          window.location.href = "/receptionistdashboard";
         } else {
           window.location.href = "/";
         }
