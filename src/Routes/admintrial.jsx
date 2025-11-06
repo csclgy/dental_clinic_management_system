@@ -373,7 +373,8 @@ const AdminTrial = () => {
           <h1 className="text-2xl font-bold text-[#00458B]">Trial Balance</h1>
           <button
             onClick={handlePrintReport}
-            className="px-6 py-3 bg-[#00458B] hover:bg-[#003366] text-white font-bold rounded-lg flex items-center gap-2"
+            // NEW CODE
+            className="bg-[#00458B] hover:bg-[#003366] text-white font-semibold px-6 py-2 rounded-lg flex items-center gap-2"
           >
             <Printer size={18} /> Generate Report
           </button>

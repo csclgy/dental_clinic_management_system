@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import * as XLSX from "xlsx";
 import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer, PlusCircle, Settings } from "lucide-react";
 
 const AdminSubsidiaryPayable = () => {
@@ -187,6 +188,31 @@ const AdminSubsidiaryPayable = () => {
       }, 500);
     }, 250);
   };
+
+const handleExportExcel = () => {
+  if (!filteredRecords.length) {
+    alert("No records to export!");
+    return;
+  }
+
+  const exportData = filteredRecords.map((record) => ({
+    Date: record.date,
+    particulars: record.particulars,
+    "Invoice No": record.invoice_no,
+    Debit: record.debit,
+    Credit: record.credit,
+    Balance: record.balance,
+  }));
+
+  // Create worksheet & workbook
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Account Payables");
+
+  // Download Excel file
+  XLSX.writeFile(workbook, "Account_Payables_Report.xlsx");
+};
+
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -421,6 +447,14 @@ const AdminSubsidiaryPayable = () => {
           >
             <PlusCircle size={18} /> Add New Payable
           </button>
+
+          <button
+              onClick={handleExportExcel}
+              className="bg-green-600 hover:bg-green-700 text-white  font-semibold px-6 py-2 rounded-lg flex items-center gap-2"
+            >
+              <i className="fa fa-file-excel-o"></i> Export to Excel
+            </button>
+
           </div>
         </div>
 

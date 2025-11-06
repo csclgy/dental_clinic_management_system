@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer, PlusCircle, Settings } from "lucide-react";
 import axios from "axios";
+import * as XLSX from "xlsx";
 
 const AdminJournal = () => {
   const location = useLocation();
@@ -175,6 +176,31 @@ const AdminJournal = () => {
       }, 500);
     }, 250);
   };
+
+const handleExportExcel = () => {
+  if (!filteredRecords.length) {
+    alert("No records to export!");
+    return;
+  }
+
+  const exportData = filteredRecords.map((record) => ({
+    Date: record.date,
+    "Account Name": record.Account,
+        Description: record.description,
+    Debit: record.debit,
+    Credit: record.credit,
+    Comment: record.comment,
+  }));
+
+  // Create worksheet & workbook
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Journal Entries");
+
+  // Download Excel file
+  XLSX.writeFile(workbook, "Journal_Entrties_Report.xlsx");
+};
+
 
   // Fetch journal entries
   useEffect(() => {
@@ -377,13 +403,22 @@ const AdminJournal = () => {
               onClick={handlePrintReport}          >
               <Printer size={18} /> Generate Report
             </button>
+           
             <button
               className="flex items-center gap-2 bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
               onClick={() => navigate("/adminjournaladd")}
             >
               <PlusCircle size={18} /> Add Entry
             </button>
+
+            <button
+              onClick={handleExportExcel}
+              className="bg-green-600 hover:bg-green-700 text-white  font-semibold px-6 py-2 rounded-lg flex items-center gap-2"
+            >
+              <i className="fa fa-file-excel-o"></i> Export to Excel
+            </button>
           </div>
+          
         </div>
 
         {/* Filters + Search */}

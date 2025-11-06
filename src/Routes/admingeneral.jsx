@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import * as XLSX from "xlsx";
+
 import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer, Settings } from "lucide-react";
 
 const Admingeneral = () => {
@@ -225,6 +227,32 @@ const Admingeneral = () => {
     }, 250);
   };
 
+  //  Export to Excel
+const handleExportExcel = () => {
+  if (!filteredRecords.length) {
+    alert("No records to export!");
+    return;
+  }
+
+  const exportData = filteredRecords.map((record) => ({
+    Date: record.date,
+    "Account Name": record.account,
+    "Account Type": record.account_type,
+    Debit: record.debit,
+    Credit: record.credit,
+    Balance: record.balance,
+  }));
+
+  // Create worksheet & workbook
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "General Ledger");
+
+  // Download Excel file
+  XLSX.writeFile(workbook, "General_Ledger_Report.xlsx");
+};
+
+
   const filterRecord = async (account_id) => {
     try {
       if (!account_id) {
@@ -408,10 +436,17 @@ const Admingeneral = () => {
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <button
               onClick={handlePrintReport}
-              className="px-6 py-3 bg-[#00458B] hover:bg-[#003366] text-white font-bold rounded-lg flex items-center gap-2"
+              className="flex items-center gap-2 bg-[#00458B]   hover:bg-[#003366]  font-bold text-white px-4 py-2 rounded-lg"
             >
               <Printer size={18} /> Generate Report
             </button>
+            <button
+              onClick={handleExportExcel}
+              className="bg-green-600 hover:bg-green-700 text-white  font-semibold px-6 py-2 rounded-lg flex items-center gap-2"
+            >
+              <i className="fa fa-file-excel-o"></i> Export to Excel
+            </button>
+
           </div>
         </div>
 

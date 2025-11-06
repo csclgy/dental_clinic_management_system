@@ -14,7 +14,9 @@ import {
   ChevronUp,
   PhilippinePeso,
   IdCard,
-  Settings
+  Settings,
+  FolderKanban, 
+  BriefcaseMedical
 } from "lucide-react";
 
 const AdminCoa = () => {
@@ -23,6 +25,7 @@ const AdminCoa = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [isSettingopen, setIsSettingOpen] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const role = localStorage.getItem("role");
@@ -243,18 +246,13 @@ const AdminCoa = () => {
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <IdCard size={18} /> HMO
-              </Link>
-              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <Settings size={18} /> OR Range
-              </Link>
-              <Link
+                <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <Users size={18} /> Users
               </Link>
+
             </>
           )}
 
@@ -307,6 +305,35 @@ const AdminCoa = () => {
               </Link>
             </>
           )}
+       {role === "admin" && (
+            <>
+               <button onClick={() => setIsSettingOpen(!isSettingopen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
+                <span className="flex items-center gap-2">
+                   <Settings size={18} /> Settings
+                </span>
+                {isSettingopen?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
+              </button>
+               {isSettingopen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <IdCard size={18} /> HMO
+                  </Link>
+
+                  <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                        <FolderKanban size={18} /> OR Range
+                   </Link>
+
+                   <Link to="/adminServices" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                        <BriefcaseMedical  size={18} /> Services
+                   </Link>
+                </div>
+              )}
+            </>
+          )}      
         </nav>
       </aside>
 

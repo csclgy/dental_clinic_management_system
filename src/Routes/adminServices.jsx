@@ -1,26 +1,46 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso, IdCard, Printer,   Settings, FolderKanban, BriefcaseMedical } from "lucide-react";
+import {
+  BarChart3,
+  Users,
+  Calendar,
+  Menu,
+  X,
+  PlusCircle,
+  Trash2,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  PhilippinePeso,
+  IdCard,
+  Settings,
+  FolderKanban, 
+  BriefcaseMedical
+} from "lucide-react";
 
-const AdminCoaAdd = () => {
+const AdminServices = () => {
   const location = useLocation();
   const navigate = useNavigate();
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [isSettingopen, setIsSettingOpen] = useState(false);
-  const [accountName, setAccountName] = useState("");
-  const [accountType, setAccountType] = useState("Asset");
-
+  const [isSettingopen, setIsSettingOpen] = useState(true);
+  const [service, setService] = useState([]);
+  const [loading, setLoading] = useState(true);
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
 
-  const [description, setDescription] = useState("Account Description");
-
-  // ✅ Popup state and fade animation (copied from ProfileChange)
+  // ✅ Popup state and fade animation (same as AdminCoaEdit)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
   const [fade, setFade] = useState(false);
+
+  // ✅ Confirmation Modal
+  const [confirmBox, setConfirmBox] = useState({
+    show: false,
+    ServiceId: null,
+    ServiceName: "",
+  });
 
   const showPopup = (message, type) => {
     setPopup({ show: true, message, type });
@@ -28,6 +48,18 @@ const AdminCoaAdd = () => {
     setTimeout(() => setFade(false), 2500);
     setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
   };
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      const tooltip = document.getElementById("floatingTooltipBox");
+      if (tooltip && !tooltip.contains(e.target)) {
+        setSelectedRecord(null);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (location.state?.scrollTo) {
@@ -40,44 +72,53 @@ const AdminCoaAdd = () => {
     }
   }, [location]);
 
-  const handleSave = async () => {
-    if (!accountName.trim()) {
-      showPopup("Account Name is required.", "error");
-      return;
-    }
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/auth/service");
+        setService(res.data);
+      } catch (err) {
+        console.error("Error fetching HMOs:", err);
+        showPopup("Failed to fetch HMO records.", "error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchServices();
+  }, []);
 
+  const filteredServices = service.filter((service) =>
+    service.service_name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleDelete = async () => {
     try {
-      const token = localStorage.getItem("token"); // get your saved JWT token
+      const token = localStorage.getItem("token"); 
+      if (!token) {
+        showPopup("No token found. Please login again.", "error");
+        return;
+      }
 
-      const response = await axios.post(
-        "http://localhost:3000/auth/coa",
-        {
-          account_name: accountName,
-          account_type: accountType,
-          description: description,
+      await axios.delete(`http://localhost:3000/auth/service/${confirmBox.ServiceId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`, // <- include 'Bearer '
         },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ add this
-          },
-        }
-      );
+      });
 
-      showPopup(response.data.message || "Account saved successfully!", "success");
-      setAccountName("");
-      setAccountType("Asset");
 
-      // Redirect after a short delay
-      setTimeout(() => navigate("/admincoa"), 1500);
+      setConfirmBox({ show: false, hmoIdId: null, hmoName: "" });
+      window.location.reload();
+      showPopup("HMO changed to inactive successfully.", "success");
     } catch (err) {
-      console.error(err);
-      showPopup(err.response?.data?.message || "Something went wrong.", "error");
+      console.error("Error deleting account:", err);
+      showPopup("Failed to delete account.", "error");
     }
   };
 
+
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
-      {/* ✅ Popup Notification (same style as ProfileChange) */}
+      {/* ✅ Popup Notification (same style as AdminCoaEdit) */}
       {popup.show && (
         <div
           className={`fixed top-6 right-6 px-6 py-3 rounded-lg shadow-lg text-white text-sm font-medium transform transition-all duration-700 ${fade ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-3"
@@ -85,6 +126,38 @@ const AdminCoaAdd = () => {
           style={{ zIndex: 9999 }}
         >
           {popup.message}
+        </div>
+      )}
+
+      {/* ✅ Delete Confirmation Modal */}
+      {confirmBox.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-10 backdrop-blur-sm flex items-center justify-center z-[9998]">
+          <div className="bg-white rounded-2xl shadow-lg w-[90%] max-w-md p-6 text-center relative animate-fadeIn">
+            <AlertTriangle className="text-red-500 mx-auto mb-3" size={50} />
+            <h2 className="text-lg font-bold text-gray-800 mb-2">
+              Are you sure you want to deactive this Service?
+            </h2>
+            <p className="text-gray-600 mb-6">
+              <span className="font-semibold text-[#00458B]">
+                {confirmBox.ServiceName}
+              </span>{" "}
+              will be inactive.
+            </p>
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setConfirmBox({ show: false, ServiceId: null, ServiceName: "" })}
+                className="px-5 py-2 rounded-lg bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-5 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium flex items-center gap-2"
+              >
+                Deactivate
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -124,7 +197,7 @@ const AdminCoaAdd = () => {
           {role === "admin" && (
             <>
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
@@ -138,7 +211,7 @@ const AdminCoaAdd = () => {
                 <div className="ml-6 flex flex-col gap-1 text-sm">
                   <Link
                     to="/admincoa"
-                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
                   >
                     Chart of Accounts
                   </Link>
@@ -226,10 +299,11 @@ const AdminCoaAdd = () => {
               </Link>
             </>
           )}
-           {role === "admin" && (
+
+          {role === "admin" && (
             <>
                <button onClick={() => setIsSettingOpen(!isSettingopen)}
-                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
               >
                 <span className="flex items-center gap-2">
                    <Settings size={18} /> Settings
@@ -254,11 +328,11 @@ const AdminCoaAdd = () => {
                 </div>
               )}
             </>
-          )}      
+          )}              
         </nav>
       </aside>
 
-      {/* Mobile Sidebar */}
+      {/* Sidebar (mobile) */}
       {sidebarOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden">
           <aside className="absolute left-0 top-0 h-full w-64 bg-[#00458B] text-white flex flex-col p-6 z-50">
@@ -289,7 +363,7 @@ const AdminCoaAdd = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* Mobile Menu Button */}
+        {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -297,76 +371,112 @@ const AdminCoaAdd = () => {
           <Menu size={24} /> Menu
         </button>
 
-        <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
-          <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add New Account
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#00458B]">
+            Clinic Services
           </h1>
 
-          <div className="space-y-6">
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account Name: <span style={{ color: "red" }}>*</span>
-              </label>
-              <input
-                type="text"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Account Type: <span style={{ color: "red" }}>*</span>
-              </label>
-              <select
-                value={accountType}
-                onChange={(e) => setAccountType(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              >
-                <option value="Asset">Asset</option>
-                <option value="Revenue">Revenue</option>
-                <option value="Liability">Liability</option>
-                <option value="Equity">Equity</option>
-                <option value="Income">Income</option>
-                <option value="Expense">Expense</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Description:
-              </label>
-              <input
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
-              />
-            </div>
-
-            <div className="flex justify-end gap-4 mt-6">
-              <button
-                type="button"
-                className="bg-white text-[#00458B] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate("/admincoa")}
-              >
-                Back to List
-              </button>
-
-              <button
-                type="button"
-                className="bg-[#00458B] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
-                onClick={handleSave}
-              >
-                Save
-              </button>
-            </div>
+          <div className="flex gap-3">
+            <Link
+              to="/adminServiceAdd"
+              className="flex items-center gap-2 bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
+            >
+              <PlusCircle size={18} /> Add Service
+            </Link>
           </div>
         </div>
+
+        {loading ? (
+          <p>Loading accounts...</p>
+        ) : (
+          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 overflow-x-auto">
+            {/* Search Bar */}
+            <div className="flex justify-end mb-4">
+              <div className="flex items-center border border-[#00458B] rounded-full px-3 py-1 w-64 bg-white">
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 outline-none text-sm text-gray-700"
+                />
+                <i className="fa fa-search text-[#00458B]"></i>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <div className="max-h-[500px] overflow-y-auto">
+                <table className="w-full border-collapse border border-gray-200">
+                  <thead className="bg-gray-100 text-[#00458B] sticky top-0 z-10">
+                    <tr className="bg-gray-100 text-[#00458B]">
+                      <th className="px-4 py-2 text-left">Service Name</th>
+                      <th className="px-4 py-2 text-center">status</th>
+                      <th className="px-4 py-2 text-center">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredServices.length > 0 ? (
+                      filteredServices.map((service) => {
+                        const isInactive =
+                          service.status?.toLowerCase() === "inactive";
+                        return (
+                          <tr key={service.service_id}>
+                            <td className="px-4 py-2 text-blue-700">
+                              {service.service_name}
+                            </td>
+                            <td
+                              className={`px-4 py-2 text-center font-semibold ${isInactive ? "text-red-500" : "text-green-600"
+                                }`}
+                            >
+                              {isInactive ? "Inactive" : "Active"}
+                            </td>
+                           
+                            <td className="px-4 py-2 text-center space-x-2">
+                              <Link to={`/adminServiceEdit/${service.service_id}`}>
+                                <button className="px-4 py-2 rounded-lg bg-green-500 text-white hover:bg-green-600">
+                                  Edit
+                                </button>
+                              </Link>
+                              <button
+                                disabled={isInactive}
+                                onClick={() => {
+                                  if (!isInactive) {
+                                    setConfirmBox({
+                                      show: true,
+                                      ServiceId: service.service_id,
+                                      ServiceName: service.service_name,
+                                    });
+                                  }
+                                }}
+                                className={`px-4 py-2 rounded-lg ${isInactive
+                                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  : "bg-red-500 text-white hover:bg-red-600"
+                                  }`}
+                              >
+                                Deactivate
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="4"
+                          className="text-center text-gray-500 py-4"
+                        >
+                          No records found
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
 };
 
-export default AdminCoaAdd;
+export default AdminServices;

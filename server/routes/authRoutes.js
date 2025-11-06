@@ -3506,6 +3506,51 @@ router.get("/subaccs/:id", async (req, res) => {
   }
 });
 
+//NEW CODE
+router.put("/coa/:id", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { id } = req.params;
+    const { account_name, account_type, status } = req.body;
+
+    const db = await connectToDatabase();
+
+    // ✅ 1️⃣ Update the Chart of Account record
+    const [result] = await db.query(
+      "UPDATE chartofaccounts SET account_name = ?, account_type = ?, status = ? WHERE account_id = ?",
+      [account_name, account_type, status, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    // ✅ 2️⃣ Insert into audit trail
+    const action = "Update COA";
+    const description = `Updated COA: ${account_name} (${account_type})`;
+    const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    // ✅ 3️⃣ Return success response
+    return res.json({ message: "Account updated successfully." });
+  } catch (err) {
+    console.error("Update COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+//END OF NEW CODE
+
 // ✅ Inactivate a subaccount by ID (soft delete)
 router.put("/coa/sub/:id", async (req, res) => {
   const { id } = req.params;
@@ -5325,6 +5370,160 @@ router.put("/hmo_service/:service_id", async (req, res) => {
   }
 });
 
+//NEW CODE
+router.get("/service", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query("SELECT * FROM service");
+    res.json(rows); 
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch services" });
+  }
+});
+
+router.get("/service/:service_id", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const { service_id } = req.params;
+
+
+    const [rows] = await db.query("SELECT * FROM service WHERE service_id = ?", [service_id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Service not found" });
+    }
+    res.json(rows[0]); 
+  } catch (err) {
+    console.error("Error fetching service:", err);
+    res.status(500).json({ error: "Failed to fetch service" });
+  }
+});
+
+router.post("/serviceadd", authenticateToken, async (req, res) => {
+  const { service_name, status } = req.body;
+
+  if (!service_name || !status) {
+    return res.status(400).json({ message: "All fields required" });
+  }
+
+  try {
+    const db = await connectToDatabase();
+
+    //  Insert into service
+    await db.query(
+      "INSERT INTO service (service_name, status) VALUES (?, ?)",
+      [service_name, status]
+    );
+
+    //  Get logged-in user info
+    const user_name = req.user.user_name; // from auth middleware
+    const role = req.user.role;
+
+    //  Insert into audit_trail
+    const action = "Add COA";
+    const audit_description = `Added new Service: ${service_name}`;
+
+    const created_at = new Date(); // current date and time
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [user_name, role, action, audit_description, created_at]
+    );
+
+    return res.status(201).json({ message: "Account saved successfully!" });
+  } catch (err) {
+    console.error("COA insert error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.put("/service/:service_id", async (req, res) => {
+  const db = await connectToDatabase();
+  const { service_id } = req.params;
+  const { service_name, status } = req.body;
+
+  try {
+    // Check if service exists
+    const [existing] = await db.query("SELECT * FROM service WHERE service_id = ?", [service_id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    // Update record
+    await db.query(
+      "UPDATE service SET service_name = ?, status = ? WHERE service_id = ?",
+      [service_name, status, service_id]
+    );
+
+    res.json({ message: "Service updated successfully!" });
+  } catch (err) {
+    console.error("Error updating service:", err);
+    res.status(500).json({ message: "Failed to update service" });
+  } finally {
+    db.end();
+  }
+});
+
+router.delete("/service/:ServiceId", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { ServiceId } = req.params;
+    const db = await connectToDatabase();
+
+    // ✅ Fetch existing account for audit trail details
+    const [existing] = await db.query(
+      "SELECT service_name FROM service WHERE service_id = ?",
+      [ServiceId]
+    );
+
+    if (existing.length === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    const ServiceName = existing[0].service_name;
+
+    //  Instead DELETE, update the status
+    const [result] = await db.query(
+      "UPDATE service SET status = 'Inactive' WHERE service_id = ?",
+      [ServiceId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "HMO not found" });
+    }
+
+    // ✅ Insert audit trail record
+    const at_action = "Deactivated Service";
+    const at_description = `User "${decoded.user_name}" marked the Service "${ServiceName}" as Inactive.`;
+    const created_at = new Date();
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, at_action, at_description, created_at]
+    );
+
+    return res.json({ message: "Account marked as inactive successfully" });
+  } catch (err) {
+    console.error("Error updating COA status:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+// GET active services only
+router.get("/services/active", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query("SELECT service_name FROM service WHERE status = 'active'");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch active services" });
+  }
+});
+//END OF NEW CODE
 
 // ADMIN DASHBOARDS
 // Count Appointments

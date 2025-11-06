@@ -1,22 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate, Link, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, Link } from "react-router-dom";
 import axios from "axios";
-import { Calendar, Users, BarChart3, ChevronDown, ChevronUp, Menu, X, AlertTriangle, PlusCircle, PhilippinePeso, IdCard, Printer,   Settings, FolderKanban, BriefcaseMedical } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
 
-const AdminCoaViewAdd = () => {
+const AdminServiceEdit = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { service_id } = useParams();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
-  const [isSettingopen, setIsSettingOpen] = useState(false);
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
+  const [file, setFile] = useState(null);
 
-  const [accountName, setAccountName] = useState("");
-  const [subaccounts, setSubaccounts] = useState([]);
+  const [service, setService] = useState({
+    service_name: "",
+    status: "Active",
+  });
 
   // ✅ Popup state and fade animation (copied from AdminCoaAdd)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -29,17 +31,59 @@ const AdminCoaViewAdd = () => {
     setTimeout(() => setPopup({ show: false, message: "", type: "" }), 3000);
   };
 
-  // Fetch subaccounts
-  const fetchSubaccounts = async () => {
-    try {
-      const res = await axios.get(`http://localhost:3000/auth/coa/${id}/subaccounts`);
-      setSubaccounts(res.data);
-    } catch (err) {
-      console.error("Error fetching subaccounts:", err);
-    }
+  // ✅ Fetch account by id
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const res = await axios.get(`http://localhost:3000/auth/service/${service_id}`);
+        setService(res.data);
+      } catch (err) {
+        console.error("Error fetching account:", err);
+        showPopup("Failed to fetch account details.", "error");
+      }
+    };
+    fetchServices();
+  }, [service_id]);
+
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setService((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Scroll + fetch
+  const handleUpdate = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      showPopup("No token found. Please login again.", "error");
+      return;
+    }
+
+    const services = {
+      service_name: service.service_name,
+      status: service.status,
+    };
+
+    const response = await axios.put(
+      `http://localhost:3000/auth/service/${service_id}`,
+      services,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json", 
+        },
+      }
+    );
+
+    showPopup(response.data.message || "Service updated successfully!", "success");
+    setTimeout(() => navigate("/adminServices"), 1500);
+  } catch (err) {
+    console.error("Error updating Service:", err);
+    showPopup(err.response?.data?.message || "Failed to update Service.", "error");
+  }
+};
+
+  // ✅ Scroll to element if provided
   useEffect(() => {
     if (location.state?.scrollTo) {
       const element = document.getElementById(location.state.scrollTo);
@@ -49,37 +93,7 @@ const AdminCoaViewAdd = () => {
         }, 100);
       }
     }
-    if (id) fetchSubaccounts();
-  }, [location, id]);
-
-  // Save handler
-  const handleSave = async () => {
-    if (!accountName.trim()) {
-      showPopup("Sub-account Name is required.", "error");
-      return;
-    }
-
-    try {
-      const token = localStorage.getItem("token"); // get your saved JWT token
-
-      const response = await axios.post(
-        `http://localhost:3000/auth/coa/${id}/subaccounts`,
-        { account_name: accountName },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`, // ✅ add this
-          },
-        }
-      );
-
-      showPopup(response.data.message || "Sub-account added successfully!", "success");
-      setAccountName("");
-      setTimeout(() => navigate(-1), 1500);
-    } catch (err) {
-      console.error(err);
-      showPopup(err.response?.data?.error || "Something went wrong.", "error");
-    }
-  };
+  }, [location]);
 
   return (
     <div className="flex min-h-screen bg-gray-100 relative">
@@ -174,6 +188,12 @@ const AdminCoaViewAdd = () => {
                   </Link>
                 </div>
               )}
+              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <IdCard size={18} /> HMO
+              </Link>
+              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Settings size={18} /> OR Range
+              </Link>
               <Link
                 to="/adminusers"
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
@@ -233,40 +253,11 @@ const AdminCoaViewAdd = () => {
             </>
           )}
         </nav>
-         {role === "admin" && (
-            <>
-               <button onClick={() => setIsSettingOpen(!isSettingopen)}
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <span className="flex items-center gap-2">
-                   <Settings size={18} /> Settings
-                </span>
-                {isSettingopen?
-                  <ChevronUp size={16} /> :
-                  <ChevronDown size={16} />}
-              </button>
-               {isSettingopen && (
-                <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                    <IdCard size={18} /> HMO
-                  </Link>
-
-                  <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                        <FolderKanban size={18} /> OR Range
-                   </Link>
-
-                   <Link to="/adminServices" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                        <BriefcaseMedical  size={18} /> Services
-                   </Link>
-                </div>
-              )}
-            </>
-          )}      
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-        {/* Mobile Menu Button */}
+        {/* Mobile menu button */}
         <button
           onClick={() => setSidebarOpen(true)}
           className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
@@ -276,27 +267,44 @@ const AdminCoaViewAdd = () => {
 
         <div className="bg-white p-8 rounded-xl shadow-md border border-gray-200">
           <h1 className="text-2xl font-bold text-[#00458B] mb-6">
-            Add New Sub-Account
+            Edit Service
           </h1>
 
           <div className="space-y-6">
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Sub-Account Name: <span style={{ color: "red" }}>*</span>
+                Service Name
               </label>
               <input
                 type="text"
-                value={accountName}
-                onChange={(e) => setAccountName(e.target.value)}
+                name="service_name"
+                value={service.service_name}
+                onChange={handleChange}
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
             </div>
+
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Service Status
+              </label>
+              <select
+                name="status"
+                value={service.status}
+                onChange={handleChange}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+              >
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
 
             <div className="flex justify-end gap-4 mt-6">
               <button
                 type="button"
                 className="bg-white text-[#00458B] font-semibold border border-[#00458b] px-6 py-2 rounded-lg"
-                onClick={() => navigate(-1)}
+                onClick={() => navigate("/adminhmo")}
               >
                 Back to List
               </button>
@@ -304,9 +312,9 @@ const AdminCoaViewAdd = () => {
               <button
                 type="button"
                 className="bg-[#00458B] text-white font-semibold px-6 py-2 rounded-lg hover:bg-[#00a99d]"
-                onClick={handleSave}
+                onClick={handleUpdate}
               >
-                Save
+                Update
               </button>
             </div>
           </div>
@@ -316,4 +324,4 @@ const AdminCoaViewAdd = () => {
   );
 };
 
-export default AdminCoaViewAdd;
+export default AdminServiceEdit;

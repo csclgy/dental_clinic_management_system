@@ -85,6 +85,10 @@ import AdminHMOServiceAdd from "./Routes/adminhmoserviceadd.jsx";
 import AdminHMOEdit from "./Routes/adminhmoedit.jsx";
 import AdminHMOServiceEdit from "./Routes/adminhmoserviceedit.jsx";
 import OrRangeSetup from "./Routes/OrRangeSetup.jsx";
+//NEW CODE
+import AdminServices from "./Routes/adminServices.jsx";
+import AdminServiceAdd from "./Routes/adminServiceAdd.jsx";
+import AdminServiceEdit from "./Routes/adminServiceEdit.jsx";
 
 function App() {
   return (
@@ -386,6 +390,34 @@ function App() {
               element={
                 <ProtectedRoute>
                   <AdminHMOServiceEdit/>
+                </ProtectedRoute>
+              }
+
+              //NEW CODE NOV
+            />
+            <Route
+              path="/adminServices"
+              element={
+                <ProtectedRoute>
+                  <AdminServices/>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/adminServiceAdd"
+              element={
+                <ProtectedRoute>
+                  <AdminServiceAdd/>
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="/adminServiceEdit/:service_id"
+              element={
+                <ProtectedRoute>
+                  <AdminServiceEdit/>
                 </ProtectedRoute>
               }
             />

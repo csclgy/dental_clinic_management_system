@@ -12,6 +12,7 @@ const Appointment = () => {
   // Availability checking states
   const [bookedSlots, setBookedSlots] = useState({});
   const [fullyBookedDates, setFullyBookedDates] = useState([]);
+  const [services, setServices] = useState([]);
 
   // ✅ Popup state and fade animation (same as AppointmentSubmit)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -85,6 +86,18 @@ const Appointment = () => {
       showPopup("User not logged in or ID missing.", "error");
     }
   }, [userId]);
+
+useEffect(() => {
+  const fetchServices = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/auth/services/active");
+      setServices(response.data);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+    }
+  };
+  fetchServices();
+}, []);
 
   const fetchAppointments = async () => {
     try {
@@ -263,17 +276,12 @@ const Appointment = () => {
                   }}
                 >
                   <option value="">Select a procedure</option>
-                  <option value="TMJ TREATMENT">TMJ TREATMENT</option>
-                  <option value="MYOFUNCTIONAL TREATMENT">MYOFUNCTIONAL TREATMENT</option>
-                  <option value="ROOT CANAL TREATMENT">ROOT CANAL TREATMENT</option>
-                  <option value="ORAL PROPHYLAXIS">ORAL PROPHYLAXIS</option>
-                  <option value="TOOTH EXTRACTION">TOOTH EXTRACTION</option>
-                  <option value="ODONTECTOMY">ODONTECTOMY</option>
-                  <option value="RESTORATIVE FILLING">RESTORATIVE FILLING</option>
-                  <option value="FLOURIDE TREATMENT">FLOURIDE TREATMENT</option>
-                  <option value="DENTURES">DENTURES</option>
-                  <option value="TEETH WHITENING">TEETH WHITENING</option>
-                  <option value="DENTAL X-RAY">DENTAL X-RAY</option>
+                  {services.map((s, index) => (
+                  <option key={index} value={s.service_name}>
+                    {s.service_name}
+                  </option>
+                ))}
+
                 </select>
                 <p style={{ color: "gray" }} className="text-xs mt-1">
                   For Orthodontic Treatment services, please contact our clinic first to arrange an agreement.
