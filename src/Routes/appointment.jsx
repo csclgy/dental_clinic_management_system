@@ -8,6 +8,7 @@ const Appointment = () => {
   const navigate = useNavigate();
   const { appointmentData, updateAppointment } = useAppointment();
   const userId = localStorage.getItem("userId");
+  const [services, setServices] = useState([]);
 
   // Availability checking states
   const [bookedSlots, setBookedSlots] = useState({});
@@ -86,9 +87,21 @@ const Appointment = () => {
     }
   }, [userId]);
 
+  useEffect(() => {
+  const fetchServices = async () => {
+    try {
+      const response = await axios.get("http://localhost:3000/auth/services/active");
+      setServices(response.data);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+    }
+  };
+  fetchServices();
+}, []);
+
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/all");
+      const response = await axios.get("http://localhost:3000/auth/appointments/all");
       const appointments = response.data;
 
       // Filter for active appointments (not cancelled or done)
@@ -263,17 +276,12 @@ const Appointment = () => {
                   }}
                 >
                   <option value="">Select a procedure</option>
-                  <option value="TMJ TREATMENT">TMJ TREATMENT</option>
-                  <option value="MYOFUNCTIONAL TREATMENT">MYOFUNCTIONAL TREATMENT</option>
-                  <option value="ROOT CANAL TREATMENT">ROOT CANAL TREATMENT</option>
-                  <option value="ORAL PROPHYLAXIS">ORAL PROPHYLAXIS</option>
-                  <option value="TOOTH EXTRACTION">TOOTH EXTRACTION</option>
-                  <option value="ODONTECTOMY">ODONTECTOMY</option>
-                  <option value="RESTORATIVE FILLING">RESTORATIVE FILLING</option>
-                  <option value="FLOURIDE TREATMENT">FLOURIDE TREATMENT</option>
-                  <option value="DENTURES">DENTURES</option>
-                  <option value="TEETH WHITENING">TEETH WHITENING</option>
-                  <option value="DENTAL X-RAY">DENTAL X-RAY</option>
+                  {services.map((s, index) => (
+                  <option key={index} value={s.service_name}>
+                    {s.service_name}
+                  </option>
+                ))}
+
                 </select>
                 <p style={{ color: "gray" }} className="text-xs mt-1">
                   For Orthodontic Treatment services, please contact our clinic first to arrange an agreement.
@@ -394,21 +402,69 @@ const Appointment = () => {
           <br></br>
           <hr></hr>
           <br></br>
+          {/* NEW CODE */}
           {/* Title and Button Row */}
-          <div className="flex items-center justify-between mb-4">
-            {/* Left side: text */}
-            <p className="text-[#00458b] text-xl font-bold m-0">Personal Information</p>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+            {/* Left: Title and Toggle side by side */}
+            <div className="flex items-center gap-4">
+              <p className="text-[#00c3b8] text-xl font-bold m-0">Patient Information</p>
 
-            {/* Right side: button */}
+              {/* Book for Someone Else Toggle */}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="bookForSomeoneElse"
+                  checked={appointmentData.bookForSomeoneElse || false}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    updateAppointment("bookForSomeoneElse", checked);
+
+                    if (checked) {
+                      const userId = localStorage.getItem("userId");
+                      axios
+                        .get(`http://localhost:3000/auth/users/${userId}`)
+                        .then((response) => {
+                          const user = response.data;
+                          updateAppointment("p_home_address", user.home_address || "");
+                          updateAppointment("p_email", user.email || "");
+                          updateAppointment("p_contact_no", user.contact_no || "");
+                          updateAppointment("p_gender", user.gender || "");
+                          updateAppointment(
+                            "p_date_birth",
+                            user.date_birth ? user.date_birth.split("T")[0] : ""
+                          );
+                          updateAppointment("p_blood_type", user.blood_type || "");
+                          updateAppointment("relation", "");
+                          showPopup(
+                            "Booking for someone else. Your info will be used for contact details.",
+                            "success"
+                          );
+                        })
+                        .catch((err) => {
+                          console.error("Error autofilling user info:", err);
+                          showPopup("Could not retrieve your info.", "error");
+                        });
+                    } else {
+                      updateAppointment("relation", "");
+                      updateAppointment("bookForSomeoneElse", false);
+                    }
+                  }}
+                  className="mr-2 w-4 h-4 accent-[#00c3b8]"
+                />
+                <label htmlFor="bookForSomeoneElse" className="text-[#00458b] font-semibold">
+                  Book for someone else
+                </label>
+              </div>
+            </div>
+
+            {/* Right: Auto-fill Button */}
             <button
-              className="bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-lg hover:bg-teal-600 transition"
+              className="bg-[#008CBA] text-white font-semibold px-4 py-2 rounded-lg hover:bg-teal-600 transition self-end md:self-auto"
               onClick={async () => {
                 try {
                   const userId = localStorage.getItem("userId");
-                  const response = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/users/${userId}`);
+                  const response = await axios.get(`http://localhost:3000/auth/users/${userId}`);
                   const user = response.data;
-
-                  console.log("User data:", user);
 
                   // Auto-fill fields
                   updateAppointment("p_fname", user.fname || "");
@@ -442,115 +498,211 @@ const Appointment = () => {
             </button>
           </div>
 
+
         </div>
         {/* Form Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column */}
-          <div>
-            {[
-              { label: "First Name", key: "p_fname", type: "text" },
-              { label: "Middle Name", key: "p_mname", type: "text" },
-              { label: "Last Name", key: "p_lname", type: "text" },
-              { label: "Home Address", key: "p_home_address", type: "text" },
-              { label: "Email", key: "p_email", type: "email" },
-              { label: "Contact Number", key: "p_contact_no", type: "text" },
-            ].map((field) => (
-              <div key={field.key} className="mb-4 text-left">
-                <label className="block text-[#00458b] font-semibold mb-1">
-                  {field.label}: <span style={{ color: "red" }}>*</span>
-                </label>
-                <input
-                  type={field.type}
-                  className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                  value={appointmentData[field.key]}
-                  onChange={(e) => {
-                    if (field.key === "p_contact_no") {
-                      const value = e.target.value.replace(/\D/g, "");
-                      if (value.length <= 11) updateAppointment(field.key, value);
-                    } else {
-                      updateAppointment(field.key, e.target.value);
-                    }
-                  }}
-                  required={field.key === "p_contact_no"}
-                  pattern={field.key === "p_contact_no" ? "[0-9]{11}" : undefined}
-                  maxLength={field.key === "p_contact_no" ? 11 : undefined}
-                  placeholder={field.key === "p_contact_no" ? "Enter 11-digit number" : ""}
-                />
+{/* NEW CODE */}
+        {/* If booking for someone else */}
+        {appointmentData.bookForSomeoneElse ? (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Full name */}
+              <div>
+                {[
+                  { label: "First Name", key: "p_fname" },
+                  { label: "Middle Name", key: "p_mname" },
+                  { label: "Last Name", key: "p_lname" },
+                ].map((field) => (
+                  <div key={field.key} className="mb-4 text-left">
+                    <label className="block text-[#00458b] font-semibold mb-1">
+                      {field.label}: <span style={{ color: "red" }}>*</span>
+                    </label>
+                    <input
+                      type="text"
+                      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                      value={appointmentData[field.key] || ""}
+                      onChange={(e) => updateAppointment(field.key, e.target.value)}
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Right Column */}
-          <div>
-            {/* Gender */}
-            <div className="mb-4 text-left">
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Gender: <span style={{ color: "red" }}>*</span>
-              </label>
-              <select
-                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-                value={appointmentData.p_gender}
-                onChange={(e) => updateAppointment("p_gender", e.target.value)}
-              >
-                <option value="">-- Select gender --</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
+              {/* Date of Birth + Age + Relationship */}
+              <div>
+                {/* Date of Birth */}
+                <div className="mb-4 text-left">
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Date of Birth: <span style={{ color: "red" }}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={appointmentData.p_date_birth || ""}
+                    onChange={(e) => {
+                      const dateValue = e.target.value;
+                      updateAppointment("p_date_birth", dateValue);
+
+                      // Auto-calculate age
+                      if (dateValue) {
+                        const today = new Date();
+                        const birthDate = new Date(dateValue);
+                        let age = today.getFullYear() - birthDate.getFullYear();
+                        const m = today.getMonth() - birthDate.getMonth();
+                        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
+                        updateAppointment("p_age", age);
+                      } else {
+                        updateAppointment("p_age", "");
+                      }
+                    }}
+                    max={new Date().toISOString().split("T")[0]}
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  />
+                </div>
+
+                {/* Age (read-only) */}
+                <div className="mb-4 text-left">
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={appointmentData.p_age || ""}
+                    readOnly
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none bg-gray-50"
+                  />
+                </div>
+
+                {/* Relationship */}
+                <div className="mb-4 text-left">
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Relationship: <span style={{ color: "red" }}>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={appointmentData.relation || ""}
+                    onChange={(e) => updateAppointment("relation", e.target.value)}
+                    placeholder="e.g. Father, Sister, Friend"
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  />
+                </div>
+              </div>
+
             </div>
+          </>
+        ) : (
+          <>
+            {/* Your existing patient info form */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Left Column */}
+              <div>
+                {[
+                  { label: "First Name", key: "p_fname", type: "text" },
+                  { label: "Middle Name", key: "p_mname", type: "text" },
+                  { label: "Last Name", key: "p_lname", type: "text" },
+                  { label: "Home Address", key: "p_home_address", type: "text" },
+                  { label: "Email", key: "p_email", type: "email" },
+                  { label: "Contact Number", key: "p_contact_no", type: "text" },
+                ].map((field) => (
+                  <div key={field.key} className="mb-4 text-left">
+                    <label className="block text-[#00458b] font-semibold mb-1">
+                      {field.label}: <span style={{ color: "red" }}>*</span>
+                    </label>
+                    <input
+                      type={field.type}
+                      className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                      value={appointmentData[field.key]}
+                      onChange={(e) => {
+                        if (field.key === "p_contact_no") {
+                          const value = e.target.value.replace(/\D/g, "");
+                          if (value.length <= 11) updateAppointment(field.key, value);
+                        } else {
+                          updateAppointment(field.key, e.target.value);
+                        }
+                      }}
+                      required={field.key === "p_contact_no"}
+                      pattern={field.key === "p_contact_no" ? "[0-9]{11}" : undefined}
+                      maxLength={field.key === "p_contact_no" ? 11 : undefined}
+                      placeholder={field.key === "p_contact_no" ? "Enter 11-digit number" : ""}
+                    />
+                  </div>
+                ))}
+              </div>
 
-            {/* Date of Birth */}
-            <div className="mb-4 text-left">
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Date of Birth: <span style={{ color: "red" }}>*</span>
-              </label>
-              <input
-                type="date"
-                value={appointmentData.p_date_birth}
-                onChange={(e) => handleDateOfBirthChange(e.target.value)}
-                max={new Date().toISOString().split("T")[0]}
-                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-              />
+              {/* Right Column */}
+              <div>
+                {/* Gender */}
+                <div className="mb-4 text-left">
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Gender: <span style={{ color: "red" }}>*</span>
+                  </label>
+                  <select
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                    value={appointmentData.p_gender}
+                    onChange={(e) => updateAppointment("p_gender", e.target.value)}
+                  >
+                    <option value="">-- Select gender --</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
+                </div>
+
+                {/* Date of Birth */}
+                <div className="mb-4 text-left">
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Date of Birth: <span style={{ color: "red" }}>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    value={appointmentData.p_date_birth}
+                    onChange={(e) => handleDateOfBirthChange(e.target.value)}
+                    max={new Date().toISOString().split("T")[0]}
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  />
+                </div>
+
+                {/* Age */}
+                <div className="mb-4 text-left">
+                  <label className="block text-[#00458b] font-semibold mb-1">
+                    Age
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={appointmentData.p_age}
+                    readOnly
+                    className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none bg-gray-50"
+                  />
+                </div>
+
+                {/* Blood Type */}
+                <label className="block text-[#00458b] font-semibold mb-1">
+                  Blood Type: <span style={{ color: "red" }}>*</span>
+                </label>
+                <select
+                  className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
+                  value={appointmentData.p_blood_type}
+                  onChange={(e) => updateAppointment("p_blood_type", e.target.value)}
+                >
+                  <option value="">-- Select Blood Type --</option>
+                  <option value="O">O</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                  <option value="A">A</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B">B</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB">AB</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="Unknown">Unknown</option>
+                </select>
+              </div>
             </div>
-
-            {/* Age */}
-            <div className="mb-4 text-left">
-              <label className="block text-[#00458b] font-semibold mb-1">
-                Age
-              </label>
-              <input
-                type="number"
-                min={1}
-                value={appointmentData.p_age}
-                readOnly
-                className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none bg-gray-50"
-              />
-            </div>
-            <label className="block text-[#00458b] font-semibold mb-1">
-              Blood Type: <span style={{ color: "red" }}>*</span>
-            </label>
-            <select
-              className="w-full border border-[#00458b] rounded-full px-4 py-2 outline-none"
-              value={appointmentData.p_blood_type}
-              onChange={(e) => updateAppointment("p_blood_type", e.target.value)}
-            >
-              <option value="">-- Select Blood Type --</option>
-              <option value="O">O</option>
-              <option value="O+">O+</option>
-              <option value="O-">O-</option>
-              <option value="A">A</option>
-              <option value="A+">A+</option>
-              <option value="A-">A-</option>
-              <option value="B">B</option>
-              <option value="B+">B+</option>
-              <option value="B-">B-</option>
-              <option value="AB">AB</option>
-              <option value="AB+">AB+</option>
-              <option value="AB-">AB-</option>
-              <option value="Unknown">Unknown</option>
-            </select>
-          </div>
-        </div>
-
+          </>
+        )}
+        {/* END CODE */}
         <div className="col-sm-12">
           <div className="row">
             <div className="col-sm-6">

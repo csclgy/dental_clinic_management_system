@@ -25,7 +25,7 @@ const ProfileChange = () => {
       }
 
       try {
-        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/me", {
+        const res = await fetch("http://localhost:3000/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Failed to fetch user");
@@ -78,7 +78,7 @@ const ProfileChange = () => {
     }
 
     try {
-      const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/change-password", {
+      const res = await fetch("http://localhost:3000/auth/change-password", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

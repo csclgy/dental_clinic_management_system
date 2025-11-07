@@ -14,7 +14,9 @@ import {
   ChevronUp,
   PhilippinePeso,
   IdCard,
-  Settings
+  Settings,
+  FolderKanban,
+  BriefcaseMedical
 } from "lucide-react";
 
 const AdminPatientsView = () => {
@@ -34,6 +36,8 @@ const AdminPatientsView = () => {
   const [patient, setPatient] = useState(null);
   const [consultations, setConsultations] = useState([]);
   const [error, setError] = useState("");
+  const [isSettingopen, setIsSettingOpen] = useState(false);
+
 
   // ✅ Popup state and fade animation
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -56,7 +60,7 @@ const AdminPatientsView = () => {
         }
 
         const res = await fetch(
-          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displaypatient/${id}`,
+          `http://localhost:3000/auth/displaypatient/${id}`,
           {
             method: "GET",
             headers: {
@@ -87,7 +91,7 @@ const AdminPatientsView = () => {
   const handleFollowUp = async (appoint_id, p_fname, p_lname) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/followup/${appoint_id}`, {
+      const res = await fetch(`http://localhost:3000/auth/followup/${appoint_id}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -298,19 +302,18 @@ const AdminPatientsView = () => {
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-xl font-bold mb-8">Dental Clinic</h2>
         <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
-
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
-          <button
-            onClick={() => setOpenDashboard(!openDashboard)}
+          <button onClick={() => setOpenDashboard(!openDashboard)}
             className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
               <BarChart3 size={18} /> Dashboard
             </span>
-            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {openDashboard ?
+              <ChevronUp size={16} /> :
+              <ChevronDown size={16} />}
           </button>
 
           {openDashboard && (
@@ -323,7 +326,7 @@ const AdminPatientsView = () => {
                 </Link>
               )}
               {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Appointments
                   Dashboard</Link>
               )}
             </div>
@@ -332,6 +335,7 @@ const AdminPatientsView = () => {
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
+              {/* Ledger Dropdown */}
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
@@ -345,48 +349,27 @@ const AdminPatientsView = () => {
 
               {isLedgerOpen && (
                 <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link
-                    to="/admincoa"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Chart of Accounts
                   </Link>
-                  <Link
-                    to="/adminjournal"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Journal Entries
                   </Link>
-                  <Link
-                    to="/adminsubsidiaryreceivable"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Subsidiary
                   </Link>
-                  <Link
-                    to="/admingeneral"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     General Ledger
                   </Link>
-                  <Link
-                    to="/admintrial"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Trial Balance
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <IdCard size={18} /> HMO
-              </Link>
-              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <Settings size={18} /> OR Range
-              </Link>
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <Users size={18} /> Users
               </Link>
             </>
@@ -394,10 +377,7 @@ const AdminPatientsView = () => {
 
           {(role === "admin" || role === "inventory") && (
             <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/admininventory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-archive"></i> Inventory
               </Link>
             </>
@@ -405,38 +385,50 @@ const AdminPatientsView = () => {
 
           {(role === "admin" || role === "dentist" || role === "receptionist") && (
             <>
-              <Link
-                to="/adminpatients"
-                className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminpatients" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-user-plus"></i> Patients
               </Link>
-              <Link
-                to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
+
+              <Link to="/adminschedule" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Calendar size={18} />{" "}
+                {role === "dentist" ? "Appointments" : "Appointments & Billing"}
               </Link>
             </>
           )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
           {role === "admin" && (
             <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              <button onClick={() => setIsSettingOpen(!isSettingopen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
+                <span className="flex items-center gap-2">
+                  <Settings size={18} /> Settings
+                </span>
+                {isSettingopen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
+              </button>
+              {isSettingopen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <IdCard size={18} /> HMO
+                  </Link>
+
+                  <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <FolderKanban size={18} /> OR Range
+                  </Link>
+
+                  <Link to="/adminServices"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <BriefcaseMedical size={18} /> Services
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+          {role === "admin" && (
+            <>
+              <Link to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-eye"></i> Audit Trail
               </Link>
             </>
@@ -472,12 +464,16 @@ const AdminPatientsView = () => {
                 >
                   <i className="fa fa-file-pdf-o"></i> Generate Report
                 </button>
-                <button
-                  className="flex items-center gap-2 bg-[#00458B] hover:bg-[#003870] text-white px-5 py-2 rounded-lg font-semibold transition"
-                  onClick={() => navigate(`/adminpatientsedit/${patient?.user_id}`)}
-                >
-                  <i className="fa fa-edit"></i> Edit Profile
-                </button>
+                {/* //NEW CODE */}
+                {role !== "dentist" && (
+                  <button
+                    className="flex items-center gap-2 bg-[#00458B] hover:bg-[#003870] text-white px-5 py-2 rounded-lg font-semibold transition"
+                    onClick={() => navigate(`/adminpatientsedit/${patient?.user_id}`)}
+                  >
+                    <i className="fa fa-edit"></i> Edit Profile
+                  </button>
+                )}
+
               </div>
             </div>
 
@@ -509,12 +505,16 @@ const AdminPatientsView = () => {
               <h2 className="text-xl font-bold text-[#00458B]">
                 Consultation History
               </h2>
-              <button
-                className="bg-[#00458B] text-white px-4 py-2 rounded-lg flex items-center font-semibold"
-                onClick={() => navigate("/adminconsultationadd", { state: { patient } })}
-              >
-                <PlusCircle className="mr-2" /> New Consultation
-              </button>
+              {/* //NEW CODE */}
+              {role !== "dentist" && (
+                <button
+                  className="bg-[#00458B] text-white px-4 py-2 rounded-lg flex items-center font-semibold"
+                  onClick={() => navigate("/adminconsultationadd", { state: { patient } })}
+                >
+                  <PlusCircle className="mr-2" /> New Consultation
+                </button>
+              )}
+
             </div>
 
             {/* Search + Filter */}
@@ -558,6 +558,7 @@ const AdminPatientsView = () => {
                       <th colSpan="4" className="px-2 py-2">Actions</th>
                     </tr>
                   </thead>
+                  {/* //NEW CODE */}
                   <tbody>
                     {filteredConsultations.map((c) => (
                       <tr key={c.appoint_id} className="border-b">
@@ -587,9 +588,9 @@ const AdminPatientsView = () => {
                                   )
                                 }
                                 className={`px-3 py-1 rounded-lg ${c.appointment_status === "incomplete" ||
-                                    c.appointment_status === "pending"
-                                    ? "bg-gray-200 hover:bg-gray-300"
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  c.appointment_status === "pending"
+                                  ? "bg-gray-200 hover:bg-gray-300"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                   }`}
                               >
                                 Cancel
@@ -602,9 +603,9 @@ const AdminPatientsView = () => {
                                 }
                                 onClick={() => handleFollowUp(c.appoint_id, patient.fname, patient.lname)}
                                 className={`px-4 py-2 rounded-lg ${c.appointment_status === "incomplete" ||
-                                    c.appointment_status === "pending"
-                                    ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  c.appointment_status === "pending"
+                                  ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                   }`}
                               >
                                 + Follow Up
@@ -615,8 +616,8 @@ const AdminPatientsView = () => {
                                 disabled={c.appointment_status !== "incomplete"}
                                 onClick={() => navigate(`/adminconsultationcomplete/${c.appoint_id}`)}
                                 className={`px-3 py-1 rounded-lg ${c.appointment_status === "incomplete"
-                                    ? "bg-green-600 hover:bg-green-700 text-white"
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  ? "bg-green-600 hover:bg-green-700 text-white"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                   }`}
                               >
                                 Complete

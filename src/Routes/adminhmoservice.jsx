@@ -15,7 +15,9 @@ import {
   ChevronUp,
   PhilippinePeso,
   IdCard,
-  Settings
+  Settings,
+  FolderKanban,
+  BriefcaseMedical
 } from "lucide-react";
 
 const AdminHMOService = () => {
@@ -31,6 +33,8 @@ const AdminHMOService = () => {
   const { hmo_id } = useParams();
   const [services, setServices] = useState([]);
   const [hmo, setHMO] = useState({});
+  const [isSettingopen, setIsSettingOpen] = useState(false);
+
 
   // ✅ Popup state and fade animation (same as AdminCoaEdit)
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -81,7 +85,7 @@ const AdminHMOService = () => {
 
     const fetchHMO = async () => {
       try {
-        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo1/${hmo_id}`);
+        const res = await axios.get(`http://localhost:3000/auth/hmo1/${hmo_id}`);
         setHMO(res.data);
         setLoading(false);
       } catch (err) {
@@ -92,7 +96,7 @@ const AdminHMOService = () => {
 
     const fetchServices = async () => {
       try {
-        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo_services/${hmo_id}`);
+        const res = await axios.get(`http://localhost:3000/auth/hmo_services/${hmo_id}`);
         setServices(res.data);
         setLoading(false);
       } catch (err) {
@@ -119,7 +123,7 @@ const AdminHMOService = () => {
 
       // PUT request to change status to inactive
       await axios.put(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo_service_status/${confirmBox.hmoId}`,
+        `http://localhost:3000/auth/hmo_service_status/${confirmBox.hmoId}`,
         { status: "Inactive" },
         {
           headers: {
@@ -191,17 +195,17 @@ const AdminHMOService = () => {
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
-
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
-          <button
-            onClick={() => setOpenDashboard(!openDashboard)}
+          <button onClick={() => setOpenDashboard(!openDashboard)}
             className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
               <BarChart3 size={18} /> Dashboard
             </span>
-            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {openDashboard ?
+              <ChevronUp size={16} /> :
+              <ChevronDown size={16} />}
           </button>
 
           {openDashboard && (
@@ -214,7 +218,7 @@ const AdminHMOService = () => {
                 </Link>
               )}
               {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Appointments
                   Dashboard</Link>
               )}
             </div>
@@ -223,6 +227,7 @@ const AdminHMOService = () => {
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
+              {/* Ledger Dropdown */}
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
@@ -236,48 +241,27 @@ const AdminHMOService = () => {
 
               {isLedgerOpen && (
                 <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link
-                    to="/admincoa"
-                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
-                  >
+                  <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Chart of Accounts
                   </Link>
-                  <Link
-                    to="/adminjournal"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Journal Entries
                   </Link>
-                  <Link
-                    to="/adminsubsidiaryreceivable"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Subsidiary
                   </Link>
-                  <Link
-                    to="/admingeneral"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     General Ledger
                   </Link>
-                  <Link
-                    to="/admintrial"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Trial Balance
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]">
-                <IdCard size={18} /> HMO
-              </Link>
-              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <Settings size={18} /> OR Range
-              </Link>
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <Users size={18} /> Users
               </Link>
             </>
@@ -285,10 +269,7 @@ const AdminHMOService = () => {
 
           {(role === "admin" || role === "inventory") && (
             <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/admininventory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-archive"></i> Inventory
               </Link>
             </>
@@ -296,38 +277,50 @@ const AdminHMOService = () => {
 
           {(role === "admin" || role === "dentist" || role === "receptionist") && (
             <>
-              <Link
-                to="/adminpatients"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminpatients" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-user-plus"></i> Patients
               </Link>
-              <Link
-                to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
+
+              <Link to="/adminschedule" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Calendar size={18} />{" "}
+                {role === "dentist" ? "Appointments" : "Appointments & Billing"}
               </Link>
             </>
           )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
           {role === "admin" && (
             <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              <button onClick={() => setIsSettingOpen(!isSettingopen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
+                <span className="flex items-center gap-2">
+                  <Settings size={18} /> Settings
+                </span>
+                {isSettingopen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
+              </button>
+              {isSettingopen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <IdCard size={18} /> HMO
+                  </Link>
+
+                  <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <FolderKanban size={18} /> OR Range
+                  </Link>
+
+                  <Link to="/adminServices"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <BriefcaseMedical size={18} /> Services
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+          {role === "admin" && (
+            <>
+              <Link to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-eye"></i> Audit Trail
               </Link>
             </>

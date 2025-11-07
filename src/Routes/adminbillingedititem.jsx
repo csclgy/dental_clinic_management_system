@@ -19,7 +19,7 @@ const AdminBillingEditItem = () => {   // ✅ uppercase
   useEffect(() => {
     if (ci_id) {
       axios
-        .get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/item/${ci_id}`, {
+        .get(`http://localhost:3000/auth/billing/item/${ci_id}`, {
           headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
         })
         .then((res) => {
@@ -52,7 +52,7 @@ const AdminBillingEditItem = () => {   // ✅ uppercase
     e.preventDefault();
     try {
       await axios.put(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/updatebilling/${ci_id}`,
+        `http://localhost:3000/auth/updatebilling/${ci_id}`,
         {
           inv_id: selectedInvId,
           ci_item_name: itemName,

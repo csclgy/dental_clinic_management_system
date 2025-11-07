@@ -5,7 +5,8 @@ import { useRegister } from "../context/RegisterContext";
 const Register2 = () => {
   const navigate = useNavigate();
   const { registerData, setRegisterData } = useRegister();
-  const [showAlert, setShowAlert] = useState(false); // for alert modal
+  const [showAlert, setShowAlert] = useState(false);
+  const [agree, setAgree] = useState(false);
 
   // helper updater
   const updateFormData = (field, value) => {
@@ -38,7 +39,7 @@ const Register2 = () => {
       "lname",
       "mname",
       "gender",
-      "religion",
+      // "religion",
       "date_birth",
       "home_address",
       "city",
@@ -53,6 +54,12 @@ const Register2 = () => {
 
     if (missing.length > 0) {
       setShowAlert(true); // show modal instead of native alert
+      return;
+    }
+
+    // ✅ Check if user agreed to the privacy policy
+    if (!agree) {
+      setShowAlert(true);
       return;
     }
 
@@ -127,7 +134,7 @@ const Register2 = () => {
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
-                Religion: <span style={{color:"red"}}>*</span>
+                Religion: (Optional)
               </label>
               <select
                 value={registerData.religion || ""}
@@ -280,7 +287,28 @@ const Register2 = () => {
             </div>
           </div>
         </div>
-        <br></br>
+
+        {/* ✅ Data Privacy Agreement */}
+        <div className="flex items-center text-left mt-6 mb-4">
+          <input
+            type="checkbox"
+            checked={agree}
+            onChange={() => setAgree(!agree)}
+            className="mr-2 w-4 h-4 accent-[#00c3b8]"
+          />
+          <label className="text-sm text-[#00458b]">
+            I have read and fully understand the{" "}
+            <span className="text-[#00c3b8] font-semibold">
+              <a
+                href="https://privacy.gov.ph/data-privacy-act/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Data Privacy Policy
+              </a>
+            </span>.
+          </label>
+        </div>
 
         {/* Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 mt-6">
@@ -299,15 +327,13 @@ const Register2 = () => {
         </div>
       </div>
 
-      {/* 🔔 Custom Alert Modal */}
+      {/* ✅ Custom Alert Modal */}
       {showAlert && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-lg p-6 w-80 text-center">
-            <h3 className="text-lg font-bold text-[#00458b] mb-2">
-              ⚠️ Incomplete Information
-            </h3>
+            <h3 className="text-lg font-bold text-[#00458b] mb-2">⚠️ Missing Information</h3>
             <p className="text-sm text-gray-700 mb-4">
-              Please fill in all required fields before continuing.
+              Please complete all required fields and agree to the Data Privacy Policy before proceeding.
             </p>
             <button
               onClick={() => setShowAlert(false)}
@@ -319,6 +345,7 @@ const Register2 = () => {
         </div>
       )}
       <br />
+    
     </div>
   );
 };

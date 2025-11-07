@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer, PlusCircle, Settings } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Printer, PlusCircle, Settings, FolderKanban, BriefcaseMedical } from "lucide-react";
 import axios from "axios";
+import * as XLSX from "xlsx";
 
 const AdminJournal = () => {
   const location = useLocation();
@@ -13,6 +14,8 @@ const AdminJournal = () => {
   const [endDate, setEndDate] = useState("");
   const [journalData, setJournalData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isSettingopen, setIsSettingOpen] = useState(false);
+
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
@@ -176,12 +179,37 @@ const AdminJournal = () => {
     }, 250);
   };
 
+  const handleExportExcel = () => {
+    if (!filteredRecords.length) {
+      alert("No records to export!");
+      return;
+    }
+
+    const exportData = filteredRecords.map((record) => ({
+      Date: record.date,
+      "Account Name": record.Account,
+      Description: record.description,
+      Debit: record.debit,
+      Credit: record.credit,
+      Comment: record.comment,
+    }));
+
+    // Create worksheet & workbook
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Journal Entries");
+
+    // Download Excel file
+    XLSX.writeFile(workbook, "Journal_Entrties_Report.xlsx");
+  };
+
+
   // Fetch journal entries
   useEffect(() => {
     const fetchJournalEntries = async () => {
       setLoading(true); // ✅ show spinner
       try {
-        const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/journal1");
+        const response = await axios.get("http://localhost:3000/auth/journal1");
         setJournalData(response.data);
       } catch (err) {
         console.error(err);
@@ -214,17 +242,17 @@ const AdminJournal = () => {
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
-
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
-          <button
-            onClick={() => setOpenDashboard(!openDashboard)}
+          <button onClick={() => setOpenDashboard(!openDashboard)}
             className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
               <BarChart3 size={18} /> Dashboard
             </span>
-            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {openDashboard ?
+              <ChevronUp size={16} /> :
+              <ChevronDown size={16} />}
           </button>
 
           {openDashboard && (
@@ -237,7 +265,7 @@ const AdminJournal = () => {
                 </Link>
               )}
               {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Appointments
                   Dashboard</Link>
               )}
             </div>
@@ -246,8 +274,9 @@ const AdminJournal = () => {
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
+              {/* Ledger Dropdown */}
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
-                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
+                className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
@@ -259,48 +288,27 @@ const AdminJournal = () => {
 
               {isLedgerOpen && (
                 <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link
-                    to="/admincoa"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Chart of Accounts
                   </Link>
-                  <Link
-                    to="/adminjournal"
-                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
-                  >
+                  <Link to="/adminjournal"
+                    className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200">
                     Journal Entries
                   </Link>
-                  <Link
-                    to="/adminsubsidiaryreceivable"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Subsidiary
                   </Link>
-                  <Link
-                    to="/admingeneral"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     General Ledger
                   </Link>
-                  <Link
-                    to="/admintrial"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Trial Balance
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <IdCard size={18} /> HMO
-              </Link>
-              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <Settings size={18} /> OR Range
-              </Link>
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <Users size={18} /> Users
               </Link>
             </>
@@ -308,10 +316,7 @@ const AdminJournal = () => {
 
           {(role === "admin" || role === "inventory") && (
             <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/admininventory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-archive"></i> Inventory
               </Link>
             </>
@@ -319,38 +324,50 @@ const AdminJournal = () => {
 
           {(role === "admin" || role === "dentist" || role === "receptionist") && (
             <>
-              <Link
-                to="/adminpatients"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminpatients" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-user-plus"></i> Patients
               </Link>
-              <Link
-                to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
+
+              <Link to="/adminschedule" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Calendar size={18} />{" "}
+                {role === "dentist" ? "Appointments" : "Appointments & Billing"}
               </Link>
             </>
           )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
           {role === "admin" && (
             <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              <button onClick={() => setIsSettingOpen(!isSettingopen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
+                <span className="flex items-center gap-2">
+                  <Settings size={18} /> Settings
+                </span>
+                {isSettingopen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
+              </button>
+              {isSettingopen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <IdCard size={18} /> HMO
+                  </Link>
+
+                  <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <FolderKanban size={18} /> OR Range
+                  </Link>
+
+                  <Link to="/adminServices"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <BriefcaseMedical size={18} /> Services
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+          {role === "admin" && (
+            <>
+              <Link to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-eye"></i> Audit Trail
               </Link>
             </>
@@ -377,13 +394,22 @@ const AdminJournal = () => {
               onClick={handlePrintReport}          >
               <Printer size={18} /> Generate Report
             </button>
+
             <button
               className="flex items-center gap-2 bg-[#00458B] font-bold text-white px-4 py-2 rounded-lg"
               onClick={() => navigate("/adminjournaladd")}
             >
               <PlusCircle size={18} /> Add Entry
             </button>
+
+            <button
+              onClick={handleExportExcel}
+              className="bg-green-600 hover:bg-green-700 text-white  font-semibold px-6 py-2 rounded-lg flex items-center gap-2"
+            >
+              <i className="fa fa-file-excel-o"></i> Export to Excel
+            </button>
           </div>
+
         </div>
 
         {/* Filters + Search */}

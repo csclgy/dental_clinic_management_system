@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
-import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
+import { BarChart3, Users, Calendar, Menu, X, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings, FolderKanban, BriefcaseMedical } from "lucide-react";
 
 const AdminInventoryEditItem = () => {
   const { id } = useParams();
@@ -14,6 +14,9 @@ const AdminInventoryEditItem = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [itemStatus, setItemStatus] = useState(""); // new state
+  const [batchNumber, setBatchNumber] = useState(""); //NEW CODE
+  const [isSettingopen, setIsSettingOpen] = useState(false);
+
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
@@ -42,7 +45,7 @@ const AdminInventoryEditItem = () => {
     const fetchItem = async () => {
       try {
         const res = await axios.get(
-          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayitem/${id}`,
+          `http://localhost:3000/auth/displayitem/${id}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -74,24 +77,27 @@ const AdminInventoryEditItem = () => {
       setML(item.inv_ml ?? "");
       setExpiration(item.inv_exp_date || "");
       setItemStatus(item.inv_item_status || "active");
+      setBatchNumber(item.batch_number || ""); // //NEW CODE
     }
   }, [item]);
 
+  //NEW CODE
   // handle update
   const handleUpdate = async (e) => {
     e.preventDefault();
 
     try {
       await axios.put(
-        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/edititem/${id}`,
+        `http://localhost:3000/auth/edititem/${id}`,
         {
           inv_item_name: itemName,
           inv_item_type: itemType,
           inv_quantity: Number(quantity),
           inv_price_per_item: Number(price),
-          inv_ml: itemType === "medicine" ? ml : null,
-          inv_exp_date: itemType === "medicine" ? expiration : null,
+          inv_ml: itemType.toLowerCase() === "medicine" ? (ml ? Number(ml) : null) : null,
+          inv_exp_date: itemType.toLowerCase() === "medicine" ? (expiration || null) : null,
           inv_item_status: itemStatus,
+          batch_number: itemType.toLowerCase() === "medicine" ? batchNumber : null
         },
         {
           headers: {
@@ -138,17 +144,17 @@ const AdminInventoryEditItem = () => {
       {/* Sidebar (desktop) */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
-
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
-          <button
-            onClick={() => setOpenDashboard(!openDashboard)}
+          <button onClick={() => setOpenDashboard(!openDashboard)}
             className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
           >
             <span className="flex items-center gap-2">
               <BarChart3 size={18} /> Dashboard
             </span>
-            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {openDashboard ?
+              <ChevronUp size={16} /> :
+              <ChevronDown size={16} />}
           </button>
 
           {openDashboard && (
@@ -161,14 +167,16 @@ const AdminInventoryEditItem = () => {
                 </Link>
               )}
               {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Appointments
                   Dashboard</Link>
               )}
             </div>
           )}
+
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
+              {/* Ledger Dropdown */}
               <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
@@ -182,48 +190,27 @@ const AdminInventoryEditItem = () => {
 
               {isLedgerOpen && (
                 <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link
-                    to="/admincoa"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Chart of Accounts
                   </Link>
-                  <Link
-                    to="/adminjournal"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Journal Entries
                   </Link>
-                  <Link
-                    to="/adminsubsidiaryreceivable"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Subsidiary
                   </Link>
-                  <Link
-                    to="/admingeneral"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     General Ledger
                   </Link>
-                  <Link
-                    to="/admintrial"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Trial Balance
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <IdCard size={18} /> HMO
-              </Link>
-              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <Settings size={18} /> OR Range
-              </Link>
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <Users size={18} /> Users
               </Link>
             </>
@@ -231,10 +218,7 @@ const AdminInventoryEditItem = () => {
 
           {(role === "admin" || role === "inventory") && (
             <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/admininventory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-archive"></i> Inventory
               </Link>
             </>
@@ -242,38 +226,50 @@ const AdminInventoryEditItem = () => {
 
           {(role === "admin" || role === "dentist" || role === "receptionist") && (
             <>
-              <Link
-                to="/adminpatients"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminpatients" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-user-plus"></i> Patients
               </Link>
-              <Link
-                to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
+
+              <Link to="/adminschedule" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Calendar size={18} />{" "}
+                {role === "dentist" ? "Appointments" : "Appointments & Billing"}
               </Link>
             </>
           )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
           {role === "admin" && (
             <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              <button onClick={() => setIsSettingOpen(!isSettingopen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
+                <span className="flex items-center gap-2">
+                  <Settings size={18} /> Settings
+                </span>
+                {isSettingopen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
+              </button>
+              {isSettingopen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <IdCard size={18} /> HMO
+                  </Link>
+
+                  <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <FolderKanban size={18} /> OR Range
+                  </Link>
+
+                  <Link to="/adminServices"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <BriefcaseMedical size={18} /> Services
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+          {role === "admin" && (
+            <>
+              <Link to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-eye"></i> Audit Trail
               </Link>
             </>
@@ -333,6 +329,21 @@ const AdminInventoryEditItem = () => {
                 required
               />
             </div>
+
+            {/* //NEW CODE */}
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Batch Number
+              </label>
+              <input
+                type="text"
+                value={batchNumber}
+                onChange={(e) => setBatchNumber(e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                required={itemType.toLowerCase() === "medicine"}
+              />
+            </div>
+
 
             {/* Quantity */}
             <div>
@@ -396,8 +407,8 @@ const AdminInventoryEditItem = () => {
               />
             </div>
 
-            {/* Medicine fields */}
-            {itemType === "medicine" && (
+            {/* //NEW CODE */}
+            {itemType.toLowerCase() === "medicine" && (
               <>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
@@ -408,6 +419,7 @@ const AdminInventoryEditItem = () => {
                     value={ml}
                     onChange={(e) => setML(e.target.value)}
                     className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                    required
                   />
                 </div>
                 <div>
@@ -419,10 +431,12 @@ const AdminInventoryEditItem = () => {
                     value={expiration}
                     onChange={(e) => setExpiration(e.target.value)}
                     className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                    required
                   />
                 </div>
               </>
             )}
+
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">Item Status</label>

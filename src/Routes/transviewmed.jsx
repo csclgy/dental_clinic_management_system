@@ -364,7 +364,7 @@ const transviewmed = () => {
     const fetchConsultation = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/viewmyconsultation/${appointId}`, {
+        const res = await fetch(`http://localhost:3000/auth/viewmyconsultation/${appointId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -614,7 +614,7 @@ const transviewmed = () => {
                               <button
                                 onClick={() =>
                                   window.open(
-                                    `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${consultation.downpayment_proof}`,
+                                    `http://localhost:3000/uploads/appointments/${consultation.downpayment_proof}`,
                                     "_blank"
                                   )
                                 }
@@ -658,7 +658,7 @@ const transviewmed = () => {
                                 <button
                                   onClick={() =>
                                     window.open(
-                                      `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${cancelInfo.refund_photo}`,
+                                      `http://localhost:3000/uploads/appointments/${cancelInfo.refund_photo}`,
                                       "_blank"
                                     )
                                   }

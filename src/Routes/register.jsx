@@ -7,20 +7,32 @@ const Register = () => {
   const navigate = useNavigate();
   const { registerData, setRegisterData } = useRegister();
   const [error, setError] = useState("");
-  const [agree, setAgree] = useState(false);
-  const [showAlert, setShowAlert] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState("");
+  const [passwordMatch, setPasswordMatch] = useState(null);
 
   // Handles input changes for password and confirm password
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setRegisterData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    setRegisterData((prevData) => {
+      const updatedData = { ...prevData, [name]: value };
+
+      // ✅ Check for real-time password match
+      if (name === "user_password" || name === "confirm_password") {
+        if (updatedData.user_password && updatedData.confirm_password) {
+          setPasswordMatch(
+            updatedData.user_password === updatedData.confirm_password
+          );
+        } else {
+          setPasswordMatch(null); // no comparison yet
+        }
+      }
+
+      return updatedData;
+    });
   };
+
   const checkPasswordStrength = (password) => {
     let strength = "Weak";
 
@@ -69,11 +81,6 @@ const Register = () => {
       return;
     }
 
-    if (!agree) {
-      setShowAlert(true);
-      return;
-    }
-
     // ✅ If validation passes, move to next page
     navigate("/register2");
   };
@@ -102,7 +109,7 @@ const Register = () => {
 
         {/* Username */}
         <div className="mb-4 text-left">
-          <label className="block text-[#00458b] font-semibold mb-1">Username: <span style={{color:"red"}}>*</span></label>
+          <label className="block text-[#00458b] font-semibold mb-1">Username: <span style={{ color: "red" }}>*</span></label>
           <input
             type="text"
             value={registerData.user_name || ""}
@@ -116,7 +123,7 @@ const Register = () => {
 
         {/* Password */}
         <div className="mb-4 text-left">
-          <label className="block text-[#00458b] font-semibold mb-1">Password: <span style={{color:"red"}}>*</span></label>
+          <label className="block text-[#00458b] font-semibold mb-1">Password: <span style={{ color: "red" }}>*</span></label>
 
           {/* Input + Eye Icon */}
           <div className="relative">
@@ -147,21 +154,21 @@ const Register = () => {
               <div className="h-2 w-full bg-gray-200 rounded-full mb-2 mt-2">
                 <div
                   className={`h-2 rounded-full transition-all duration-500 ${passwordStrength === "Weak"
-                      ? "bg-red-500 w-1/3"
-                      : passwordStrength === "Medium"
-                        ? "bg-yellow-500 w-2/3"
-                        : passwordStrength === "Strong"
-                          ? "bg-green-500 w-full"
-                          : "w-0"
+                    ? "bg-red-500 w-1/3"
+                    : passwordStrength === "Medium"
+                      ? "bg-yellow-500 w-2/3"
+                      : passwordStrength === "Strong"
+                        ? "bg-green-500 w-full"
+                        : "w-0"
                     }`}
                 ></div>
               </div>
               <p
                 className={`text-sm font-medium ${passwordStrength === "Weak"
-                    ? "text-red-500"
-                    : passwordStrength === "Medium"
-                      ? "text-yellow-500"
-                      : "text-green-600"
+                  ? "text-red-500"
+                  : passwordStrength === "Medium"
+                    ? "text-yellow-500"
+                    : "text-green-600"
                   }`}
               >
                 Password strength: {passwordStrength}
@@ -180,7 +187,7 @@ const Register = () => {
 
         {/* Confirm Password */}
         <div className="mb-4 text-left">
-          <label className="block text-[#00458b] font-semibold mb-1">Confirm Password: <span style={{color:"red"}}>*</span></label>
+          <label className="block text-[#00458b] font-semibold mb-1">Confirm Password: <span style={{ color: "red" }}>*</span></label>
           <div className="relative">
             <input
               type={showConfirmPassword ? "text" : "password"}
@@ -199,11 +206,20 @@ const Register = () => {
               {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
           </div>
+          {passwordMatch !== null && (
+            <p
+              className={`text-sm mt-1 ${passwordMatch ? "text-green-600" : "text-red-500"
+                }`}
+            >
+              {passwordMatch ? "✅ Passwords match" : "❌ Passwords do not match"}
+            </p>
+          )}
+
         </div>
 
         {/* Email */}
         <div className="mb-4 text-left">
-          <label className="block text-[#00458b] font-semibold mb-1">Email: <span style={{color:"red"}}>*</span></label>
+          <label className="block text-[#00458b] font-semibold mb-1">Email: <span style={{ color: "red" }}>*</span></label>
           <input
             type="email"
             value={registerData.email || ""}
@@ -218,7 +234,7 @@ const Register = () => {
         {/* Contact No */}
         <div className="mb-4 text-left">
           <label className="block text-[#00458b] font-semibold mb-1">
-            Contact Number: <span style={{color:"red"}}>*</span>
+            Contact Number: <span style={{ color: "red" }}>*</span>
           </label>
           <input
             type="tel"
@@ -234,28 +250,6 @@ const Register = () => {
           />
         </div>
 
-        {/* Agreement Checkbox */}
-        <div className="flex items-center text-left mb-4">
-          <input
-            type="checkbox"
-            checked={agree}
-            onChange={() => setAgree(!agree)}
-            className="mr-2 w-4 h-4 accent-[#00c3b8]"
-          />
-          <label className="text-sm text-[#00458b]">
-            I have read and fully understand the{" "}
-            <span className="text-[#00c3b8] font-semibold">
-              <a
-                href="https://privacy.gov.ph/data-privacy-act/"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Data Privacy Policy
-              </a>
-            </span>.
-          </label>
-        </div>
-
         {/* Error Message */}
         {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
@@ -268,31 +262,18 @@ const Register = () => {
             Cancel
           </button>
           <button
-            className="bg-[#00c3b8] text-white font-semibold px-6 py-2 rounded-lg w-full sm:w-1/2"
+            className={`${passwordMatch === false
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#00c3b8] hover:bg-[#00a79d]"
+              } text-white font-semibold px-6 py-2 rounded-lg w-full sm:w-1/2`}
             onClick={handleNext}
+            disabled={passwordMatch === false}
           >
             Next
           </button>
+
         </div>
       </div>
-
-      {/* Custom Alert Modal */}
-      {showAlert && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-lg p-6 w-80 text-center">
-            <h3 className="text-lg font-bold text-[#00458b] mb-2">⚠️ Agreement Required</h3>
-            <p className="text-sm text-gray-700 mb-4">
-              You must agree to the Data Privacy Policy before proceeding.
-            </p>
-            <button
-              onClick={() => setShowAlert(false)}
-              className="bg-[#00c3b8] text-white px-4 py-2 rounded-lg"
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
       <br></br>
     </div>
   );

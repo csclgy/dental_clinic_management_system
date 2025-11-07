@@ -21,7 +21,7 @@ const Notification = () => {
     if (!token) return;
 
     axios
-      .get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/notificaitions", {
+      .get("http://localhost:3000/auth/notificaitions", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setNotifications(res.data))

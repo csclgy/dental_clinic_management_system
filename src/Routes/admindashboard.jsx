@@ -11,7 +11,9 @@ import {
   Menu,
   IdCard,
   Printer,
-  Settings
+  Settings,
+  FolderKanban,
+  BriefcaseMedical
 } from "lucide-react";
 import {
   PieChart,
@@ -45,26 +47,29 @@ function AdminDashboard() {
   const [totalCredit, setTotalCredit] = useState(0);
   const [netBalance, setNetBalance] = useState(0);
   const role = localStorage.getItem("role");
+  const [isSettingopen, setIsSettingOpen] = useState(false);
+
 
 
   const COLORS = ["#01D5C4", "#00458B", "#A3A3A3"];
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   // Fetch backend data
+  // //NEW CODE
   useEffect(() => {
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/count")
-      .then(res => setAppointmentsCount(res.data))
-      .catch(err => console.error("Error fetching appointments:", err));
+    axios.get(`http://localhost:3000/auth/appointments/count?year=${year}`)
+      .then(res => setAppointmentsCount(res.data.count))
+      .catch(err => console.error(err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/count")
-      .then(res => setPatientsCount(res.data))
-      .catch(err => console.error("Error fetching patients:", err));
+    axios.get(`http://localhost:3000/auth/patients/count?year=${year}`)
+      .then(res => setPatientsCount(res.data.total)) // if backend sends total
+      .catch(err => console.error(err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/demographics")
+    axios.get("http://localhost:3000/auth/patients/demographics")
       .then(res => setPatientDemographics(res.data))
       .catch(err => console.error("Error fetching demographics:", err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/revenue")
+    axios.get("http://localhost:3000/auth/revenue")
       .then(res => {
         setRevenueData(res.data);
         setFilteredRevenue(res.data);
@@ -73,7 +78,7 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/trial")
+    axios.get("http://localhost:3000/auth/trial")
       .then(res => {
         const { data, totalDebit, totalCredit } = res.data;
         setLedgerData(data);
@@ -84,25 +89,12 @@ function AdminDashboard() {
       .catch(err => console.error("Error fetching trial balance:", err));
   }, []);
 
-
-
-  // Filter revenue by month/year
+  //NEW CODE
+  // Filter revenue by year only
   useEffect(() => {
-    const startIndex = months.indexOf(startMonth);
-    const endIndex = months.indexOf(endMonth);
-
-    const filtered = revenueData.filter((item) => {
-      const monthIndex = months.indexOf(item.month);
-      return (
-        item.year === parseInt(year) &&
-        monthIndex >= startIndex &&
-        monthIndex <= endIndex
-      );
-    });
-
+    const filtered = revenueData.filter((item) => item.year === parseInt(year));
     setFilteredRevenue(filtered);
-  }, [startMonth, endMonth, year, revenueData]);
-
+  }, [year, revenueData]);
 
   const ledgerSummaryData = [
     { name: "Total Debit", value: totalDebit },
@@ -196,26 +188,29 @@ function AdminDashboard() {
         <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
-          <button
-            onClick={() => setOpenDashboard(!openDashboard)}
+          <button onClick={() => setOpenDashboard(!openDashboard)}
             className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
           >
             <span className="flex items-center gap-2">
               <BarChart3 size={18} /> Dashboard
             </span>
-            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {openDashboard ?
+              <ChevronUp size={16} /> :
+              <ChevronDown size={16} />}
           </button>
 
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
               {role === "admin" && (
-                <Link to="/admindashboard" className="bg-white text-[#00458B] hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+                <Link to="/admindashboard" className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Admin Dashboard</Link>
               )}
               {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
               )}
               {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
+                <Link to="/receptionistdashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Appointments
+                  Dashboard</Link>
               )}
             </div>
           )}
@@ -237,48 +232,27 @@ function AdminDashboard() {
 
               {isLedgerOpen && (
                 <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link
-                    to="/admincoa"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Chart of Accounts
                   </Link>
-                  <Link
-                    to="/adminjournal"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Journal Entries
                   </Link>
-                  <Link
-                    to="/adminsubsidiaryreceivable"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Subsidiary
                   </Link>
-                  <Link
-                    to="/admingeneral"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     General Ledger
                   </Link>
-                  <Link
-                    to="/admintrial"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Trial Balance
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <IdCard size={18} /> HMO
-              </Link>
-              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <Settings size={18} /> OR Range
-              </Link>
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <Users size={18} /> Users
               </Link>
             </>
@@ -286,10 +260,7 @@ function AdminDashboard() {
 
           {(role === "admin" || role === "inventory") && (
             <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/admininventory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-archive"></i> Inventory
               </Link>
             </>
@@ -297,38 +268,50 @@ function AdminDashboard() {
 
           {(role === "admin" || role === "dentist" || role === "receptionist") && (
             <>
-              <Link
-                to="/adminpatients"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminpatients" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-user-plus"></i> Patients
               </Link>
-              <Link
-                to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
+
+              <Link to="/adminschedule" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Calendar size={18} />{" "}
+                {role === "dentist" ? "Appointments" : "Appointments & Billing"}
               </Link>
             </>
           )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
           {role === "admin" && (
             <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              <button onClick={() => setIsSettingOpen(!isSettingopen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
+                <span className="flex items-center gap-2">
+                  <Settings size={18} /> Settings
+                </span>
+                {isSettingopen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
+              </button>
+              {isSettingopen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <IdCard size={18} /> HMO
+                  </Link>
+
+                  <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <FolderKanban size={18} /> OR Range
+                  </Link>
+
+                  <Link to="/adminServices"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <BriefcaseMedical size={18} /> Services
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+          {role === "admin" && (
+            <>
+              <Link to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-eye"></i> Audit Trail
               </Link>
             </>
@@ -532,7 +515,7 @@ function AdminDashboard() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-
+          {/* //NEW CODE */}
           {/* Revenue Trends */}
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
             <div className="flex items-center justify-between mb-4">
@@ -540,20 +523,15 @@ function AdminDashboard() {
                 <PhilippinePeso size={20} /> Revenue Trends
               </h2>
               <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <select value={startMonth} onChange={(e) => setStartMonth(e.target.value)} className="border rounded-lg px-2 py-1">
-                  {months.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <span className="text-gray-600">to</span>
-                <select value={endMonth} onChange={(e) => setEndMonth(e.target.value)} className="border rounded-lg px-2 py-1">
-                  {months.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
+                <label className="text-gray-600 font-medium">Year:</label>
                 <input
                   type="number"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="border rounded-lg px-2 py-1 w-16 sm:w-20"
+                  className="border rounded-lg px-2 py-1 w-20 sm:w-24"
                 />
               </div>
+
             </div>
 
             <ResponsiveContainer width="100%" height={250}>

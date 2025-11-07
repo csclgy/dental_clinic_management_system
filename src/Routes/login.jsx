@@ -10,7 +10,7 @@ const Login = () => {
   const handleLogin = async () => {
     setError(""); // clear old error
     try {
-      const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/login", {
+      const res = await fetch("http://localhost:3000/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_name, user_password }),
@@ -36,7 +36,7 @@ const Login = () => {
         } else if (data.user.role === "dentist") {
           window.location.href = "/receptionistdashboard";
         } else if (data.user.role === "inventory") {
-          window.location.href = "/inventorydashboard";
+          window.location.href = "/admininventory";
         } else if (data.user.role === "receptionist") {
           window.location.href = "/receptionistdashboard";
         } else {

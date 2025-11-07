@@ -1,8 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { Calendar, Users, BarChart3, Menu, X, Clock, XCircle, CheckCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import {
+  Calendar,
+  Users,
+  BarChart3,
+  Menu,
+  X,
+  Clock,
+  XCircle,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  PhilippinePeso,
+  IdCard,
+  Settings,
+  FolderKanban,
+  BriefcaseMedical
+} from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 function ReceptionistDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -10,74 +37,91 @@ function ReceptionistDashboard() {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const role = localStorage.getItem("role");
 
-  // Stat cards dummy data
-  // Dashboard states — ready for backend connection
+  // Dashboard States
   const [totalAppointments, setTotalAppointments] = useState(0);
   const [patientsCount, setPatientsCount] = useState(0);
   const [pendingAppointments, setPendingAppointments] = useState(0);
   const [cancelledAppointments, setCancelledAppointments] = useState(0);
   const [completedAppointments, setCompletedAppointments] = useState(0);
+  const [isSettingopen, setIsSettingOpen] = useState(false);
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+  // Chart filter controls
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const [startMonth, setStartMonth] = useState("Jan");
   const [endMonth, setEndMonth] = useState("Dec");
   const [year, setYear] = useState(new Date().getFullYear());
 
   const [patientDemographics, setPatientDemographics] = useState([]);
   const [appointmentTrends, setAppointmentTrends] = useState([]);
-
-  const [todayAppointments, setTodayAppointments] = useState([]); // table data
+  const [todayAppointments, setTodayAppointments] = useState([]);
 
   const COLORS = ["#01D5C4", "#00458B", "#A3A3A3"];
 
-
+  // ✅ Include year in API call
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/receptionistdashboard");
+        const res = await axios.get(
+          `http://localhost:3000/auth/receptionistdashboard?year=${year}`
+        );
         const data = res.data;
 
         console.log("📊 Dashboard Data:", data);
 
-        // ✅ Assign backend data to React states properly
         setTotalAppointments(data.totalAppointments);
         setPatientsCount(data.patientsCount);
         setPendingAppointments(data.pendingAppointments);
         setCancelledAppointments(data.cancelledAppointments);
         setCompletedAppointments(data.completedAppointments);
-
-        // ✅ Charts
         setPatientDemographics(data.patientDemographics || []);
         setAppointmentTrends(data.appointmentTrends || []);
-
-        // ✅ Today's appointments
         setTodayAppointments(data.todayAppointments || []);
-
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [year]);
 
+  // ✅ Filter trends by start/end month (before return)
+  const filteredTrends = appointmentTrends.filter((item) => {
+    const startIndex = months.indexOf(startMonth);
+    const endIndex = months.indexOf(endMonth);
+    const itemIndex = months.indexOf(item.month);
+    return itemIndex >= startIndex && itemIndex <= endIndex;
+  });
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-
       {/* Sidebar */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
         <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
-          <button
-            onClick={() => setOpenDashboard(!openDashboard)}
+          <button onClick={() => setOpenDashboard(!openDashboard)}
             className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
           >
             <span className="flex items-center gap-2">
               <BarChart3 size={18} /> Dashboard
             </span>
-            {openDashboard ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {openDashboard ?
+              <ChevronUp size={16} /> :
+              <ChevronDown size={16} />}
           </button>
 
           {openDashboard && (
@@ -86,10 +130,12 @@ function ReceptionistDashboard() {
                 <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
               )}
               {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
+                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard
+                </Link>
               )}
               {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="bg-white text-[#00458B] hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
+                <Link to="/receptionistdashboard" className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]">Receptionist
+                  Dashboard</Link>
               )}
             </div>
           )}
@@ -111,48 +157,27 @@ function ReceptionistDashboard() {
 
               {isLedgerOpen && (
                 <div className="ml-6 flex flex-col gap-1 text-sm">
-                  <Link
-                    to="/admincoa"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admincoa" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Chart of Accounts
                   </Link>
-                  <Link
-                    to="/adminjournal"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminjournal"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Journal Entries
                   </Link>
-                  <Link
-                    to="/adminsubsidiaryreceivable"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/adminsubsidiaryreceivable"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Subsidiary
                   </Link>
-                  <Link
-                    to="/admingeneral"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admingeneral"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     General Ledger
                   </Link>
-                  <Link
-                    to="/admintrial"
-                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]"
-                  >
+                  <Link to="/admintrial" className="flex items-center gap-2 p-2 rounded-lg hover:bg-[white] hover:text-[#00458B]">
                     Trial Balance
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <IdCard size={18} /> HMO
-              </Link>
-              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
-                <Settings size={18} /> OR Range
-              </Link>
-              <Link
-                to="/adminusers"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminusers" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <Users size={18} /> Users
               </Link>
             </>
@@ -160,10 +185,7 @@ function ReceptionistDashboard() {
 
           {(role === "admin" || role === "inventory") && (
             <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/admininventory" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-archive"></i> Inventory
               </Link>
             </>
@@ -171,38 +193,50 @@ function ReceptionistDashboard() {
 
           {(role === "admin" || role === "dentist" || role === "receptionist") && (
             <>
-              <Link
-                to="/adminpatients"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
+              <Link to="/adminpatients" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-user-plus"></i> Patients
               </Link>
-              <Link
-                to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
+
+              <Link to="/adminschedule" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                <Calendar size={18} />{" "}
+                {role === "dentist" ? "Appointments" : "Appointments & Billing"}
               </Link>
             </>
           )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
           {role === "admin" && (
             <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              <button onClick={() => setIsSettingOpen(!isSettingopen)}
+                className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
+                <span className="flex items-center gap-2">
+                  <Settings size={18} /> Settings
+                </span>
+                {isSettingopen ?
+                  <ChevronUp size={16} /> :
+                  <ChevronDown size={16} />}
+              </button>
+              {isSettingopen && (
+                <div className="ml-6 flex flex-col gap-1 text-sm">
+                  <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <IdCard size={18} /> HMO
+                  </Link>
+
+                  <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <FolderKanban size={18} /> OR Range
+                  </Link>
+
+                  <Link to="/adminServices"
+                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                    <BriefcaseMedical size={18} /> Services
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+          {role === "admin" && (
+            <>
+              <Link to="/adminaudit"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                 <i className="fa fa-eye"></i> Audit Trail
               </Link>
             </>
@@ -212,13 +246,17 @@ function ReceptionistDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-
         {/* Mobile Menu Button */}
-        <button onClick={() => setSidebarOpen(true)} className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
+        >
           <Menu size={24} /> Menu
         </button>
 
-        <h1 className="text-2xl font-bold text-[#00458B] mb-6">Receptionist Dashboard</h1>
+        <h1 className="text-2xl font-bold text-[#00458B] mb-6">
+          Receptionist Dashboard
+        </h1>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
@@ -309,16 +347,16 @@ function ReceptionistDashboard() {
                 <select value={endMonth} onChange={(e) => setEndMonth(e.target.value)} className="border rounded-lg px-2 py-1">
                   {months.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
-                <input
+                {/* <input
                   type="number"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
                   className="border rounded-lg px-2 py-1 w-16 sm:w-20"
-                />
+                /> */}
               </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={appointmentTrends}>
+              <BarChart data={filteredTrends}>
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />
