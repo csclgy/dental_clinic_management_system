@@ -348,6 +348,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
       p_email,
       p_contact_no,
       p_blood_type,
+      relation,
     } = req.body;
 
     // ✅ Handle downpayment proof URL (from S3)
@@ -367,8 +368,8 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
       (user_name, procedure_type, pref_date, pref_time, payment_method, downpayment_proof,
        attending_dentist, or_num, payment_status, total_service_charged, total_charged, appointment_status,
        p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
-       p_home_address, p_email, p_contact_no, p_blood_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       p_home_address, p_email, p_contact_no, p_blood_type, relation)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         req.user.user_name,
         procedure_type,
@@ -392,6 +393,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
         p_email,
         p_contact_no,
         p_blood_type,
+        relation || null,
       ]
     );
 
@@ -481,7 +483,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
           <p>Thank you for choosing <strong>Arciaga-Juntilla TMJ Ortho Dental Clinic</strong>!</p>
 
           <div style="margin-top: 30px; text-align: center;">
-            <a href="https://dental-clinic-management-system-frontend-wipu.onrender.com/" 
+            <a href="http://localhost:5173/" 
               style="background-color: #01D5C4; color: white; text-decoration: none; padding: 10px 20px; border-radius: 5px; font-weight: bold;">
               View Your Appointment
             </a>
@@ -508,6 +510,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
 
 router.get("/users/:id", async (req, res) => {
   try {
@@ -2598,17 +2601,19 @@ router.get("/dentists", async (req, res) => {
 //################################ INVENTORY MANAGEMENT ################################
 // for admininventoryadd.jsx (ADD NEW ITEM)
 router.post('/additem', async (req, res) => {
-  const { inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, supplier_id } = req.body;
+  const { inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, supplier_id, batch_number } = req.body;
 
+  // Basic validation
   if (!inv_item_name || !inv_quantity || !inv_item_type) {
     return res.status(400).json({ message: "Item Name, Quantity, and Item Type are required" });
   }
 
-  if (inv_item_type === "medicine" && (!inv_ml || !inv_exp_date)) {
+  if (inv_item_type.toLowerCase() === "medicine" && (!inv_ml || !inv_exp_date)) {
     return res.status(400).json({ message: "Medicine requires Amount of ML and Expiration Date" });
   }
 
   try {
+    // Verify JWT token
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
     if (!token) return res.status(401).json({ message: "No token provided" });
@@ -2618,21 +2623,27 @@ router.post('/additem', async (req, res) => {
     const db = await connectToDatabase();
 
     // Check if item already exists
-    const [rows] = await db.query(
+    const [existingRows] = await db.query(
       'SELECT * FROM inventory WHERE inv_item_name = ?',
       [inv_item_name]
     );
-    if (rows.length > 0) {
+    if (existingRows.length > 0) {
       return res.status(409).json({ message: "Item already exists" });
     }
 
     // Default inv_status: High if quantity > 50, Low otherwise
-    let status = inv_quantity > 50 ? "High" : "Low";
+    const status = inv_quantity > 50 ? "High" : "Low";
 
+    if (!batch_number) {
+  return res.status(400).json({ message: "Batch Number is required" });
+}
+
+
+    // Insert into inventory
     await db.query(
       `INSERT INTO inventory 
-    (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status, inv_item_status, supplier_id, created_by) 
-   VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+        (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status, inv_item_status, supplier_id, created_by, batch_number, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, NOW())`,
       [
         inv_item_type,
         inv_item_name,
@@ -2642,11 +2653,12 @@ router.post('/additem', async (req, res) => {
         inv_exp_date || null,
         status,
         supplier_id,
-        decoded.user_id // ← this is the key change
+        decoded.user_id,
+        batch_number
       ]
     );
 
-    // --- Send notification to all admins ---
+    // Notify all admins
     const [adminRows] = await db.query(
       `SELECT user_id FROM users WHERE role = 'admin'`
     );
@@ -2654,27 +2666,19 @@ router.post('/additem', async (req, res) => {
     for (const admin of adminRows) {
       await db.query(
         `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
-        VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
+         VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
         [
           admin.user_id,
           "New Inventory Item Added",
           `A new inventory item "${inv_item_name}" has been added by staff and is pending approval.`,
-          "inventory"
         ]
       );
     }
 
-    // --- Notify the staff who added the item ---
+    // Notify staff who added the item
     await db.query(
-      `INSERT INTO notifications (
-        user_id, 
-        ntf_subject, 
-        ntf_description, 
-        ntf_created_at, 
-        ntf_expires_at, 
-        category
-      )
-      VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
+       VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
       [
         decoded.user_id,
         "Item Submitted for Approval",
@@ -2685,14 +2689,15 @@ router.post('/additem', async (req, res) => {
     // Insert into audit trail
     const action = "Add New Inventory Item";
     const auditDescription = `Added new inventory item: ${inv_item_name} (${inv_item_type})`;
-    const created_at = new Date();
-
     await db.query(
-      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
-      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, NOW())",
+      [decoded.user_name, decoded.role, action, auditDescription]
     );
 
-    return res.status(201).json({ message: "Item has been created successfully and is currently under review by the Admin." });
+    return res.status(201).json({
+      message: "Item has been created successfully and is currently under review by the Admin.",
+      batch_number: batch_number, // Optional: send batch number to frontend
+    });
   } catch (err) {
     console.error("Add Item error:", err);
     return res.status(500).json({ message: "Internal server error" });
@@ -2898,15 +2903,29 @@ router.get("/viewitem/:id", async (req, res) => {
 
 // for admininventory.jsx (DISPLAY ALL ITEMS IN TABLE)
 router.get('/inventory', async (req, res) => {
+  const { year } = req.query; // optional query param: ?year=2025
   try {
     const db = await connectToDatabase();
-    const [rows] = await db.query(`SELECT * FROM inventory WHERE inv_item_status = 'active' OR inv_item_status = 'inactive'`);
+
+    let query = `
+      SELECT *
+      FROM inventory
+      WHERE inv_item_status = 'active' OR inv_item_status = 'inactive'
+    `;
+    const params = [];
+
+    if (year) {
+      query += ` AND YEAR(created_at) = ?`;
+      params.push(year);
+    }
+
+    const [rows] = await db.query(query, params);
     res.json(rows);
   } catch (err) {
     console.error("Fetch inventory error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
-});
+}); 
 
 // get pending items with supplier name
 router.get("/pendingitems", async (req, res) => {
@@ -3580,6 +3599,49 @@ router.get("/subaccs/:id", async (req, res) => {
     return res.status(500).json({ message: "Internal server error" });
   }
 });
+
+router.put("/coa/:id", async (req, res) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { id } = req.params;
+    const { account_name, account_type, status } = req.body;
+
+    const db = await connectToDatabase();
+
+    // ✅ 1️⃣ Update the Chart of Account record
+    const [result] = await db.query(
+      "UPDATE chartofaccounts SET account_name = ?, account_type = ?, status = ? WHERE account_id = ?",
+      [account_name, account_type, status, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    // ✅ 2️⃣ Insert into audit trail
+    const action = "Update COA";
+    const description = `Updated COA: ${account_name} (${account_type})`;
+    const created_at = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, action, description, created_at]
+    );
+
+    // ✅ 3️⃣ Return success response
+    return res.json({ message: "Account updated successfully." });
+  } catch (err) {
+    console.error("Update COA error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 // ✅ Inactivate a subaccount by ID (soft delete)
 router.put("/coa/sub/:id", async (req, res) => {
@@ -5261,29 +5323,160 @@ router.get("/hmo_service/:service_id", async (req, res) => {
   }
 });
 
+//NEW CODE
+router.get("/service", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query("SELECT * FROM service");
+    res.json(rows); 
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch services" });
+  }
+});
 
-// //NEW (SPECIFC HMO)
-// router.get("/hmo/:id", async (req, res) => {
-//   try {
-//     const { hmo_id } = req.params;
-//     const db = await connectToDatabase();
+router.get("/service/:service_id", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const { service_id } = req.params;
 
-//     const [result] = await db.query(
-//       "SELECT * FROM hmo WHERE hmo_id = ?",
-//       [hmo_id]
-//     );
 
-//     if (result.length === 0) {
-//       return res.status(404).json({ message: "HMO not found" });
-//     }
+    const [rows] = await db.query("SELECT * FROM service WHERE service_id = ?", [service_id]);
 
-//     res.json(result[0]);
-//   } catch (err) {
-//     console.error("Fetch COA error:", err);
-//     return res.status(500).json({ message: "Internal server error" });
-//   }
-// });
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Service not found" });
+    }
+    res.json(rows[0]); 
+  } catch (err) {
+    console.error("Error fetching service:", err);
+    res.status(500).json({ error: "Failed to fetch service" });
+  }
+});
 
+router.post("/serviceadd", authenticateToken, async (req, res) => {
+  const { service_name, status } = req.body;
+
+  if (!service_name || !status) {
+    return res.status(400).json({ message: "All fields required" });
+  }
+
+  try {
+    const db = await connectToDatabase();
+
+    //  Insert into service
+    await db.query(
+      "INSERT INTO service (service_name, status) VALUES (?, ?)",
+      [service_name, status]
+    );
+
+    //  Get logged-in user info
+    const user_name = req.user.user_name; // from auth middleware
+    const role = req.user.role;
+
+    //  Insert into audit_trail
+    const action = "Add COA";
+    const audit_description = `Added new Service: ${service_name}`;
+
+    const created_at = new Date(); // current date and time
+    await db.query(
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
+      [user_name, role, action, audit_description, created_at]
+    );
+
+    return res.status(201).json({ message: "Account saved successfully!" });
+  } catch (err) {
+    console.error("COA insert error:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.put("/service/:service_id", async (req, res) => {
+  const db = await connectToDatabase();
+  const { service_id } = req.params;
+  const { service_name, status } = req.body;
+
+  try {
+    // Check if service exists
+    const [existing] = await db.query("SELECT * FROM service WHERE service_id = ?", [service_id]);
+    if (existing.length === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    // Update record
+    await db.query(
+      "UPDATE service SET service_name = ?, status = ? WHERE service_id = ?",
+      [service_name, status, service_id]
+    );
+
+    res.json({ message: "Service updated successfully!" });
+  } catch (err) {
+    console.error("Error updating service:", err);
+    res.status(500).json({ message: "Failed to update service" });
+  } finally {
+    db.end();
+  }
+});
+
+router.delete("/service/:ServiceId", async (req, res) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) return res.status(401).json({ message: "No token provided" });
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const { ServiceId } = req.params;
+    const db = await connectToDatabase();
+
+    // ✅ Fetch existing account for audit trail details
+    const [existing] = await db.query(
+      "SELECT service_name FROM service WHERE service_id = ?",
+      [ServiceId]
+    );
+
+    if (existing.length === 0) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    const ServiceName = existing[0].service_name;
+
+    //  Instead DELETE, update the status
+    const [result] = await db.query(
+      "UPDATE service SET status = 'Inactive' WHERE service_id = ?",
+      [ServiceId]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "HMO not found" });
+    }
+
+    // ✅ Insert audit trail record
+    const at_action = "Deactivated Service";
+    const at_description = `User "${decoded.user_name}" marked the Service "${ServiceName}" as Inactive.`;
+    const created_at = new Date();
+
+    await db.query(
+      `INSERT INTO audittrail (user_name, role, at_action, at_description, created_at)
+      VALUES (?, ?, ?, ?, ?)`,
+      [decoded.user_name, decoded.role, at_action, at_description, created_at]
+    );
+
+    return res.json({ message: "Account marked as inactive successfully" });
+  } catch (err) {
+    console.error("Error updating COA status:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+});
+// GET active services only
+router.get("/services/active", async (req, res) => {
+  const db = await connectToDatabase();
+  try {
+    const [rows] = await db.query("SELECT service_name FROM service WHERE status = 'active'");
+    res.json(rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch active services" });
+  }
+});
+//END OF NEW CODE
 
 // NEW HMO MAIN
 router.get("/hmo1/:hmo_id", async (req, res) => {
@@ -5408,10 +5601,15 @@ router.put("/hmo_service/:service_id", async (req, res) => {
 // ADMIN DASHBOARDS
 // Count Appointments
 router.get("/appointments/count", async (req, res) => {
+  const { year } = req.query;
   const db = await connectToDatabase();
   try {
-    const [rows] = await db.query("SELECT COUNT(*) AS count FROM appointment");
-    res.json(rows[0].count);
+    const [rows] = await db.query(`
+      SELECT COUNT(*) AS count
+      FROM appointment
+      WHERE YEAR(pref_date) = ?
+    `, [year || new Date().getFullYear()]);
+    res.json({ count: rows[0].count });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch appointments count" });
@@ -5422,35 +5620,46 @@ router.get("/appointments/count", async (req, res) => {
 router.get("/patients/count", async (req, res) => {
   const db = await connectToDatabase();
   try {
-    const [rows] = await db.query("SELECT COUNT(*) AS count FROM users WHERE role = 'patient'");
-    res.json(rows[0].count);
+    const [rows] = await db.query(`
+      SELECT COUNT(DISTINCT appoint_id) AS total 
+      FROM appointment
+      WHERE YEAR(pref_date) = YEAR(CURDATE())
+    `);
+    res.json({ total: rows[0].total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch patients count" });
   }
 });
 
+
 // routes/dashboard.js
 router.get("/patients/demographics", async (req, res) => {
   const db = await connectToDatabase();
+  const { year } = req.query; // optional: use current year if not provided
+  const filterYear = year || new Date().getFullYear();
+
   try {
     const [rows] = await db.query(`
       SELECT 
         CASE 
-          WHEN age < 18 THEN 'Children'
-          WHEN age BETWEEN 18 AND 59 THEN 'Adults'
+          WHEN p_age < 18 THEN 'Children'
+          WHEN p_age BETWEEN 18 AND 59 THEN 'Adults'
           ELSE 'Seniors'
-        END as category,
-        COUNT(*) as value
-      FROM users
+        END AS category,
+        COUNT(DISTINCT appoint_id) AS value
+      FROM appointment
+      WHERE YEAR(pref_date) = ?
       GROUP BY category;
-    `);
+    `, [filterYear]);
+
     res.json(rows);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch demographics" });
   }
 });
+
 
 // ✅ Patient demographics route
 router.get("/receptionistpatientdemo", async (req, res) => {
@@ -5474,34 +5683,46 @@ router.get("/receptionistpatientdemo", async (req, res) => {
   }
 });
 
-
 router.get("/receptionistdashboard", async (req, res) => {
   try {
     const db = await connectToDatabase();
 
-    // --- TOTAL COUNTS ---
+    // --- TOTAL COUNTS (only current year) ---
     const [[totalAppointments]] = await db.query(`
-      SELECT COUNT(*) AS total FROM appointment
+      SELECT COUNT(*) AS total 
+      FROM appointment
+      WHERE YEAR(pref_date) = YEAR(CURDATE())
     `);
 
-    // Count distinct users from appointment table (since no patient table)
+    // Count distinct users from appointment table (current year only)
     const [[patientsCount]] = await db.query(`
-      SELECT COUNT(DISTINCT user_name) AS total FROM appointment
+      SELECT COUNT(DISTINCT user_name) AS total 
+      FROM appointment
+      WHERE YEAR(pref_date) = YEAR(CURDATE())
     `);
 
     const [[pendingAppointments]] = await db.query(`
-      SELECT COUNT(*) AS total FROM appointment WHERE appointment_status = 'pending'
+      SELECT COUNT(*) AS total 
+      FROM appointment 
+      WHERE appointment_status = 'pending' 
+      AND YEAR(pref_date) = YEAR(CURDATE())
     `);
 
     const [[cancelledAppointments]] = await db.query(`
-      SELECT COUNT(*) AS total FROM appointment WHERE appointment_status = 'cancelled'
+      SELECT COUNT(*) AS total 
+      FROM appointment 
+      WHERE appointment_status = 'cancelled' 
+      AND YEAR(pref_date) = YEAR(CURDATE())
     `);
 
     const [[completedAppointments]] = await db.query(`
-      SELECT COUNT(*) AS total FROM appointment WHERE appointment_status = 'done'
+      SELECT COUNT(*) AS total 
+      FROM appointment 
+      WHERE appointment_status = 'done' 
+      AND YEAR(pref_date) = YEAR(CURDATE())
     `);
 
-    // --- TODAY'S APPOINTMENTS ---
+    // --- TODAY'S APPOINTMENTS (no change) ---
     const [todayAppointments] = await db.query(`
       SELECT appoint_id, p_fname, p_lname, procedure_type, pref_time, appointment_status
       FROM appointment
@@ -5509,7 +5730,7 @@ router.get("/receptionistdashboard", async (req, res) => {
       ORDER BY pref_time ASC
     `);
 
-    // --- DEMOGRAPHICS (based on p_age from appointment table) ---
+    // --- DEMOGRAPHICS (only current year) ---
     const [demoRows] = await db.query(`
       SELECT
         CASE
@@ -5519,6 +5740,7 @@ router.get("/receptionistdashboard", async (req, res) => {
         END AS category,
         COUNT(*) AS value
       FROM appointment
+      WHERE YEAR(pref_date) = YEAR(CURDATE())
       GROUP BY category
     `);
 
@@ -5527,7 +5749,7 @@ router.get("/receptionistdashboard", async (req, res) => {
       value: Number(r.value)
     }));
 
-    // --- APPOINTMENT TRENDS (Monthly) ---
+    // --- APPOINTMENT TRENDS (already current year) ---
     const [trendRows] = await db.query(`
       SELECT 
         MONTHNAME(pref_date) AS month,
@@ -5561,13 +5783,13 @@ router.get("/receptionistdashboard", async (req, res) => {
   }
 });
 
-
 // ✅ Route for Revenue Summary (Admin Dashboard)
+//NEW CODE
 router.get("/revenue", async (req, res) => {
   try {
     const db = await connectToDatabase();
+    const { year } = req.query; // e.g., ?year=2025
 
-    // 🧠 Compute monthly revenue (total_charged per month)
     const [rows] = await db.query(`
       SELECT 
         DATE_FORMAT(billing_date, '%b') AS month,
@@ -5575,9 +5797,10 @@ router.get("/revenue", async (req, res) => {
         SUM(total_charged) AS revenue
       FROM appointment
       WHERE appointment_status = 'done'
+        ${year ? "AND YEAR(billing_date) = ?" : ""}
       GROUP BY YEAR(billing_date), MONTH(billing_date)
       ORDER BY YEAR(billing_date), MONTH(billing_date);
-    `);
+    `, year ? [year] : []);
 
     res.json(rows);
   } catch (err) {
