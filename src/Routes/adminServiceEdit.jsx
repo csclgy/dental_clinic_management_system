@@ -53,36 +53,36 @@ const AdminServiceEdit = () => {
   };
 
   const handleUpdate = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      showPopup("No token found. Please login again.", "error");
-      return;
-    }
-
-    const services = {
-      service_name: service.service_name,
-      status: service.status,
-    };
-
-    const response = await axios.put(
-      `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/service/${service_id}`,
-      services,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json", 
-        },
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        showPopup("No token found. Please login again.", "error");
+        return;
       }
-    );
 
-    showPopup(response.data.message || "Service updated successfully!", "success");
-    setTimeout(() => navigate("/adminServices"), 1500);
-  } catch (err) {
-    console.error("Error updating Service:", err);
-    showPopup(err.response?.data?.message || "Failed to update Service.", "error");
-  }
-};
+      const services = {
+        service_name: service.service_name,
+        status: service.status,
+      };
+
+      const response = await axios.put(
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/service/${service_id}`,
+        services,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      showPopup(response.data.message || "Service updated successfully!", "success");
+      setTimeout(() => navigate("/adminServices"), 1500);
+    } catch (err) {
+      console.error("Error updating Service:", err);
+      showPopup(err.response?.data?.message || "Failed to update Service.", "error");
+    }
+  };
 
   // ✅ Scroll to element if provided
   useEffect(() => {
@@ -206,17 +206,14 @@ const AdminServiceEdit = () => {
           )}
           {role === "admin" && (
             <>
-              <button onClick={() => setIsSettingOpen(!isSettingopen)}
-                className="flex items-center justify-between gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-gray-200"
-              >
+              <button onClick={() => setIsSettingOpen(!isSettingOpen)}>
                 <span className="flex items-center gap-2">
                   <Settings size={18} /> Settings
                 </span>
-                {isSettingopen ?
-                  <ChevronUp size={16} /> :
-                  <ChevronDown size={16} />}
+                {isSettingOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
-              {isSettingopen && (
+
+              {isSettingOpen && (
                 <div className="ml-6 flex flex-col gap-1 text-sm">
                   <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                     <IdCard size={18} /> HMO
@@ -226,12 +223,12 @@ const AdminServiceEdit = () => {
                     <FolderKanban size={18} /> OR Range
                   </Link>
 
-                  <Link to="/adminServices"
-                    className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+                  <Link to="/adminServices" className="flex items-center gap-2 bg-white text-[#00458B] p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
                     <BriefcaseMedical size={18} /> Services
                   </Link>
                 </div>
               )}
+
             </>
           )}
           {role === "admin" && (
