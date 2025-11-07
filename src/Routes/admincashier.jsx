@@ -223,24 +223,12 @@ const AdminCashier = () => {
               </Link>
               <Link
                 to="/adminschedule"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <Calendar size={18} /> Schedules
-              </Link>
-            </>
-          )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
                 className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <PhilippinePeso size={18} /> Cashier
+                <Calendar size={18} /> Appointments & Billing
               </Link>
             </>
           )}
-
           {role === "admin" && (
             <>
               <Link

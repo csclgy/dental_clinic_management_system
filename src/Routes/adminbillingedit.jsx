@@ -680,7 +680,8 @@ const Adminbillingedit = () => {
           <div className="mb-4 grid grid-cols-2 gap-4">
             <div>
               <label className="block font-bold text-gray-700">
-                OR Number:
+                {/* //NEW CODE */}
+                Invoice Number:
               </label>
 
               <div className="flex gap-2">
@@ -689,30 +690,30 @@ const Adminbillingedit = () => {
                   className="w-full border rounded px-3 py-2"
                   value={paymentOR}
                   onChange={(e) => setPaymentOR(e.target.value)}
-                  placeholder="OR will generate after completing this transaction..."
+                  placeholder="Invoice number will generate after completing this transaction..."
                   readOnly
                 />
               </div>
             </div>
 
 
-<div>
-  <label className="block font-bold text-gray-700">
-    Payment Status: <span style={{ color: "red" }}>*</span>
-  </label>
-  <select
-    className="border p-2 w-full rounded"
-    value={paymentStatus}
-    onChange={(e) => setPaymentStatus(e.target.value)}
-    required
-  >
-    <option value="">--Select--</option>
-    <option value="Unpaid">Unpaid</option>
-    <option value="Partial" disabled={paymentMode === "HMO"}>
-      Partial
-    </option>
-  </select>
-</div>
+            <div>
+              <label className="block font-bold text-gray-700">
+                Payment Status: <span style={{ color: "red" }}>*</span>
+              </label>
+              <select
+                className="border p-2 w-full rounded"
+                value={paymentStatus}
+                onChange={(e) => setPaymentStatus(e.target.value)}
+                required
+              >
+                <option value="">--Select--</option>
+                <option value="Unpaid">Unpaid</option>
+                <option value="Partial" disabled={paymentMode === "HMO"}>
+                  Partial
+                </option>
+              </select>
+            </div>
 
 
             <div>

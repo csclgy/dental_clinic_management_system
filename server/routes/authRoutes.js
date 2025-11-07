@@ -321,6 +321,7 @@ router.post(
   }
 );
 
+//NEW CODE
 // Create Appointment
 router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
   try {
@@ -347,6 +348,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
       p_email,
       p_contact_no,
       p_blood_type,
+      relation,
     } = req.body;
 
     // ✅ Handle downpayment proof URL (from S3)
@@ -366,8 +368,8 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
       (user_name, procedure_type, pref_date, pref_time, payment_method, downpayment_proof,
        attending_dentist, or_num, payment_status, total_service_charged, total_charged, appointment_status,
        p_fname, p_mname, p_lname, p_gender, p_age, p_date_birth,
-       p_home_address, p_email, p_contact_no, p_blood_type)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       p_home_address, p_email, p_contact_no, p_blood_type, relation)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         req.user.user_name,
         procedure_type,
@@ -391,6 +393,7 @@ router.post("/appointments", authenticateToken, cpUpload, async (req, res) => {
         p_email,
         p_contact_no,
         p_blood_type,
+        relation || null,
       ]
     );
 
@@ -2521,19 +2524,22 @@ router.get("/dentists", async (req, res) => {
 });
 
 //################################ INVENTORY MANAGEMENT ################################
+//NEW CODE
 // for admininventoryadd.jsx (ADD NEW ITEM)
 router.post('/additem', async (req, res) => {
-  const { inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, supplier_id } = req.body;
+  const { inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, supplier_id, batch_number } = req.body;
 
+  // Basic validation
   if (!inv_item_name || !inv_quantity || !inv_item_type) {
     return res.status(400).json({ message: "Item Name, Quantity, and Item Type are required" });
   }
 
-  if (inv_item_type === "medicine" && (!inv_ml || !inv_exp_date)) {
+  if (inv_item_type.toLowerCase() === "medicine" && (!inv_ml || !inv_exp_date)) {
     return res.status(400).json({ message: "Medicine requires Amount of ML and Expiration Date" });
   }
 
   try {
+    // Verify JWT token
     const authHeader = req.headers["authorization"];
     const token = authHeader && authHeader.split(" ")[1];
     if (!token) return res.status(401).json({ message: "No token provided" });
@@ -2543,21 +2549,27 @@ router.post('/additem', async (req, res) => {
     const db = await connectToDatabase();
 
     // Check if item already exists
-    const [rows] = await db.query(
+    const [existingRows] = await db.query(
       'SELECT * FROM inventory WHERE inv_item_name = ?',
       [inv_item_name]
     );
-    if (rows.length > 0) {
+    if (existingRows.length > 0) {
       return res.status(409).json({ message: "Item already exists" });
     }
 
     // Default inv_status: High if quantity > 50, Low otherwise
-    let status = inv_quantity > 50 ? "High" : "Low";
+    const status = inv_quantity > 50 ? "High" : "Low";
 
+    if (!batch_number) {
+  return res.status(400).json({ message: "Batch Number is required" });
+}
+
+
+    // Insert into inventory
     await db.query(
       `INSERT INTO inventory 
-    (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status, inv_item_status, supplier_id, created_by) 
-   VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`,
+        (inv_item_type, inv_item_name, inv_price_per_item, inv_quantity, inv_ml, inv_exp_date, inv_status, inv_item_status, supplier_id, created_by, batch_number, created_at) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?, ?, NOW())`,
       [
         inv_item_type,
         inv_item_name,
@@ -2567,11 +2579,12 @@ router.post('/additem', async (req, res) => {
         inv_exp_date || null,
         status,
         supplier_id,
-        decoded.user_id // ← this is the key change
+        decoded.user_id,
+        batch_number
       ]
     );
 
-    // --- Send notification to all admins ---
+    // Notify all admins
     const [adminRows] = await db.query(
       `SELECT user_id FROM users WHERE role = 'admin'`
     );
@@ -2579,27 +2592,19 @@ router.post('/additem', async (req, res) => {
     for (const admin of adminRows) {
       await db.query(
         `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
-        VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
+         VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
         [
           admin.user_id,
           "New Inventory Item Added",
           `A new inventory item "${inv_item_name}" has been added by staff and is pending approval.`,
-          "inventory"
         ]
       );
     }
 
-    // --- Notify the staff who added the item ---
+    // Notify staff who added the item
     await db.query(
-      `INSERT INTO notifications (
-        user_id, 
-        ntf_subject, 
-        ntf_description, 
-        ntf_created_at, 
-        ntf_expires_at, 
-        category
-      )
-      VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
+      `INSERT INTO notifications (user_id, ntf_subject, ntf_description, ntf_created_at, ntf_expires_at, category)
+       VALUES (?, ?, ?, NOW(), DATE_ADD(NOW(), INTERVAL 30 DAY), 'inventory')`,
       [
         decoded.user_id,
         "Item Submitted for Approval",
@@ -2610,14 +2615,15 @@ router.post('/additem', async (req, res) => {
     // Insert into audit trail
     const action = "Add New Inventory Item";
     const auditDescription = `Added new inventory item: ${inv_item_name} (${inv_item_type})`;
-    const created_at = new Date();
-
     await db.query(
-      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, ?)",
-      [decoded.user_name, decoded.role, action, auditDescription, created_at]
+      "INSERT INTO audittrail (user_name, role, at_action, at_description, created_at) VALUES (?, ?, ?, ?, NOW())",
+      [decoded.user_name, decoded.role, action, auditDescription]
     );
 
-    return res.status(201).json({ message: "Item has been created successfully and is currently under review by the Admin." });
+    return res.status(201).json({
+      message: "Item has been created successfully and is currently under review by the Admin.",
+      batch_number: batch_number, // Optional: send batch number to frontend
+    });
   } catch (err) {
     console.error("Add Item error:", err);
     return res.status(500).json({ message: "Internal server error" });
@@ -2640,11 +2646,17 @@ router.put("/edititem/:id", async (req, res) => {
       inv_price_per_item,
       inv_ml,
       inv_exp_date,
-      inv_item_status
+      inv_item_status,
+      batch_number // <-- added batch_number
     } = req.body;
 
     const { id } = req.params;
     const db = await connectToDatabase();
+
+    // Optional validation for medicine batch number
+    if (inv_item_type.toLowerCase() === "medicine" && !batch_number) {
+      return res.status(400).json({ message: "Batch number is required for medicine." });
+    }
 
     const [result] = await db.query(
       `UPDATE inventory 
@@ -2654,9 +2666,10 @@ router.put("/edititem/:id", async (req, res) => {
            inv_price_per_item = ?, 
            inv_ml = ?, 
            inv_exp_date = ?,
-           inv_item_status = ?
+           inv_item_status = ?,
+           batch_number = ?  -- <-- update batch_number
        WHERE inv_id = ?`,
-      [inv_item_name, inv_item_type, inv_quantity, inv_price_per_item, inv_ml, inv_exp_date, inv_item_status, id]
+      [inv_item_name, inv_item_type, inv_quantity, inv_price_per_item, inv_ml, inv_exp_date, inv_item_status, batch_number, id]
     );
 
     if (result.affectedRows === 0) {
@@ -2769,7 +2782,7 @@ router.get("/displayitem/:id", async (req, res) => {
     const itemId = req.params.id;
     const db = await connectToDatabase();
     const [rows] = await db.query(
-      `SELECT inv_id, inv_item_name, inv_item_type, inv_quantity, inv_price_per_item, inv_ml, inv_exp_date 
+      `SELECT * 
       FROM inventory 
       WHERE inv_id = ?`,
       [itemId]
@@ -2799,6 +2812,7 @@ router.get("/viewitem/:id", async (req, res) => {
         i.inv_ml,
         i.inv_exp_date,
         i.inv_status,
+        i.batch_number, 
         i.inv_item_status,
         i.supplier_id,
         s.supplier_name,
@@ -2821,11 +2835,26 @@ router.get("/viewitem/:id", async (req, res) => {
   }
 });
 
+//NEW CODE
 // for admininventory.jsx (DISPLAY ALL ITEMS IN TABLE)
 router.get('/inventory', async (req, res) => {
+  const { year } = req.query; // optional query param: ?year=2025
   try {
     const db = await connectToDatabase();
-    const [rows] = await db.query(`SELECT * FROM inventory WHERE inv_item_status = 'active' OR inv_item_status = 'inactive'`);
+
+    let query = `
+      SELECT *
+      FROM inventory
+      WHERE inv_item_status = 'active' OR inv_item_status = 'inactive'
+    `;
+    const params = [];
+
+    if (year) {
+      query += ` AND YEAR(created_at) = ?`;
+      params.push(year);
+    }
+
+    const [rows] = await db.query(query, params);
     res.json(rows);
   } catch (err) {
     console.error("Fetch inventory error:", err);
@@ -5325,47 +5354,62 @@ router.put("/hmo_service/:service_id", async (req, res) => {
   }
 });
 
-
+//NEW CODE
 // ADMIN DASHBOARDS
-// Count Appointments
 router.get("/appointments/count", async (req, res) => {
+  const { year } = req.query;
   const db = await connectToDatabase();
   try {
-    const [rows] = await db.query("SELECT COUNT(*) AS count FROM appointment");
-    res.json(rows[0].count);
+    const [rows] = await db.query(`
+      SELECT COUNT(*) AS count
+      FROM appointment
+      WHERE YEAR(pref_date) = ?
+    `, [year || new Date().getFullYear()]);
+    res.json({ count: rows[0].count });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch appointments count" });
   }
 });
 
+//NEW CODE
 // Count Patients
 router.get("/patients/count", async (req, res) => {
   const db = await connectToDatabase();
   try {
-    const [rows] = await db.query("SELECT COUNT(*) AS count FROM users WHERE role = 'patient'");
-    res.json(rows[0].count);
+    const [rows] = await db.query(`
+      SELECT COUNT(DISTINCT appoint_id) AS total 
+      FROM appointment
+      WHERE YEAR(pref_date) = YEAR(CURDATE())
+    `);
+    res.json({ total: rows[0].total });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch patients count" });
   }
 });
 
+//NEW CODE
 // routes/dashboard.js
 router.get("/patients/demographics", async (req, res) => {
   const db = await connectToDatabase();
+  const { year } = req.query; // optional: use current year if not provided
+  const filterYear = year || new Date().getFullYear();
+
   try {
     const [rows] = await db.query(`
       SELECT 
         CASE 
-          WHEN age < 18 THEN 'Children'
-          WHEN age BETWEEN 18 AND 59 THEN 'Adults'
+          WHEN p_age < 18 THEN 'Children'
+          WHEN p_age BETWEEN 18 AND 59 THEN 'Adults'
           ELSE 'Seniors'
-        END as category,
-        COUNT(*) as value
-      FROM users
+        END AS category,
+        COUNT(DISTINCT appoint_id) AS value
+      FROM appointment
+      WHERE YEAR(pref_date) = ?
       GROUP BY category;
-    `);
+    `, [filterYear]);
+
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -5373,6 +5417,7 @@ router.get("/patients/demographics", async (req, res) => {
   }
 });
 
+//NEW CODE
 // ✅ Patient demographics route
 router.get("/receptionistpatientdemo", async (req, res) => {
   const db = await connectToDatabase();
@@ -5395,34 +5440,47 @@ router.get("/receptionistpatientdemo", async (req, res) => {
   }
 });
 
-
+//NEW CODE
 router.get("/receptionistdashboard", async (req, res) => {
   try {
     const db = await connectToDatabase();
 
-    // --- TOTAL COUNTS ---
+    // --- TOTAL COUNTS (only current year) ---
     const [[totalAppointments]] = await db.query(`
-      SELECT COUNT(*) AS total FROM appointment
+      SELECT COUNT(*) AS total 
+      FROM appointment
+      WHERE YEAR(pref_date) = YEAR(CURDATE())
     `);
 
-    // Count distinct users from appointment table (since no patient table)
+    // Count distinct users from appointment table (current year only)
     const [[patientsCount]] = await db.query(`
-      SELECT COUNT(DISTINCT user_name) AS total FROM appointment
+      SELECT COUNT(DISTINCT user_name) AS total 
+      FROM appointment
+      WHERE YEAR(pref_date) = YEAR(CURDATE())
     `);
 
     const [[pendingAppointments]] = await db.query(`
-      SELECT COUNT(*) AS total FROM appointment WHERE appointment_status = 'pending'
+      SELECT COUNT(*) AS total 
+      FROM appointment 
+      WHERE appointment_status = 'pending' 
+      AND YEAR(pref_date) = YEAR(CURDATE())
     `);
 
     const [[cancelledAppointments]] = await db.query(`
-      SELECT COUNT(*) AS total FROM appointment WHERE appointment_status = 'cancelled'
+      SELECT COUNT(*) AS total 
+      FROM appointment 
+      WHERE appointment_status = 'cancelled' 
+      AND YEAR(pref_date) = YEAR(CURDATE())
     `);
 
     const [[completedAppointments]] = await db.query(`
-      SELECT COUNT(*) AS total FROM appointment WHERE appointment_status = 'done'
+      SELECT COUNT(*) AS total 
+      FROM appointment 
+      WHERE appointment_status = 'done' 
+      AND YEAR(pref_date) = YEAR(CURDATE())
     `);
 
-    // --- TODAY'S APPOINTMENTS ---
+    // --- TODAY'S APPOINTMENTS (no change) ---
     const [todayAppointments] = await db.query(`
       SELECT appoint_id, p_fname, p_lname, procedure_type, pref_time, appointment_status
       FROM appointment
@@ -5430,7 +5488,7 @@ router.get("/receptionistdashboard", async (req, res) => {
       ORDER BY pref_time ASC
     `);
 
-    // --- DEMOGRAPHICS (based on p_age from appointment table) ---
+    // --- DEMOGRAPHICS (only current year) ---
     const [demoRows] = await db.query(`
       SELECT
         CASE
@@ -5440,6 +5498,7 @@ router.get("/receptionistdashboard", async (req, res) => {
         END AS category,
         COUNT(*) AS value
       FROM appointment
+      WHERE YEAR(pref_date) = YEAR(CURDATE())
       GROUP BY category
     `);
 
@@ -5448,7 +5507,7 @@ router.get("/receptionistdashboard", async (req, res) => {
       value: Number(r.value)
     }));
 
-    // --- APPOINTMENT TRENDS (Monthly) ---
+    // --- APPOINTMENT TRENDS (already current year) ---
     const [trendRows] = await db.query(`
       SELECT 
         MONTHNAME(pref_date) AS month,
@@ -5482,13 +5541,12 @@ router.get("/receptionistdashboard", async (req, res) => {
   }
 });
 
-
-// ✅ Route for Revenue Summary (Admin Dashboard)
+//NEW CODE
 router.get("/revenue", async (req, res) => {
   try {
     const db = await connectToDatabase();
+    const { year } = req.query; // e.g., ?year=2025
 
-    // 🧠 Compute monthly revenue (total_charged per month)
     const [rows] = await db.query(`
       SELECT 
         DATE_FORMAT(billing_date, '%b') AS month,
@@ -5496,9 +5554,10 @@ router.get("/revenue", async (req, res) => {
         SUM(total_charged) AS revenue
       FROM appointment
       WHERE appointment_status = 'done'
+        ${year ? "AND YEAR(billing_date) = ?" : ""}
       GROUP BY YEAR(billing_date), MONTH(billing_date)
       ORDER BY YEAR(billing_date), MONTH(billing_date);
-    `);
+    `, year ? [year] : []);
 
     res.json(rows);
   } catch (err) {

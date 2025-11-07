@@ -34,6 +34,7 @@ const AdminInventoryAdd = () => {
     inv_ml: "",
     inv_exp_date: "",
     supplier_id: "",
+    batch_number: "", //NEW CODE
   });
 
   const updateFormData = (field, value) => {
@@ -77,6 +78,7 @@ const AdminInventoryAdd = () => {
         inv_ml: "",
         inv_exp_date: "",
         supplier_id: "",
+        batch_number: "", //NEW CODE
       });
 
       setTimeout(() => navigate("/admininventory"), 1500);
@@ -293,6 +295,21 @@ const AdminInventoryAdd = () => {
                 className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
               />
             </div>
+            {/* //NEW CODE */}
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Batch Number: <span style={{ color: "red" }}>*</span>
+              </label>
+              <input
+                type="text"
+                value={registerData.batch_number}
+                onChange={(e) => updateFormData("batch_number", e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                placeholder="Enter batch number"
+                required
+              />
+            </div>
+
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">

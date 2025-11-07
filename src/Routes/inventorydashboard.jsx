@@ -18,28 +18,31 @@ function InventoryDashboard() {
   const [openDashboard, setOpenDashboard] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const role = localStorage.getItem("role");
+  const [year, setYear] = useState(new Date().getFullYear());
 
-  // Fetch inventory data from backend
-  useEffect(() => {
-    const fetchItems = async () => {
-      try {
-        const token = localStorage.getItem("token"); // staff login token
-        const res = await fetch("http://localhost:3000/auth/inventory", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        if (!res.ok) throw new Error("Failed to fetch inventory");
-        const data = await res.json();
-        setInventory(data);
-      } catch (err) {
-        console.error("Error fetching inventory:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchItems();
-  }, []);
+// Fetch inventory data from backend
+useEffect(() => {
+  const fetchItems = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const res = await fetch(`http://localhost:3000/auth/inventory?year=${year}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to fetch inventory");
+      const data = await res.json();
+      setInventory(data);
+    } catch (err) {
+      console.error("Error fetching inventory:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchItems();
+}, [year]); // <- refetch whenever year changes
 
   const totalItems = inventory.length;
 

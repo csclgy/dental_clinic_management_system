@@ -51,14 +51,15 @@ function AdminDashboard() {
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   // Fetch backend data
+  // //NEW CODE
   useEffect(() => {
-    axios.get("http://localhost:3000/auth/appointments/count")
-      .then(res => setAppointmentsCount(res.data))
-      .catch(err => console.error("Error fetching appointments:", err));
+    axios.get(`http://localhost:3000/auth/appointments/count?year=${year}`)
+      .then(res => setAppointmentsCount(res.data.count))
+      .catch(err => console.error(err));
 
-    axios.get("http://localhost:3000/auth/patients/count")
-      .then(res => setPatientsCount(res.data))
-      .catch(err => console.error("Error fetching patients:", err));
+    axios.get(`http://localhost:3000/auth/patients/count?year=${year}`)
+      .then(res => setPatientsCount(res.data.total)) // if backend sends total
+      .catch(err => console.error(err));
 
     axios.get("http://localhost:3000/auth/patients/demographics")
       .then(res => setPatientDemographics(res.data))
@@ -84,25 +85,12 @@ function AdminDashboard() {
       .catch(err => console.error("Error fetching trial balance:", err));
   }, []);
 
-
-
-  // Filter revenue by month/year
+  //NEW CODE
+  // Filter revenue by year only
   useEffect(() => {
-    const startIndex = months.indexOf(startMonth);
-    const endIndex = months.indexOf(endMonth);
-
-    const filtered = revenueData.filter((item) => {
-      const monthIndex = months.indexOf(item.month);
-      return (
-        item.year === parseInt(year) &&
-        monthIndex >= startIndex &&
-        monthIndex <= endIndex
-      );
-    });
-
+    const filtered = revenueData.filter((item) => item.year === parseInt(year));
     setFilteredRevenue(filtered);
-  }, [startMonth, endMonth, year, revenueData]);
-
+  }, [year, revenueData]);
 
   const ledgerSummaryData = [
     { name: "Total Debit", value: totalDebit },
@@ -532,7 +520,7 @@ function AdminDashboard() {
               </PieChart>
             </ResponsiveContainer>
           </div>
-
+          {/* //NEW CODE */}
           {/* Revenue Trends */}
           <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
             <div className="flex items-center justify-between mb-4">
@@ -540,20 +528,15 @@ function AdminDashboard() {
                 <PhilippinePeso size={20} /> Revenue Trends
               </h2>
               <div className="flex items-center gap-2 text-xs sm:text-sm">
-                <select value={startMonth} onChange={(e) => setStartMonth(e.target.value)} className="border rounded-lg px-2 py-1">
-                  {months.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
-                <span className="text-gray-600">to</span>
-                <select value={endMonth} onChange={(e) => setEndMonth(e.target.value)} className="border rounded-lg px-2 py-1">
-                  {months.map((m) => <option key={m} value={m}>{m}</option>)}
-                </select>
+                <label className="text-gray-600 font-medium">Year:</label>
                 <input
                   type="number"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="border rounded-lg px-2 py-1 w-16 sm:w-20"
+                  className="border rounded-lg px-2 py-1 w-20 sm:w-24"
                 />
               </div>
+
             </div>
 
             <ResponsiveContainer width="100%" height={250}>

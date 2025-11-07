@@ -361,6 +361,7 @@ const AdminPatients = () => {
         </button>
 
         {/* Header */}
+        {/* //NEW CODE */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#00458B]">Patients</h1>
 
@@ -372,13 +373,18 @@ const AdminPatients = () => {
             >
               <Printer size={18} /> Generate Report
             </button>
-            <button
-              className="flex items-center gap-2 bg-[#00458B] font-semibold text-white px-4 py-2 rounded-lg"
-              onClick={() => navigate("/adminusersaddpatient")}
-            >
-              <PlusCircle size={18} /> Add New Patient
-            </button>
+
+            {/* 👇 Hide Add New Patient for dentists */}
+            {role !== "dentist" && (
+              <button
+                className="flex items-center gap-2 bg-[#00458B] font-semibold text-white px-4 py-2 rounded-lg"
+                onClick={() => navigate("/adminusersaddpatient")}
+              >
+                <PlusCircle size={18} /> Add New Patient
+              </button>
+            )}
           </div>
+
         </div>
 
         {loading ? (

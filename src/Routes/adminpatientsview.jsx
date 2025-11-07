@@ -472,12 +472,16 @@ const AdminPatientsView = () => {
                 >
                   <i className="fa fa-file-pdf-o"></i> Generate Report
                 </button>
-                <button
-                  className="flex items-center gap-2 bg-[#00458B] hover:bg-[#003870] text-white px-5 py-2 rounded-lg font-semibold transition"
-                  onClick={() => navigate(`/adminpatientsedit/${patient?.user_id}`)}
-                >
-                  <i className="fa fa-edit"></i> Edit Profile
-                </button>
+                {/* //NEW CODE */}
+                {role !== "dentist" && (
+                  <button
+                    className="flex items-center gap-2 bg-[#00458B] hover:bg-[#003870] text-white px-5 py-2 rounded-lg font-semibold transition"
+                    onClick={() => navigate(`/adminpatientsedit/${patient?.user_id}`)}
+                  >
+                    <i className="fa fa-edit"></i> Edit Profile
+                  </button>
+                )}
+
               </div>
             </div>
 
@@ -509,12 +513,16 @@ const AdminPatientsView = () => {
               <h2 className="text-xl font-bold text-[#00458B]">
                 Consultation History
               </h2>
-              <button
-                className="bg-[#00458B] text-white px-4 py-2 rounded-lg flex items-center font-semibold"
-                onClick={() => navigate("/adminconsultationadd", { state: { patient } })}
-              >
-                <PlusCircle className="mr-2" /> New Consultation
-              </button>
+              {/* //NEW CODE */}
+              {role !== "dentist" && (
+                <button
+                  className="bg-[#00458B] text-white px-4 py-2 rounded-lg flex items-center font-semibold"
+                  onClick={() => navigate("/adminconsultationadd", { state: { patient } })}
+                >
+                  <PlusCircle className="mr-2" /> New Consultation
+                </button>
+              )}
+
             </div>
 
             {/* Search + Filter */}
@@ -558,6 +566,7 @@ const AdminPatientsView = () => {
                       <th colSpan="4" className="px-2 py-2">Actions</th>
                     </tr>
                   </thead>
+                  {/* //NEW CODE */}
                   <tbody>
                     {filteredConsultations.map((c) => (
                       <tr key={c.appoint_id} className="border-b">
@@ -587,9 +596,9 @@ const AdminPatientsView = () => {
                                   )
                                 }
                                 className={`px-3 py-1 rounded-lg ${c.appointment_status === "incomplete" ||
-                                    c.appointment_status === "pending"
-                                    ? "bg-gray-200 hover:bg-gray-300"
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  c.appointment_status === "pending"
+                                  ? "bg-gray-200 hover:bg-gray-300"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                   }`}
                               >
                                 Cancel
@@ -602,9 +611,9 @@ const AdminPatientsView = () => {
                                 }
                                 onClick={() => handleFollowUp(c.appoint_id, patient.fname, patient.lname)}
                                 className={`px-4 py-2 rounded-lg ${c.appointment_status === "incomplete" ||
-                                    c.appointment_status === "pending"
-                                    ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  c.appointment_status === "pending"
+                                  ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                   }`}
                               >
                                 + Follow Up
@@ -615,8 +624,8 @@ const AdminPatientsView = () => {
                                 disabled={c.appointment_status !== "incomplete"}
                                 onClick={() => navigate(`/adminconsultationcomplete/${c.appoint_id}`)}
                                 className={`px-3 py-1 rounded-lg ${c.appointment_status === "incomplete"
-                                    ? "bg-green-600 hover:bg-green-700 text-white"
-                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  ? "bg-green-600 hover:bg-green-700 text-white"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                   }`}
                               >
                                 Complete

@@ -34,6 +34,7 @@ const AdminSchedule = () => {
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null); //NEW CODE
 
   // ✅ Popup state and fade animation
   const [popup, setPopup] = useState({ show: false, message: "", type: "" });
@@ -252,22 +253,10 @@ const AdminSchedule = () => {
                 to="/adminschedule"
                 className="flex items-center gap-2 p-2 bg-white text-[#00458B] rounded-lg hover:bg-white hover:text-[#00458B]"
               >
-                <Calendar size={18} /> Schedules
+                <Calendar size={18} /> Appointments & Billing
               </Link>
             </>
           )}
-
-          {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
-          )}
-
           {role === "admin" && (
             <>
               <Link
@@ -306,23 +295,33 @@ const AdminSchedule = () => {
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-[#00458B]">Upcoming Appointments</h1>
           <div>
+            {/* NEW CODE */}
             <button
               onClick={() => setViewMode("table")}
               className={`px-4 py-2 font-bold rounded-lg mr-2 ${viewMode === "table"
-                ? "bg-[#00458B] text-white"
-                : "bg-gray-200 text-gray-700"
+                  ? "bg-[#00458B] text-white"
+                  : "bg-gray-200 text-gray-700"
                 }`}
             >
               Table View
             </button>
+
             <button
               onClick={() => setViewMode("calendar")}
-              className={`px-4 py-2 rounded-lg font-bold ${viewMode === "calendar"
-                ? "bg-[#00458B] text-white"
-                : "bg-gray-200 text-gray-700"
+              className={`px-4 py-2 rounded-lg font-bold mr-2 ${viewMode === "calendar"
+                  ? "bg-[#00458B] text-white"
+                  : "bg-gray-200 text-gray-700"
                 }`}
             >
               Calendar View
+            </button>
+
+            {/* ✅ Only show button if role is receptionist */}
+            <button
+              onClick={() => navigate("/admincashier")}
+              className="px-4 py-2 rounded-lg font-bold bg-[#00c3b8] text-white hover:bg-[#00a79d] transition"
+            >
+              Go to Cashier
             </button>
           </div>
         </div>
@@ -409,79 +408,76 @@ const AdminSchedule = () => {
                         <td className="px-4 py-2">{record.appointment_status}</td>
 
                         {/* Buttons */}
-{/* Buttons */}
-<td className="px-2 py-3 whitespace-nowrap">
-  <button
-    onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
-    className="bg-[#008CBA] text-white px-4 py-2 rounded-lg"
-  >
-    View
-  </button>
-</td>
+                        {/* //NEW CODE */}
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <button
+                            onClick={() => navigate(`/adminconsultationview/${record.appoint_id}`)}
+                            className="bg-[#008CBA] text-white px-4 py-2 rounded-lg"
+                          >
+                            View
+                          </button>
+                        </td>
 
-{role !== "dentist" && (
-  <>
-    <td className="px-2 py-3 whitespace-nowrap">
-      <button
-        onClick={() => navigate(`/adminschedulecancel/${record.appoint_id}`)}
-        disabled={
-          !(
-            record.appointment_status === "incomplete" ||
-            record.appointment_status === "pending" ||
-            record.appointment_status === "cancel with refund request"
-          )
-        }
-        className={`px-4 py-2 rounded-lg ${
-          record.appointment_status === "incomplete" ||
-          record.appointment_status === "pending" ||
-          record.appointment_status === "cancel with refund request"
-            ? "bg-gray-200 hover:bg-gray-300 text-black"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-        }`}
-      >
-        Cancel
-      </button>
-    </td>
+                        {role !== "dentist" && (
+                          <>
+                            <td className="px-2 py-3 whitespace-nowrap">
+                              <button
+                                onClick={() => navigate(`/adminschedulecancel/${record.appoint_id}`)}
+                                disabled={
+                                  !(
+                                    record.appointment_status === "incomplete" ||
+                                    record.appointment_status === "pending" ||
+                                    record.appointment_status === "cancel with refund request"
+                                  )
+                                }
+                                className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" ||
+                                  record.appointment_status === "pending" ||
+                                  record.appointment_status === "cancel with refund request"
+                                  ? "bg-gray-200 hover:bg-gray-300 text-black"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  }`}
+                              >
+                                Cancel
+                              </button>
+                            </td>
 
-    <td className="px-2 py-3 whitespace-nowrap">
-      <button
-        disabled={
-          !(
-            record.appointment_status === "incomplete" ||
-            record.appointment_status === "pending"
-          )
-        }
-        onClick={() =>
-          handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)
-        }
-        className={`px-4 py-2 rounded-lg ${
-          record.appointment_status === "incomplete" ||
-          record.appointment_status === "pending"
-            ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-        }`}
-      >
-        + Follow Up
-      </button>
-    </td>
+                            <td className="px-2 py-3 whitespace-nowrap">
+                              <button
+                                disabled={
+                                  !(
+                                    record.appointment_status === "incomplete" ||
+                                    record.appointment_status === "pending"
+                                  )
+                                }
+                                onClick={() =>
+                                  handleFollowUp(record.appoint_id, record.p_fname, record.p_lname)
+                                }
+                                className={`px-4 py-2 rounded-lg ${record.appointment_status === "incomplete" ||
+                                  record.appointment_status === "pending"
+                                  ? "bg-[#00c3b8] hover:bg-[#00a89d] text-white"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  }`}
+                              >
+                                + Follow Up
+                              </button>
+                            </td>
 
-    <td className="px-2 py-3 whitespace-nowrap">
-      <button
-        onClick={() =>
-          navigate(`/adminconsultationcomplete/${record.appoint_id}`)
-        }
-        disabled={record.appointment_status !== "incomplete"}
-        className={`px-4 py-2 rounded-lg transition font-semibold ${
-          record.appointment_status === "incomplete"
-            ? "bg-green-600 hover:bg-green-700 text-white"
-            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-        }`}
-      >
-        Complete
-      </button>
-    </td>
-  </>
-)}
+                            <td className="px-2 py-3 whitespace-nowrap">
+                              <button
+                                onClick={() =>
+                                  navigate(`/adminconsultationcomplete/${record.appoint_id}`)
+                                }
+                                disabled={record.appointment_status !== "incomplete"}
+                                className={`px-4 py-2 rounded-lg transition font-semibold ${record.appointment_status === "incomplete"
+                                  ? "bg-green-600 hover:bg-green-700 text-white"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                  }`}
+                              >
+                                Complete
+                              </button>
+                            </td>
+                          </>
+                        )}
 
                       </tr>
                     ))
@@ -497,7 +493,8 @@ const AdminSchedule = () => {
             </div>
           </div>
         ) : (
-          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+          //NEW CODE
+          <div className="bg-white p-6 rounded-xl shadow-md border border-gray-200 relative">
             <BigCalendar
               localizer={localizer}
               events={events}
@@ -514,7 +511,30 @@ const AdminSchedule = () => {
               min={view !== "month" ? new Date(1970, 1, 1, 8, 0) : undefined}
               max={view !== "month" ? new Date(1970, 1, 1, 16, 0) : undefined}
               toolbar={true}
+              onSelectEvent={(event) => setSelectedEvent(event)}
             />
+
+            {/* Popup for appointment details */}
+            {selectedEvent && (
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border shadow-lg rounded-xl p-6 w-80 z-50">
+
+                {/* Top-right close (X) button */}
+                <button
+                  className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-xl font-bold"
+                  onClick={() => setSelectedEvent(null)}
+                >
+                  &times;
+                </button>
+
+                <h3 className="text-lg font-semibold mb-2">{selectedEvent.title}</h3>
+                <p><strong>Dentist:</strong> {selectedEvent.dentist}</p>
+                <p>
+                  <strong>Time:</strong>{" "}
+                  {moment(selectedEvent.start).format("hh:mm A")} -{" "}
+                  {moment(selectedEvent.end).format("hh:mm A")}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </main>

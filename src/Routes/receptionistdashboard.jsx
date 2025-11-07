@@ -1,8 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
-import { Calendar, Users, BarChart3, Menu, X, Clock, XCircle, CheckCircle, ChevronDown, ChevronUp, PhilippinePeso, IdCard, Settings } from "lucide-react";
-import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
+import {
+  Calendar,
+  Users,
+  BarChart3,
+  Menu,
+  X,
+  Clock,
+  XCircle,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  PhilippinePeso,
+  IdCard,
+  Settings,
+} from "lucide-react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
 
 function ReceptionistDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -10,64 +35,80 @@ function ReceptionistDashboard() {
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const role = localStorage.getItem("role");
 
-  // Stat cards dummy data
-  // Dashboard states — ready for backend connection
+  // Dashboard States
   const [totalAppointments, setTotalAppointments] = useState(0);
   const [patientsCount, setPatientsCount] = useState(0);
   const [pendingAppointments, setPendingAppointments] = useState(0);
   const [cancelledAppointments, setCancelledAppointments] = useState(0);
   const [completedAppointments, setCompletedAppointments] = useState(0);
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  // Chart filter controls
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const [startMonth, setStartMonth] = useState("Jan");
   const [endMonth, setEndMonth] = useState("Dec");
   const [year, setYear] = useState(new Date().getFullYear());
 
   const [patientDemographics, setPatientDemographics] = useState([]);
   const [appointmentTrends, setAppointmentTrends] = useState([]);
-
-  const [todayAppointments, setTodayAppointments] = useState([]); // table data
+  const [todayAppointments, setTodayAppointments] = useState([]);
 
   const COLORS = ["#01D5C4", "#00458B", "#A3A3A3"];
 
-
+  // ✅ Include year in API call
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/receptionistdashboard");
+        const res = await axios.get(
+          `http://localhost:3000/auth/receptionistdashboard?year=${year}`
+        );
         const data = res.data;
 
         console.log("📊 Dashboard Data:", data);
 
-        // ✅ Assign backend data to React states properly
         setTotalAppointments(data.totalAppointments);
         setPatientsCount(data.patientsCount);
         setPendingAppointments(data.pendingAppointments);
         setCancelledAppointments(data.cancelledAppointments);
         setCompletedAppointments(data.completedAppointments);
-
-        // ✅ Charts
         setPatientDemographics(data.patientDemographics || []);
         setAppointmentTrends(data.appointmentTrends || []);
-
-        // ✅ Today's appointments
         setTodayAppointments(data.todayAppointments || []);
-
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [year]);
 
+  // ✅ Filter trends by start/end month (before return)
+  const filteredTrends = appointmentTrends.filter((item) => {
+    const startIndex = months.indexOf(startMonth);
+    const endIndex = months.indexOf(endMonth);
+    const itemIndex = months.indexOf(item.month);
+    return itemIndex >= startIndex && itemIndex <= endIndex;
+  });
 
   return (
     <div className="flex min-h-screen bg-gray-100">
-
       {/* Sidebar */}
       <aside className="hidden md:flex w-64 bg-[#00458B] text-white flex-col p-6">
-        <h2 className="text-sxl font-bold mb-8">Arciaga-Juntilla TMJ Ortho Dental Clinic</h2>
+        <h2 className="text-sxl font-bold mb-8">
+          Arciaga-Juntilla TMJ Ortho Dental Clinic
+        </h2>
         <nav className="flex flex-col gap-2">
           {/* Dashboard Dropdown */}
           <button
@@ -83,13 +124,28 @@ function ReceptionistDashboard() {
           {openDashboard && (
             <div className="ml-6 flex flex-col gap-1 text-sm">
               {role === "admin" && (
-                <Link to="/admindashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Admin Dashboard</Link>
+                <Link
+                  to="/admindashboard"
+                  className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg"
+                >
+                  Admin Dashboard
+                </Link>
               )}
               {(role === "admin" || role === "inventory") && (
-                <Link to="/inventorydashboard" className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Inventory Dashboard</Link>
+                <Link
+                  to="/inventorydashboard"
+                  className="hover:text-[#00458B] hover:bg-white p-2 rounded-lg"
+                >
+                  Inventory Dashboard
+                </Link>
               )}
               {(role === "admin" || role === "receptionist" || role === "dentist") && (
-                <Link to="/receptionistdashboard" className="bg-white text-[#00458B] hover:text-[#00458B] hover:bg-white p-2 rounded-lg">Receptionist Dashboard</Link>
+                <Link
+                  to="/receptionistdashboard"
+                  className="bg-white text-[#00458B] hover:text-[#00458B] hover:bg-white p-2 rounded-lg"
+                >
+                  Receptionist Dashboard
+                </Link>
               )}
             </div>
           )}
@@ -97,16 +153,14 @@ function ReceptionistDashboard() {
           {/* Ledger dropdown */}
           {role === "admin" && (
             <>
-              {/* Ledger Dropdown */}
-              <button onClick={() => setIsLedgerOpen(!isLedgerOpen)}
+              <button
+                onClick={() => setIsLedgerOpen(!isLedgerOpen)}
                 className="flex justify-between items-center p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
               >
                 <span className="flex items-center gap-2">
                   <i className="fa fa-book"></i> Ledger
                 </span>
-                {isLedgerOpen ?
-                  <ChevronUp size={16} /> :
-                  <ChevronDown size={16} />}
+                {isLedgerOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
               </button>
 
               {isLedgerOpen && (
@@ -143,10 +197,16 @@ function ReceptionistDashboard() {
                   </Link>
                 </div>
               )}
-              <Link to="/adminhmo" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+              <Link
+                to="/adminhmo"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
                 <IdCard size={18} /> HMO
               </Link>
-              <Link to="/orRangeSetup" className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]">
+              <Link
+                to="/orRangeSetup"
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+              >
                 <Settings size={18} /> OR Range
               </Link>
               <Link
@@ -159,14 +219,12 @@ function ReceptionistDashboard() {
           )}
 
           {(role === "admin" || role === "inventory") && (
-            <>
-              <Link
-                to="/admininventory"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-archive"></i> Inventory
-              </Link>
-            </>
+            <Link
+              to="/admininventory"
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+            >
+              <i className="fa fa-archive"></i> Inventory
+            </Link>
           )}
 
           {(role === "admin" || role === "dentist" || role === "receptionist") && (
@@ -187,38 +245,38 @@ function ReceptionistDashboard() {
           )}
 
           {(role === "admin" || role === "receptionist") && (
-            <>
-              <Link
-                to="/admincashier"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <PhilippinePeso size={18} /> Cashier
-              </Link>
-            </>
+            <Link
+              to="/admincashier"
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+            >
+              <PhilippinePeso size={18} /> Cashier
+            </Link>
           )}
 
           {role === "admin" && (
-            <>
-              <Link
-                to="/adminaudit"
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
-              >
-                <i className="fa fa-eye"></i> Audit Trail
-              </Link>
-            </>
+            <Link
+              to="/adminaudit"
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-white hover:text-[#00458B]"
+            >
+              <i className="fa fa-eye"></i> Audit Trail
+            </Link>
           )}
         </nav>
       </aside>
 
       {/* Main Content */}
       <main className="flex-1 p-6 md:p-8">
-
         {/* Mobile Menu Button */}
-        <button onClick={() => setSidebarOpen(true)} className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="md:hidden mb-4 flex items-center gap-2 text-[#00458B]"
+        >
           <Menu size={24} /> Menu
         </button>
 
-        <h1 className="text-2xl font-bold text-[#00458B] mb-6">Receptionist Dashboard</h1>
+        <h1 className="text-2xl font-bold text-[#00458B] mb-6">
+          Receptionist Dashboard
+        </h1>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
@@ -309,16 +367,16 @@ function ReceptionistDashboard() {
                 <select value={endMonth} onChange={(e) => setEndMonth(e.target.value)} className="border rounded-lg px-2 py-1">
                   {months.map((m) => <option key={m} value={m}>{m}</option>)}
                 </select>
-                <input
+                {/* <input
                   type="number"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
                   className="border rounded-lg px-2 py-1 w-16 sm:w-20"
-                />
+                /> */}
               </div>
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={appointmentTrends}>
+              <BarChart data={filteredTrends}>
                 <XAxis dataKey="month" />
                 <YAxis />
                 <Tooltip />

@@ -228,7 +228,27 @@ const AdminInventoryView = () => {
                       <dt className="font-semibold">Item Status:</dt>
                       <dd>{item.inv_item_status}</dd>
                     </div>
+                    {/* //NEW CODE */}
+                    <div className="flex justify-between">
+                      <dt className="font-semibold">Batch Number:</dt>
+                      <dd>{item.batch_number || "N/A"}</dd>
+                    </div>
+
+                    {/* ✅ Display mL and Expiration if medicine */}
+                    {item.inv_item_type.toLowerCase() === "medicine" && (
+                      <>
+                        <div className="flex justify-between">
+                          <dt className="font-semibold">Amount of mL:</dt>
+                          <dd>{item.inv_ml ?? "N/A"}</dd>
+                        </div>
+                        <div className="flex justify-between">
+                          <dt className="font-semibold">Expiration Date:</dt>
+                          <dd>{item.inv_exp_date ?? "N/A"}</dd>
+                        </div>
+                      </>
+                    )}
                   </dl>
+
                 </div>
 
                 {/* Supplier Info */}

@@ -14,6 +14,7 @@ const AdminInventoryEditItem = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
   const [itemStatus, setItemStatus] = useState(""); // new state
+  const [batchNumber, setBatchNumber] = useState(""); //NEW CODE
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
@@ -74,9 +75,11 @@ const AdminInventoryEditItem = () => {
       setML(item.inv_ml ?? "");
       setExpiration(item.inv_exp_date || "");
       setItemStatus(item.inv_item_status || "active");
+      setBatchNumber(item.batch_number || ""); // //NEW CODE
     }
   }, [item]);
 
+  //NEW CODE
   // handle update
   const handleUpdate = async (e) => {
     e.preventDefault();
@@ -89,9 +92,10 @@ const AdminInventoryEditItem = () => {
           inv_item_type: itemType,
           inv_quantity: Number(quantity),
           inv_price_per_item: Number(price),
-          inv_ml: itemType === "medicine" ? ml : null,
-          inv_exp_date: itemType === "medicine" ? expiration : null,
+          inv_ml: itemType.toLowerCase() === "medicine" ? (ml ? Number(ml) : null) : null,
+          inv_exp_date: itemType.toLowerCase() === "medicine" ? (expiration || null) : null,
           inv_item_status: itemStatus,
+          batch_number: itemType.toLowerCase() === "medicine" ? batchNumber : null
         },
         {
           headers: {
@@ -334,6 +338,21 @@ const AdminInventoryEditItem = () => {
               />
             </div>
 
+            {/* //NEW CODE */}
+            <div>
+              <label className="block text-[#00458b] font-semibold mb-1">
+                Batch Number
+              </label>
+              <input
+                type="text"
+                value={batchNumber}
+                onChange={(e) => setBatchNumber(e.target.value)}
+                className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                required={itemType.toLowerCase() === "medicine"}
+              />
+            </div>
+
+
             {/* Quantity */}
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">
@@ -396,8 +415,8 @@ const AdminInventoryEditItem = () => {
               />
             </div>
 
-            {/* Medicine fields */}
-            {itemType === "medicine" && (
+            {/* //NEW CODE */}
+            {itemType.toLowerCase() === "medicine" && (
               <>
                 <div>
                   <label className="block text-[#00458b] font-semibold mb-1">
@@ -408,6 +427,7 @@ const AdminInventoryEditItem = () => {
                     value={ml}
                     onChange={(e) => setML(e.target.value)}
                     className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                    required
                   />
                 </div>
                 <div>
@@ -419,10 +439,12 @@ const AdminInventoryEditItem = () => {
                     value={expiration}
                     onChange={(e) => setExpiration(e.target.value)}
                     className="w-full border border-[#00458b] rounded-lg px-4 py-2 outline-none"
+                    required
                   />
                 </div>
               </>
             )}
+
 
             <div>
               <label className="block text-[#00458b] font-semibold mb-1">Item Status</label>
