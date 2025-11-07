@@ -51,7 +51,7 @@ const AdminConsultationAdd = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/auth/appointments/all");
+      const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/all");
       const appointments = response.data;
 
       // Filter for active appointments for selected dentist
@@ -187,7 +187,7 @@ const AdminConsultationAdd = () => {
       };
 
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:3000/auth/createconsultation", payload, {
+      await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/createconsultation", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -206,7 +206,7 @@ const AdminConsultationAdd = () => {
   useEffect(() => {
     const fetchProcedureTypes = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/services/active");
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/services/active");
         setProcedureTypes(res.data.map((s) => s.service_name));
       } catch (err) {
         console.error("Error fetching active services:", err);
@@ -220,7 +220,7 @@ const AdminConsultationAdd = () => {
     const fetchDentists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3000/auth/dentists", {
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDentists(res.data);

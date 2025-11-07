@@ -49,7 +49,7 @@ const AdminScheduleCancel = () => {
       }
 
       const response = await axios.post(
-        `http://localhost:3000/auth/processRefund/${appointId}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/processRefund/${appointId}`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

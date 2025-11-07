@@ -25,7 +25,7 @@ const Presubmit = () => {
 
     try {
       const response = await axios.post(
-        "http://localhost:3000/auth/register",
+        "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/register",
         registerData
       );
 

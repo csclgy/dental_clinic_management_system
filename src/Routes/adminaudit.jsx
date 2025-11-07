@@ -21,7 +21,7 @@ function adminaudit() {
       setLoading(true); // ✅ show spinner
       try {
         const token = localStorage.getItem("token"); // JWT token
-        const response = await axios.get("http://localhost:3000/auth/audit-trail", {
+        const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/audit-trail", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

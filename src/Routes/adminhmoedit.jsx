@@ -38,7 +38,7 @@ const AdminHMOEdit = () => {
   useEffect(() => {
     const fetchHMO = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/hmo1/${hmo_id}`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo1/${hmo_id}`);
         setHMO(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
@@ -78,7 +78,7 @@ const AdminHMOEdit = () => {
       if (file) formData.append("moa_letter", file);
 
       const response = await axios.put(
-        `http://localhost:3000/auth/hmo/${hmo_id}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo/${hmo_id}`,
         formData,
         {
           headers: {
@@ -311,7 +311,7 @@ const AdminHMOEdit = () => {
                 <p className="text-sm text-gray-600 mb-1">
                   Current file:{" "}
                   <a
-                    href={`http://localhost:3000/uploads/hmo/${hmo.moa_letter}`}
+                    href={`https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/hmo/${hmo.moa_letter}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#00458b] underline"

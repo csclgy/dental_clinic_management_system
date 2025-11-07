@@ -32,7 +32,7 @@ const AdminConsultationPartial = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `http://localhost:3000/auth/displayconsultation/${appointId}`,
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultation/${appointId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -59,7 +59,7 @@ const AdminConsultationPartial = () => {
     const fetchDentists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3000/auth/dentists", {
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDentists(res.data);
@@ -75,7 +75,7 @@ const AdminConsultationPartial = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get(
-          `http://localhost:3000/auth/consultationpayments/${appointId}`,
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/consultationpayments/${appointId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setPayments(res.data || []);
@@ -119,7 +119,7 @@ const AdminConsultationPartial = () => {
       // Combine patient name fields
       const patientName = `${consultation.p_fname} ${consultation.p_mname || ""} ${consultation.p_lname}`;
 
-      const res = await axios.post(`http://localhost:3000/auth/complete/${appoint_id}`, {
+      const res = await axios.post(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/complete/${appoint_id}`, {
         appoint_id: consultation.appoint_id,
         total_charged: totalCharged,
         patient_name: patientName,
@@ -589,7 +589,7 @@ const AdminConsultationPartial = () => {
                         className="px-4 py-2 mt-2 mr-2 rounded-md bg-[#01D5C4] text-white font-semibold hover:bg-[#00b0a6]"
                         onClick={() =>
                           window.open(
-                            `http://localhost:3000/uploads/appointments/${photo.up_url}`,
+                            `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${photo.up_url}`,
                             "_blank"
                           )
                         }
@@ -750,7 +750,7 @@ const AdminConsultationPartial = () => {
                   <button
                     onClick={() =>
                       window.open(
-                        `http://localhost:3000/uploads/appointments/${consultation.downpayment_proof}`,
+                        `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${consultation.downpayment_proof}`,
                         "_blank"
                       )
                     }
@@ -785,7 +785,7 @@ const AdminConsultationPartial = () => {
                     <button
                       onClick={() =>
                         window.open(
-                          `http://localhost:3000/uploads/appointments/${cancelInfo.refund_photo}`,
+                          `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${cancelInfo.refund_photo}`,
                           "_blank"
                         )
                       }

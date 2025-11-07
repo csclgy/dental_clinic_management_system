@@ -110,7 +110,7 @@ const Adminconsultationcomplete = () => {
     const fetchConsultation = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`http://localhost:3000/auth/displayconsultation/${appointId}`, {
+        const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultation/${appointId}`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -159,7 +159,7 @@ const Adminconsultationcomplete = () => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/auth/completeconsultation/${appointId}`, {
+      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/completeconsultation/${appointId}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -188,7 +188,7 @@ const Adminconsultationcomplete = () => {
     const fetchDentists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3000/auth/dentists", {
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDentists(res.data);

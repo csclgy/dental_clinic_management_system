@@ -33,7 +33,7 @@ const AdminCoaViewAdd = () => {
   // Fetch subaccounts
   const fetchSubaccounts = async () => {
     try {
-      const res = await axios.get(`http://localhost:3000/auth/coa/${id}/subaccounts`);
+      const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/${id}/subaccounts`);
       setSubaccounts(res.data);
     } catch (err) {
       console.error("Error fetching subaccounts:", err);
@@ -64,7 +64,7 @@ const AdminCoaViewAdd = () => {
       const token = localStorage.getItem("token"); // get your saved JWT token
 
       const response = await axios.post(
-        `http://localhost:3000/auth/coa/${id}/subaccounts`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa/${id}/subaccounts`,
         { account_name: accountName },
         {
           headers: {

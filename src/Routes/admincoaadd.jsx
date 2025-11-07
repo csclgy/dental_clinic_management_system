@@ -52,7 +52,7 @@ const AdminCoaAdd = () => {
       const token = localStorage.getItem("token"); // get your saved JWT token
 
       const response = await axios.post(
-        "http://localhost:3000/auth/coa",
+        "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa",
         {
           account_name: accountName,
           account_type: accountType,

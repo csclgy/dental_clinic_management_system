@@ -51,7 +51,7 @@ const AdminInventoryPending = () => {
     const fetchItems = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch("http://localhost:3000/auth/pendingitems", {
+        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/pendingitems", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -71,7 +71,7 @@ const AdminInventoryPending = () => {
   const handleDelete = async () => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:3000/auth/rejectitem/${confirmBox.itemId}`, {
+      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/rejectitem/${confirmBox.itemId}`, {
         method: "PUT", // <-- match backend
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -94,7 +94,7 @@ const AdminInventoryPending = () => {
   const handleApprove = async (id) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`http://localhost:3000/auth/approveitem/${id}`, {
+      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/approveitem/${id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

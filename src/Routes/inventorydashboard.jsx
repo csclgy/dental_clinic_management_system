@@ -28,7 +28,7 @@ function InventoryDashboard() {
       try {
         setLoading(true);
         const token = localStorage.getItem("token");
-        const res = await fetch(`http://localhost:3000/auth/inventory?year=${year}`, {
+        const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inventory?year=${year}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

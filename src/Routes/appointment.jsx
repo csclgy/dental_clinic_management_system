@@ -90,7 +90,7 @@ const Appointment = () => {
   useEffect(() => {
   const fetchServices = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/auth/services/active");
+      const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/services/active");
       setServices(response.data);
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -101,7 +101,7 @@ const Appointment = () => {
 
   const fetchAppointments = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/auth/appointments/all");
+      const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/all");
       const appointments = response.data;
 
       // Filter for active appointments (not cancelled or done)
@@ -422,7 +422,7 @@ const Appointment = () => {
                     if (checked) {
                       const userId = localStorage.getItem("userId");
                       axios
-                        .get(`http://localhost:3000/auth/users/${userId}`)
+                        .get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/users/${userId}`)
                         .then((response) => {
                           const user = response.data;
                           updateAppointment("p_home_address", user.home_address || "");
@@ -463,7 +463,7 @@ const Appointment = () => {
               onClick={async () => {
                 try {
                   const userId = localStorage.getItem("userId");
-                  const response = await axios.get(`http://localhost:3000/auth/users/${userId}`);
+                  const response = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/users/${userId}`);
                   const user = response.data;
 
                   // Auto-fill fields

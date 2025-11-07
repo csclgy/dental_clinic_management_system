@@ -10,7 +10,7 @@ const Login = () => {
   const handleLogin = async () => {
     setError(""); // clear old error
     try {
-      const res = await fetch("http://localhost:3000/auth/login", {
+      const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ user_name, user_password }),

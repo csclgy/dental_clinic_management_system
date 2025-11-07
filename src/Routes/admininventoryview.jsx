@@ -22,7 +22,7 @@ const AdminInventoryView = () => {
     const fetchItem = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:3000/auth/viewitem/${id}`,
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/viewitem/${id}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

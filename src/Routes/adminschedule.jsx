@@ -71,7 +71,7 @@ const AdminSchedule = () => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch("http://localhost:3000/auth/displayconsultations", {
+        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultations", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -105,7 +105,7 @@ const AdminSchedule = () => {
     setLoading(true); // ✅ show spinner
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`http://localhost:3000/auth/followup/${appoint_id}`, {
+      const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/followup/${appoint_id}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

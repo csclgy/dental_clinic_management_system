@@ -49,7 +49,7 @@ const AdminJournalAdd = () => {
 
     const fetchAccount = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/coa1`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa1`);
         setAccount(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
@@ -63,7 +63,7 @@ const AdminJournalAdd = () => {
       const fetchSubAccounts = async () => {
         try {
           const res = await axios.get(
-            `http://localhost:3000/auth/subaccs/${formData.account}`
+            `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subaccs/${formData.account}`
           );
           setSub(res.data);
         } catch (err) {
@@ -98,7 +98,7 @@ const AdminJournalAdd = () => {
       const debit = formData.type === "debit" ? Number(formData.amount) : 0;
       const credit = formData.type === "credit" ? Number(formData.amount) : 0;
 
-      await axios.post("http://localhost:3000/auth/journal", {
+      await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/journal", {
         date: formData.date,
         description: formData.description,
         account_id: formData.account,

@@ -46,7 +46,7 @@ const Adminconsultationview = () => {
       try {
         const token = localStorage.getItem("token");
         const res = await fetch(
-          `http://localhost:3000/auth/displayconsultation/${appointId}`,
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultation/${appointId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -76,7 +76,7 @@ const Adminconsultationview = () => {
     const fetchDentists = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:3000/auth/dentists", {
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/dentists", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setDentists(res.data);
@@ -765,7 +765,7 @@ const Adminconsultationview = () => {
                     <button
                       onClick={() =>
                         window.open(
-                          `http://localhost:3000/uploads/appointments/${consultation.downpayment_proof}`,
+                          `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${consultation.downpayment_proof}`,
                           "_blank"
                         )
                       }
@@ -802,7 +802,7 @@ const Adminconsultationview = () => {
                       <button
                         onClick={() =>
                           window.open(
-                            `http://localhost:3000/uploads/appointments/${cancelInfo.refund_photo}`,
+                            `https://dental-clinic-management-system-backend-jlz9.onrender.com/uploads/appointments/${cancelInfo.refund_photo}`,
                             "_blank"
                           )
                         }

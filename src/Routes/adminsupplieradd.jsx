@@ -58,7 +58,7 @@ const AdminSupplierAdd = () => {
       const token = localStorage.getItem("token");
 
       const response = await axios.post(
-        "http://localhost:3000/auth/newsupplier",
+        "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/newsupplier",
         newsupplier,
         {
           headers: {

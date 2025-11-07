@@ -209,7 +209,7 @@ const AdminJournal = () => {
     const fetchJournalEntries = async () => {
       setLoading(true); // ✅ show spinner
       try {
-        const response = await axios.get("http://localhost:3000/auth/journal1");
+        const response = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/journal1");
         setJournalData(response.data);
       } catch (err) {
         console.error(err);

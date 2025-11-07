@@ -51,7 +51,7 @@ const Admingeneral = () => {
       setLoading(true); // ✅ show spinner
 
       try {
-        const res = await axios.get("http://localhost:3000/auth/general");
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/general");
         setRecords(res.data);
       } catch (err) {
         console.error("Error fetching general ledger:", err);
@@ -65,7 +65,7 @@ const Admingeneral = () => {
   useEffect(() => {
     const fetchAccounts = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/coa");
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/coa");
         setAccounts(res.data);
       } catch (err) {
         console.error("Error fetching accounts:", err);
@@ -257,12 +257,12 @@ const Admingeneral = () => {
   const filterRecord = async (account_id) => {
     try {
       if (!account_id) {
-        const res = await axios.get("http://localhost:3000/auth/general");
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/general");
         setRecords(res.data);
         return;
       }
 
-      const res = await axios.get("http://localhost:3000/auth/general_ledger1", {
+      const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/general_ledger1", {
         params: { account_id },
       });
       setRecords(res.data);

@@ -53,7 +53,7 @@ const AdminSubsidiaryPayableAdd = () => {
 
     const fetchAccountPayable = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/accountPayable`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/accountPayable`);
         if (res.data.length > 0) {
           const { account_id, account_name } = res.data[0];
           setFormData((prev) => ({
@@ -69,7 +69,7 @@ const AdminSubsidiaryPayableAdd = () => {
 
     const fetchInventory = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/accountExpense`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/accountExpense`);
         if (res.data.length > 0) {
           setAccount(res.data);
         }
@@ -89,7 +89,7 @@ const AdminSubsidiaryPayableAdd = () => {
     }
     try {
       const res = await axios.get(
-        `http://localhost:3000/auth/supplier?name=${query}`
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/supplier?name=${query}`
       );
       setNameSuggestions(res.data);
     } catch (err) {
@@ -162,7 +162,7 @@ const AdminSubsidiaryPayableAdd = () => {
       const credit = formData.type === "credit" ? Number(formData.amount) : 0;
 
 
-      await axios.post("http://localhost:3000/auth/subsidiary1", {
+      await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/subsidiary1", {
         date: formData.date,
         name: formData.description,
         account_id: formData.account,

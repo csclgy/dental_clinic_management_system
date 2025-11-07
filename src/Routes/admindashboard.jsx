@@ -57,19 +57,19 @@ function AdminDashboard() {
   // Fetch backend data
   // //NEW CODE
   useEffect(() => {
-    axios.get(`http://localhost:3000/auth/appointments/count?year=${year}`)
+    axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/count?year=${year}`)
       .then(res => setAppointmentsCount(res.data.count))
       .catch(err => console.error(err));
 
-    axios.get(`http://localhost:3000/auth/patients/count?year=${year}`)
+    axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/count?year=${year}`)
       .then(res => setPatientsCount(res.data.total)) // if backend sends total
       .catch(err => console.error(err));
 
-    axios.get("http://localhost:3000/auth/patients/demographics")
+    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/demographics")
       .then(res => setPatientDemographics(res.data))
       .catch(err => console.error("Error fetching demographics:", err));
 
-    axios.get("http://localhost:3000/auth/revenue")
+    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/revenue")
       .then(res => {
         setRevenueData(res.data);
         setFilteredRevenue(res.data);
@@ -78,7 +78,7 @@ function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    axios.get("http://localhost:3000/auth/trial")
+    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/trial")
       .then(res => {
         const { data, totalDebit, totalCredit } = res.data;
         setLedgerData(data);

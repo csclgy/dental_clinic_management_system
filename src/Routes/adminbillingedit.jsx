@@ -69,10 +69,10 @@ const Adminbillingedit = () => {
       const token = localStorage.getItem("token");
 
       const [billingRes, invRes] = await Promise.all([
-        axios.get(`http://localhost:3000/auth/billing/${appointId}`, {
+        axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/${appointId}`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get("http://localhost:3000/auth/inventory", {
+        axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inventory", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -125,7 +125,7 @@ const Adminbillingedit = () => {
       const inv = inventory.find((i) => String(i.inv_id) === String(newInvId));
 
       const res = await axios.post(
-        `http://localhost:3000/auth/billing/${appointId}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/${appointId}`,
         {
           inv_id: inv.inv_id,
           ci_item_name: inv.inv_item_name,
@@ -160,7 +160,7 @@ const Adminbillingedit = () => {
     if (!window.confirm("Delete this item?")) return;
     try {
       const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:3000/auth/deletebilling/${ci_id}`, {
+      await axios.delete(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/deletebilling/${ci_id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       await fetchBillingData(); // refresh
@@ -181,7 +181,7 @@ const Adminbillingedit = () => {
 
       // Call backend to save the service
       const res = await axios.post(
-        `http://localhost:3000/auth/billing/${appointId}`,
+        `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/${appointId}`,
         {
           ci_item_name: newServiceName,
           ci_quantity: 1, // services usually count as 1
@@ -243,7 +243,7 @@ const Adminbillingedit = () => {
       const token = localStorage.getItem("token");
 
       // Check if OR is already used
-      const checkRes = await axios.get(`http://localhost:3000/auth/checkOR/${orNum}`, {
+      const checkRes = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/checkOR/${orNum}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -271,7 +271,7 @@ const Adminbillingedit = () => {
         formData.append("coverage", hmoCoverage);
       }
 
-      await axios.post(`http://localhost:3000/auth/billing/${appointId}`, formData, {
+      await axios.post(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/billing/${appointId}`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
@@ -307,7 +307,7 @@ const Adminbillingedit = () => {
   const fetchHmos = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:3000/auth/hmo", {
+      const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo", {
         headers: { Authorization: `Bearer ${token}` }
       });
       setHmoList(res.data);
@@ -329,7 +329,7 @@ const Adminbillingedit = () => {
         const token = localStorage.getItem("token");
 
         const res = await axios.get(
-          `http://localhost:3000/auth/hmo/${hmoProvider}/services`,
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/hmo/${hmoProvider}/services`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -359,7 +359,7 @@ const Adminbillingedit = () => {
 
   const generateOrNumber = async () => {
     try {
-      const res = await axios.post("http://localhost:3000/api/or-range/generate");
+      const res = await axios.post("https://dental-clinic-management-system-backend-jlz9.onrender.com/api/or-range/generate");
       setPaymentOR(res.data.or_num);
       return res.data.or_num; // return the OR number
     } catch (err) {
