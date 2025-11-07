@@ -52,7 +52,7 @@ const handleSave = async () => {
     const token = localStorage.getItem("token");
 
     const res = await axios.post(
-      "http://localhost:3000/auth/serviceadd",
+      "https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/serviceadd",
       { service_name: ServiceName.trim(), status },
       { headers: { Authorization: `Bearer ${token}` } }
     );

@@ -75,7 +75,7 @@ const AdminServices = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await axios.get("http://localhost:3000/auth/service");
+        const res = await axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/service");
         setService(res.data);
       } catch (err) {
         console.error("Error fetching HMOs:", err);
@@ -99,7 +99,7 @@ const AdminServices = () => {
         return;
       }
 
-      await axios.delete(`http://localhost:3000/auth/service/${confirmBox.ServiceId}`, {
+      await axios.delete(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/service/${confirmBox.ServiceId}`, {
         headers: {
           Authorization: `Bearer ${token}`, // <- include 'Bearer '
         },

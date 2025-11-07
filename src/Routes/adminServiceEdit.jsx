@@ -35,7 +35,7 @@ const AdminServiceEdit = () => {
   useEffect(() => {
     const fetchServices = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/auth/service/${service_id}`);
+        const res = await axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/service/${service_id}`);
         setService(res.data);
       } catch (err) {
         console.error("Error fetching account:", err);
@@ -65,7 +65,7 @@ const AdminServiceEdit = () => {
     };
 
     const response = await axios.put(
-      `http://localhost:3000/auth/service/${service_id}`,
+      `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/service/${service_id}`,
       services,
       {
         headers: {
