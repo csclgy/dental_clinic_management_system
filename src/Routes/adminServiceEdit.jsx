@@ -10,6 +10,7 @@ const AdminServiceEdit = () => {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isLedgerOpen, setIsLedgerOpen] = useState(false);
+  const [isSettingOpen, setIsSettingOpen] = useState(false);
 
   const role = localStorage.getItem("role");
   const [openDashboard, setOpenDashboard] = useState(false);
