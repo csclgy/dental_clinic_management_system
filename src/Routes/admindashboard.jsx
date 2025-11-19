@@ -57,28 +57,28 @@ function AdminDashboard() {
   // Fetch backend data
   // //NEW CODE
   useEffect(() => {
-    axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/appointments/count?year=${year}`)
-      .then(res => setAppointmentsCount(res.data.count))
-      .catch(err => console.error(err));
+    axios.get(`http://localhost:3000/auth/appointments/count?year=${year}`)
+    .then(res => setAppointmentsCount(res.data.count))
+    .catch(err => console.error(err));
 
-    axios.get(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/count?year=${year}`)
-      .then(res => setPatientsCount(res.data.total)) // if backend sends total
-      .catch(err => console.error(err));
+  axios.get(`http://localhost:3000/auth/patients/count?year=${year}`)
+    .then(res => setPatientsCount(res.data.total))
+    .catch(err => console.error(err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/patients/demographics")
+    axios.get("http://localhost:3000/auth/patients/demographics")
       .then(res => setPatientDemographics(res.data))
       .catch(err => console.error("Error fetching demographics:", err));
 
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/revenue")
+    axios.get("http://localhost:3000/auth/revenue")
       .then(res => {
         setRevenueData(res.data);
         setFilteredRevenue(res.data);
       })
       .catch(err => console.error("Error fetching revenue data:", err));
-  }, []);
+  }, [year]);
 
   useEffect(() => {
-    axios.get("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/trial")
+    axios.get("http://localhost:3000/auth/trial")
       .then(res => {
         const { data, totalDebit, totalCredit } = res.data;
         setLedgerData(data);
@@ -524,12 +524,21 @@ function AdminDashboard() {
               </h2>
               <div className="flex items-center gap-2 text-xs sm:text-sm">
                 <label className="text-gray-600 font-medium">Year:</label>
-                <input
-                  type="number"
-                  value={year}
-                  onChange={(e) => setYear(e.target.value)}
-                  className="border rounded-lg px-2 py-1 w-20 sm:w-24"
-                />
+<select
+  value={year}
+  onChange={(e) => setYear(e.target.value)}
+  className="border rounded-lg px-2 py-1 w-24"
+>
+  {[...Array(6)].map((_, i) => {
+    const y = new Date().getFullYear() - i;
+    return (
+      <option key={y} value={y}>
+        {y}
+      </option>
+    );
+  })}
+</select>
+
               </div>
 
             </div>

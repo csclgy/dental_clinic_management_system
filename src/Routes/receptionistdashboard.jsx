@@ -76,7 +76,7 @@ function ReceptionistDashboard() {
     const fetchDashboardData = async () => {
       try {
         const res = await axios.get(
-          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/receptionistdashboard?year=${year}`
+          `http://localhost:3000/auth/receptionistdashboard?year=${year}`
         );
         const data = res.data;
 
@@ -257,6 +257,24 @@ function ReceptionistDashboard() {
         <h1 className="text-2xl font-bold text-[#00458B] mb-6">
           Receptionist Dashboard
         </h1>
+
+        <div className="mb-6 flex justify-end items-center gap-3">
+          <label className="font-semibold text-[#00458B]">Filter by Year:</label>
+
+          <select
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            className="border border-gray-300 p-2 rounded-lg"
+          >
+            <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
+            <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
+            <option value={new Date().getFullYear() - 2}>{new Date().getFullYear() - 2}</option>
+            <option value={new Date().getFullYear() - 3}>{new Date().getFullYear() - 3}</option>
+            <option value={new Date().getFullYear() - 4}>{new Date().getFullYear() - 4}</option>
+            <option value={new Date().getFullYear() - 5}>{new Date().getFullYear() - 5}</option>
+          </select>
+        </div>
+
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">

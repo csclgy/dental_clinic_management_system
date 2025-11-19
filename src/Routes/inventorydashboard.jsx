@@ -28,7 +28,7 @@ function InventoryDashboard() {
       try {
         setLoading(true);
         const token = localStorage.getItem("token");
-        const res = await fetch(`https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/inventory?year=${year}`, {
+        const res = await fetch(`http://localhost:3000/auth/inventory?year=${year}`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -236,6 +236,25 @@ function InventoryDashboard() {
         <h1 className="text-2xl font-bold text-[#00458B] mb-6">
           Inventory Dashboard
         </h1>
+
+        <div className="mb-6 flex justify-end items-center gap-3">
+          <label className="font-semibold text-[#00458B]">Filter by Year:</label>
+
+          <select
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+            className="border border-gray-300 p-2 rounded-lg"
+          >
+            <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
+            <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
+            <option value={new Date().getFullYear() - 2}>{new Date().getFullYear() - 2}</option>
+            <option value={new Date().getFullYear() - 3}>{new Date().getFullYear() - 3}</option>
+            <option value={new Date().getFullYear() - 4}>{new Date().getFullYear() - 4}</option>
+            <option value={new Date().getFullYear() - 5}>{new Date().getFullYear() - 5}</option>
+          </select>
+        </div>
+
+
 
         {loading ? (
           <p>Loading inventory data...</p>

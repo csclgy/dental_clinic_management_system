@@ -60,7 +60,7 @@ const AdminCashier = () => {
         const token = localStorage.getItem("token");
         if (!token) return;
 
-        const res = await fetch("https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/displayconsultations1", {
+        const res = await fetch("http://localhost:3000/auth/displayconsultations1", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -385,9 +385,19 @@ const AdminCashier = () => {
         </button>
 
         {/* Header */}
-        <div className="items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#00458B]"> Payments </h1>
-          <p className="text-gray-600">(Unpaid)</p>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#00458B]"> Payments <p className="text-gray-600" style={{fontSize:"70%"}}>(Unpaid)</p></h1>
+          <div>
+                        {/* Only show "Go to Cashier" for receptionist and admin */}
+            {(role === "receptionist" || role === "admin") && (
+              <button
+                onClick={() => navigate("/adminschedule")}
+                className="px-4 py-2 rounded-lg font-bold bg-[#00c3b8] text-white hover:bg-[#00a79d] transition"
+              >
+                Go to Schedule
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Content */}
