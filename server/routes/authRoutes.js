@@ -2902,15 +2902,17 @@ router.get("/viewitem/:id", async (req, res) => {
 });
 
 // for admininventory.jsx (DISPLAY ALL ITEMS IN TABLE)
+//NEW CHANGES (NOV 20, 2025)
 router.get('/inventory', async (req, res) => {
-  const { year } = req.query; // optional query param: ?year=2025
+  const { year } = req.query;
+
   try {
     const db = await connectToDatabase();
 
     let query = `
       SELECT *
       FROM inventory
-      WHERE inv_item_status = 'active' OR inv_item_status = 'inactive'
+      WHERE (inv_item_status = 'active' OR inv_item_status = 'inactive')
     `;
     const params = [];
 
@@ -2925,7 +2927,7 @@ router.get('/inventory', async (req, res) => {
     console.error("Fetch inventory error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
-}); 
+});
 
 // get pending items with supplier name
 router.get("/pendingitems", async (req, res) => {
@@ -5683,46 +5685,49 @@ router.get("/receptionistpatientdemo", async (req, res) => {
   }
 });
 
+//NEW CHANGES (NOV 20, 2025)
 router.get("/receptionistdashboard", async (req, res) => {
   try {
     const db = await connectToDatabase();
 
-    // --- TOTAL COUNTS (only current year) ---
+    // Get year from query, default to current year
+    const year = req.query.year || new Date().getFullYear();
+
+    // --- TOTAL COUNTS ---
     const [[totalAppointments]] = await db.query(`
       SELECT COUNT(*) AS total 
       FROM appointment
-      WHERE YEAR(pref_date) = YEAR(CURDATE())
-    `);
+      WHERE YEAR(pref_date) = ?
+    `, [year]);
 
-    // Count distinct users from appointment table (current year only)
     const [[patientsCount]] = await db.query(`
       SELECT COUNT(DISTINCT user_name) AS total 
       FROM appointment
-      WHERE YEAR(pref_date) = YEAR(CURDATE())
-    `);
+      WHERE YEAR(pref_date) = ?
+    `, [year]);
 
     const [[pendingAppointments]] = await db.query(`
       SELECT COUNT(*) AS total 
       FROM appointment 
-      WHERE appointment_status = 'pending' 
-      AND YEAR(pref_date) = YEAR(CURDATE())
-    `);
+      WHERE appointment_status = 'pending'
+      AND YEAR(pref_date) = ?
+    `, [year]);
 
     const [[cancelledAppointments]] = await db.query(`
       SELECT COUNT(*) AS total 
       FROM appointment 
-      WHERE appointment_status = 'cancelled' 
-      AND YEAR(pref_date) = YEAR(CURDATE())
-    `);
+      WHERE appointment_status = 'cancelled'
+      AND YEAR(pref_date) = ?
+    `, [year]);
 
     const [[completedAppointments]] = await db.query(`
       SELECT COUNT(*) AS total 
       FROM appointment 
-      WHERE appointment_status = 'done' 
-      AND YEAR(pref_date) = YEAR(CURDATE())
-    `);
+      WHERE appointment_status = 'done'
+      AND YEAR(pref_date) = ?
+    `, [year]);
 
-    // --- TODAY'S APPOINTMENTS (no change) ---
+    // --- TODAY'S APPOINTMENTS (no year filter needed) ---
     const [todayAppointments] = await db.query(`
       SELECT appoint_id, p_fname, p_lname, procedure_type, pref_time, appointment_status
       FROM appointment
@@ -5730,7 +5735,7 @@ router.get("/receptionistdashboard", async (req, res) => {
       ORDER BY pref_time ASC
     `);
 
-    // --- DEMOGRAPHICS (only current year) ---
+    // --- DEMOGRAPHICS ---
     const [demoRows] = await db.query(`
       SELECT
         CASE
@@ -5740,32 +5745,32 @@ router.get("/receptionistdashboard", async (req, res) => {
         END AS category,
         COUNT(*) AS value
       FROM appointment
-      WHERE YEAR(pref_date) = YEAR(CURDATE())
+      WHERE YEAR(pref_date) = ?
       GROUP BY category
-    `);
+    `, [year]);
 
     const patientDemographics = demoRows.map(r => ({
       category: r.category,
       value: Number(r.value)
     }));
 
-    // --- APPOINTMENT TRENDS (already current year) ---
+    // --- APPOINTMENT TRENDS ---
     const [trendRows] = await db.query(`
       SELECT 
         MONTHNAME(pref_date) AS month,
         COUNT(*) AS appointments
       FROM appointment
-      WHERE YEAR(pref_date) = YEAR(CURDATE())
+      WHERE YEAR(pref_date) = ?
       GROUP BY MONTH(pref_date)
       ORDER BY MONTH(pref_date)
-    `);
+    `, [year]);
 
     const appointmentTrends = trendRows.map(r => ({
-      month: r.month.slice(0, 3), // "January" → "Jan"
+      month: r.month.slice(0, 3),
       appointments: Number(r.appointments)
     }));
 
-    // --- FINAL RESPONSE ---
+    // --- SEND RESPONSE ---
     res.json({
       totalAppointments: totalAppointments.total,
       patientsCount: patientsCount.total,
