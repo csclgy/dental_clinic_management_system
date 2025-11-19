@@ -11,7 +11,9 @@ import {
   Menu,
   IdCard,
   Printer,
-  Settings
+  Settings,
+  FolderKanban,
+  BriefcaseMedical
 } from "lucide-react";
 import {
   PieChart,
