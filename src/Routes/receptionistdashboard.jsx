@@ -76,7 +76,7 @@ function ReceptionistDashboard() {
     const fetchDashboardData = async () => {
       try {
         const res = await axios.get(
-          `http://localhost:3000/auth/receptionistdashboard?year=${year}`
+          `https://dental-clinic-management-system-backend-jlz9.onrender.com/auth/receptionistdashboard?year=${year}`
         );
         const data = res.data;
 
