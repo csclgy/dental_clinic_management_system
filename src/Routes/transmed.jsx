@@ -262,6 +262,7 @@ const TransMed = () => {
                       <th className="px-4 py-2 text-left">Time</th>
                       <th className="px-4 py-2 text-left">Status</th>
                       <th className="px-4 py-2 text-center"></th>
+                      <th className="px-4 py-2 text-center"></th>
                     </tr>
                   </thead>
                   <tbody>
